@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pytest:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run:*)",
+      "Bash(uv pip install:*)",
+      "Bash(ruff:*)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git push)",
+      "Bash(git rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(echo:*)",
+      "Bash(tree:*)"
+    ],
+    "deny": [
+      "Read(credentials/**)",
+      "Read(.env)"
+    ]
+  }
+}

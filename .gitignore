@@ -1,0 +1,19 @@
+# Set up
+.idea/
+.project
+*.local.*
+
+# Python
+__pycache__/
+.pytest_cache/
+*.egg-info/
+venv/
+.venv/
+
+# Environment Variables/Secrets
+.env
+credentials/
+*/credentials/
+
+# Build artifacts
+build/
