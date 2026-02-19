@@ -44,3 +44,20 @@ print(f"Expected: {result.expected}")
 The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
 automatically — words you get wrong come back sooner, words you know well
 are spaced further apart.
+
+## Examples
+
+The `examples/` folder contains runnable scripts that showcase the full API:
+
+| Script | Description |
+|--------|-------------|
+| `quickstart.py` | Minimal self-contained demo (flashcard + multiple choice) |
+| `interactive_quiz.py` | CLI quiz loop with score tracking |
+| `spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
+| `multiple_languages.py` | Multiple language pairs in one database |
+
+Run any example with:
+
+```bash
+uv run python examples/quickstart.py
+```
