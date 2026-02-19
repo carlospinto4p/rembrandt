@@ -1,7 +1,5 @@
 """Exercise generation and answer evaluation."""
 
-from __future__ import annotations
-
 import random
 
 from rembrandt.models import (

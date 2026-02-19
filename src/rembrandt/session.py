@@ -1,7 +1,5 @@
 """Chat session for vocabulary exercises."""
 
-from __future__ import annotations
-
 from rembrandt.db import Database
 from rembrandt.exercises import (
     evaluate_answer,

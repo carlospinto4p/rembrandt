@@ -1,7 +1,5 @@
 """SM-2 spaced-repetition algorithm and word selection."""
 
-from __future__ import annotations
-
 from datetime import datetime, timedelta
 
 from rembrandt.db import Database

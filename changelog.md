@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.2.3 - 19th February 2026
+
+- Removed `from __future__ import annotations` from all source modules
+  (unnecessary with Python >= 3.13).
+
+
 ### v0.2.2 - 19th February 2026
 
 - Updated `.claude/rules/committing.md`: moved reinstall step before commit
