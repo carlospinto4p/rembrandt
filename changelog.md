@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.2.1 - 19th February 2026
+
+- Renamed example scripts with numeric prefixes for ordered difficulty:
+  - `01_quickstart.py`
+  - `02_interactive_quiz.py`
+  - `03_multiple_languages.py`
+  - `04_spaced_repetition_demo.py`
+- Updated `README.md`: updated example file names.
+
+
 ### v0.2.0 - 19th February 2026
 
 - Added `examples/` folder with runnable scripts:

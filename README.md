@@ -51,13 +51,13 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 
 | Script | Description |
 |--------|-------------|
-| `quickstart.py` | Minimal self-contained demo (flashcard + multiple choice) |
-| `interactive_quiz.py` | CLI quiz loop with score tracking |
-| `spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
-| `multiple_languages.py` | Multiple language pairs in one database |
+| `01_quickstart.py` | Minimal self-contained demo (flashcard + multiple choice) |
+| `02_interactive_quiz.py` | CLI quiz loop with score tracking |
+| `03_multiple_languages.py` | Multiple language pairs in one database |
+| `04_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
 
 Run any example with:
 
 ```bash
-uv run python examples/quickstart.py
+uv run python examples/01_quickstart.py
 ```
