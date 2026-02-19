@@ -2,7 +2,7 @@
 
 Shows how `easiness_factor`, `interval`, `repetitions`, and
 `next_review` evolve as a word is reviewed with different quality
-scores.  No database is needed — this works directly with the
+scores. No database is needed — this works directly with the
 low-level `review()` function and `UserProgress` model.
 """
 

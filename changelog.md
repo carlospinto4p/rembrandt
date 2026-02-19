@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.3.0 - 19th February 2026
+
+- Added `docs/` folder with theory documentation:
+  - `spaced-repetition.md`: forgetting curve, SM-2 algorithm,
+    easiness factor, quality scores, worked example.
+  - `exercise-types.md`: active recall, flashcard vs. multiple
+    choice, answer evaluation.
+- Updated `README.md`: added Documentation section.
+
+
 ### v0.2.5 - 19th February 2026
 
 - Fixed double backticks in docstrings across `db.py`, `models.py`,

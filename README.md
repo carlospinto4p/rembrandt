@@ -45,6 +45,15 @@ The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
 automatically — words you get wrong come back sooner, words you know well
 are spaced further apart.
 
+## Documentation
+
+The `docs/` folder explains the theory behind the library:
+
+| Document | Topics |
+|----------|--------|
+| [Spaced Repetition](docs/spaced-repetition.md) | Forgetting curve, SM-2 algorithm, easiness factor, worked example |
+| [Exercise Types](docs/exercise-types.md) | Active recall, flashcard vs. multiple choice, answer evaluation |
+
 ## Examples
 
 The `examples/` folder contains runnable scripts that showcase the full API:
