@@ -10,8 +10,8 @@ class Word(BaseModel):
     """A vocabulary word with its translation.
 
     :param id: Unique identifier (assigned by the database).
-    :param language_from: Source language code (e.g. ``"en"``).
-    :param language_to: Target language code (e.g. ``"es"``).
+    :param language_from: Source language code (e.g. `"en"`).
+    :param language_to: Target language code (e.g. `"es"`).
     :param word_from: Word in the source language.
     :param word_to: Translation in the target language.
     """

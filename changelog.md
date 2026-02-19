@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.2.5 - 19th February 2026
+
+- Fixed double backticks in docstrings across `db.py`, `models.py`,
+  and `session.py` to use single backticks per code style rules.
+
+
 ### v0.2.4 - 19th February 2026
 
 - Updated `CLAUDE.md`: added rule to never use

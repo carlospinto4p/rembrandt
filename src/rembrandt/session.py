@@ -34,7 +34,7 @@ class Session:
     def next_exercise(self) -> Exercise | None:
         """Select a word and generate an exercise.
 
-        :return: An `Exercise`, or ``None`` if no words are
+        :return: An `Exercise`, or `None` if no words are
             available.
         """
         words = select_words(

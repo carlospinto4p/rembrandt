@@ -35,7 +35,7 @@ class Database:
     """Thin SQLite wrapper for vocabulary words and progress.
 
     :param path: Path to the SQLite database file.
-        Use ``":memory:"`` for an in-memory database.
+        Use `":memory:"` for an in-memory database.
     """
 
     def __init__(self, path: str | Path) -> None:
@@ -85,7 +85,7 @@ class Database:
         """Bulk-insert words.
 
         :param words: List of
-            ``(language_from, language_to, word_from, word_to)``
+            `(language_from, language_to, word_from, word_to)`
             tuples.
         :return: List of inserted `Word` objects.
         """
@@ -136,7 +136,7 @@ class Database:
 
         :param user_id: The user identifier.
         :param word_id: The word identifier.
-        :return: `UserProgress` or ``None`` if no record exists.
+        :return: `UserProgress` or `None` if no record exists.
         """
         row = self._conn.execute(
             "SELECT * FROM progress "
