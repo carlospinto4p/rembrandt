@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.2.4 - 19th February 2026
+
+- Updated `CLAUDE.md`: added rule to never use
+  `from __future__ import annotations`.
+
+
 ### v0.2.3 - 19th February 2026
 
 - Removed `from __future__ import annotations` from all source modules
