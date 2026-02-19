@@ -36,8 +36,8 @@ they don't break CI when real data files are absent.
 ## Naming
 
 - Test functions: `test_<what>_<scenario>` in snake_case.
-  - `test_get_wallet_balance_empty_response`, `test_list_transactions_flattens_nested_data`
-- Fixture functions: descriptive nouns (`mock_llm_client`, `sample_exercise`).
+  - `test_review_incorrect_resets_repetitions`, `test_select_words_due_before_new`
+- Fixture functions: descriptive nouns (`sample_word`, `sample_exercise`).
 
 ## What to Test
 
@@ -46,9 +46,3 @@ they don't break CI when real data files are absent.
 - **Don't test:** private helpers directly (test through public
   API), trivial getters/setters.
 
-## Running Tests
-
-```bash
-# Unit tests (default, fast)
-uv run pytest tests/unit -v
-```

@@ -32,6 +32,10 @@ uv run ruff check src/ tests/
 uv run ruff check src/ tests/ --fix
 ```
 
+## Conventions
+
+- Example scripts use numeric prefixes for ordering: `01_`, `02_`, etc.
+
 ## Code Style
 
 - Line length: 78 characters (enforced by ruff)

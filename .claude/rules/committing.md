@@ -12,8 +12,8 @@
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Reinstall package**: Run `uv pip install -e ".[dev]"` to install the
-   updated package. This also updates `uv.lock` with the new version.
+6. **Sync environment**: Run `uv sync --all-extras` to update `uv.lock`,
+   then `uv pip install -e ".[dev]"` to reinstall the editable package.
 7. **Commit changes**: Create a commit with a descriptive message following
    the format below.
    - **Always include `uv.lock`** in the commit — run `git status` to
@@ -59,15 +59,15 @@ Use conventional commit style:
 ## Examples
 
 ```
-feat: Add exercise generation module
+feat: Add spaced-repetition module
 
-Added generate_exercise() and list_categories() to ExerciseBuilder.
-```
-
-```
-fix: Handle empty prompt in exercise parser
+Added review() and select_words() for SM-2 scheduling.
 ```
 
 ```
-docs: Update README with installation options
+fix: Handle missing progress in Session.answer()
+```
+
+```
+docs: Add theory documentation for spaced repetition
 ```

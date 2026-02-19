@@ -1,6 +1,6 @@
 # Versioning Workflow
 
-After committing significant changes, proactively update the version and changelog, then create a version commit. Ask the user which version type (major/minor/patch) if unclear.
+As part of the commit workflow (step 3 in `committing.md`), update the version and changelog before committing. Ask the user which version type (major/minor/patch) if unclear.
 
 **Important: One feature per version release.** Each new feature gets its own version release. Do NOT combine multiple features into a single version, even if implemented in the same session. This keeps the changelog clean and makes it easier to track what changed in each version.
 

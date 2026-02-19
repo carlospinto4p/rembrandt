@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.3.1 - 19th February 2026
+
+- Self-refinement pass on Claude settings:
+  - `committing.md`: fixed step 6 (two-step: `uv sync --all-extras` for
+    lock file, then `uv pip install -e ".[dev]"` for editable install),
+    replaced generic commit examples with project-relevant ones.
+  - `versioning.md`: fixed opening line to match commit workflow order.
+  - `testing.md`: replaced naming examples from another project with
+    Rembrandt ones, removed duplicate "Running Tests" section.
+  - `CLAUDE.md`: added examples/ numeric-prefix naming convention.
+
+
 ### v0.3.0 - 19th February 2026
 
 - Added `docs/` folder with theory documentation:
