@@ -12,11 +12,13 @@
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Update uv.lock**: Run `uv sync` to update the lock file if dependencies changed
-7. **Commit changes**: Create a commit with a descriptive message following the format below
-   - **Always include uv.lock** in commits when it has changed
+6. **Reinstall package**: Run `uv pip install -e ".[dev]"` to install the
+   updated package. This also updates `uv.lock` with the new version.
+7. **Commit changes**: Create a commit with a descriptive message following
+   the format below.
+   - **Always include `uv.lock`** in the commit — run `git status` to
+     verify it is staged before committing.
 8. **Push to remote**: Push the changes with `git push`
-9. **Reinstall package**: After a version release, run `uv pip install -e ".[dev]"` to install the updated package with dev dependencies
 
 This workflow is MANDATORY after every prompt that results in code changes.
 

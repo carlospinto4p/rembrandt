@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.2.2 - 19th February 2026
+
+- Updated `.claude/rules/committing.md`: moved reinstall step before commit
+  so `uv.lock` changes are always captured in the commit.
+
+
 ### v0.2.1 - 19th February 2026
 
 - Renamed example scripts with numeric prefixes for ordered difficulty:
