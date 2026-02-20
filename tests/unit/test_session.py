@@ -1,10 +1,12 @@
 """Tests for rembrandt.session."""
 
+import json
+
 import pytest
 
 from rembrandt.db import Database
 from rembrandt.models import ExerciseType
-from rembrandt.session import Session
+from rembrandt.session import Session, quick_session
 
 
 @pytest.fixture
@@ -185,3 +187,116 @@ def test_definition_self_graded_updates_progress(
             assert progress.repetitions == 1
             return
     pytest.skip("Did not get a self-graded exercise")
+
+
+# --- quick_session Tests ---
+
+_SAMPLE_WORDS = [
+    {"word": "cat", "definition": "gato"},
+    {"word": "dog", "definition": "perro"},
+    {"word": "house", "definition": "casa"},
+    {"word": "book", "definition": "libro"},
+    {"word": "tree", "definition": "árbol"},
+]
+
+
+def test_quick_session_from_json(tmp_path):
+    vocab_file = tmp_path / "words.json"
+    vocab_file.write_text(
+        json.dumps(_SAMPLE_WORDS), encoding="utf-8",
+    )
+    s = quick_session(
+        vocab_file,
+        language_from="en",
+        language_to="es",
+    )
+    words = s.db.get_words("en", "es")
+    assert len(words) == 5
+    assert isinstance(s, Session)
+    s.db.close()
+
+
+def test_quick_session_from_list(tmp_path):
+    s = quick_session(
+        _SAMPLE_WORDS,
+        db_path=tmp_path / "inline.db",
+        language_from="en",
+        language_to="es",
+    )
+    words = s.db.get_words("en", "es")
+    assert len(words) == 5
+    assert isinstance(s, Session)
+    s.db.close()
+
+
+def test_quick_session_skips_reload(tmp_path):
+    vocab_file = tmp_path / "words.json"
+    vocab_file.write_text(
+        json.dumps(_SAMPLE_WORDS), encoding="utf-8",
+    )
+    db_path = tmp_path / "shared.db"
+
+    s1 = quick_session(
+        vocab_file,
+        db_path=db_path,
+        language_from="en",
+        language_to="es",
+    )
+    s1.db.close()
+
+    s2 = quick_session(
+        vocab_file,
+        db_path=db_path,
+        language_from="en",
+        language_to="es",
+    )
+    words = s2.db.get_words("en", "es")
+    assert len(words) == 5
+    s2.db.close()
+
+
+def test_quick_session_limit(tmp_path):
+    vocab_file = tmp_path / "words.json"
+    vocab_file.write_text(
+        json.dumps(_SAMPLE_WORDS), encoding="utf-8",
+    )
+    s = quick_session(
+        vocab_file,
+        language_from="en",
+        language_to="es",
+        limit=3,
+    )
+    words = s.db.get_words("en", "es")
+    assert len(words) == 3
+    s.db.close()
+
+
+def test_quick_session_list_requires_db_path():
+    with pytest.raises(ValueError, match="db_path is required"):
+        quick_session(
+            _SAMPLE_WORDS,
+            language_from="en",
+            language_to="es",
+        )
+
+
+def test_quick_session_custom_keys(tmp_path):
+    custom_words = [
+        {"term": "cat", "meaning": "gato"},
+        {"term": "dog", "meaning": "perro"},
+    ]
+    vocab_file = tmp_path / "custom.json"
+    vocab_file.write_text(
+        json.dumps(custom_words), encoding="utf-8",
+    )
+    s = quick_session(
+        vocab_file,
+        language_from="en",
+        language_to="es",
+        word_key="term",
+        definition_key="meaning",
+    )
+    words = s.db.get_words("en", "es")
+    assert len(words) == 2
+    assert words[0].word_from == "cat"
+    s.db.close()

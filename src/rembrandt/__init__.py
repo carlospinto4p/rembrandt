@@ -11,7 +11,7 @@ from rembrandt.models import (
     Word,
     learning_mode,
 )
-from rembrandt.session import Session
+from rembrandt.session import Session, quick_session
 
 __version__ = version("rembrandt")
 
@@ -24,4 +24,5 @@ __all__ = [
     "Session",
     "Word",
     "learning_mode",
+    "quick_session",
 ]

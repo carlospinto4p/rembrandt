@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.6.0 - 20th February 2026
+
+- Added `quick_session()` factory function in `session`: creates a
+  `Session` from a JSON file or inline word list, handling database
+  creation and conditional word loading in one call.
+- Updated `examples/06_load_spanish_vocab.py`: simplified using
+  `quick_session()`.
+
+
 ### v0.5.0 - 20th February 2026
 
 - Added flexible answer matching in `evaluate_answer()`:

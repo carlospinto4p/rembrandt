@@ -45,6 +45,37 @@ The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
 automatically — words you get wrong come back sooner, words you know well
 are spaced further apart.
 
+### Quick Session
+
+For even faster setup, use `quick_session()` to handle database creation,
+word loading, and session setup in a single call:
+
+```python
+from rembrandt import quick_session
+
+session = quick_session(
+    "vocab.json",              # JSON file with word/definition dicts
+    language_from="es",
+    language_to="en",
+    limit=500,
+)
+
+exercise = session.next_exercise()
+```
+
+Words are loaded only on first run — subsequent calls reuse the existing
+database and spaced-repetition progress. You can also pass an inline list
+of dicts instead of a file path:
+
+```python
+session = quick_session(
+    [{"word": "cat", "definition": "gato"}, ...],
+    db_path="vocab.db",
+    language_from="en",
+    language_to="es",
+)
+```
+
 ## Definition Learning
 
 Rembrandt also supports monolingual definition-based learning — learn

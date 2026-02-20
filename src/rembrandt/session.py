@@ -1,5 +1,8 @@
 """Chat session for vocabulary exercises."""
 
+import json
+from pathlib import Path
+
 from rembrandt.db import Database
 from rembrandt.exercises import (
     evaluate_answer,
@@ -101,3 +104,68 @@ class Session:
 
         self._current_exercise = None
         return result
+
+
+def quick_session(
+    vocab: str | Path | list[dict[str, str]],
+    *,
+    db_path: str | Path | None = None,
+    language_from: str,
+    language_to: str,
+    user_id: str = "default",
+    limit: int | None = None,
+    word_key: str = "word",
+    definition_key: str = "definition",
+) -> Session:
+    """Create a `Session` from a JSON file or inline word list.
+
+    Handles database creation, conditional word loading (only on
+    first run), and session setup in a single call.
+
+    :param vocab: Path to a JSON file or a list of dicts with
+        word/definition pairs.
+    :param db_path: SQLite file path. If `None`, derived from
+        `vocab` filename (same directory, `.db` extension).
+        Required when `vocab` is a list.
+    :param language_from: Source language code.
+    :param language_to: Target language code.
+    :param user_id: User identifier.
+    :param limit: Maximum number of words to load. `None` loads
+        all.
+    :param word_key: Key in each dict for the word.
+    :param definition_key: Key in each dict for the definition.
+    :return: A ready-to-use `Session`.
+    :raises ValueError: If `vocab` is a list and `db_path` is
+        `None`.
+    """
+    if isinstance(vocab, list):
+        if db_path is None:
+            raise ValueError(
+                "db_path is required when vocab is a list"
+            )
+        entries = vocab
+    else:
+        vocab = Path(vocab)
+        if db_path is None:
+            db_path = vocab.with_suffix(".db")
+
+    db_path = Path(db_path)
+    fresh = not db_path.exists()
+    db = Database(db_path)
+
+    if fresh:
+        if not isinstance(vocab, list):
+            with open(vocab, encoding="utf-8") as fh:
+                entries = json.load(fh)
+        words = [
+            (
+                language_from,
+                language_to,
+                e[word_key],
+                e[definition_key],
+            )
+            for e in entries[:limit]
+        ]
+        db.add_words(words)
+
+    return Session(db, user_id, language_from, language_to)
