@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.4.2 - 20th February 2026
+
+- Updated `examples/06_load_spanish_vocab.py`: use a persistent SQLite
+  file (`data/spanish_vocab.db`) instead of in-memory database, so
+  spaced-repetition progress survives across sessions. Vocab is loaded
+  only on first run.
+- Updated `.gitignore`: added `*.db` to ignore runtime databases.
+
+
 ### v0.4.1 - 20th February 2026
 
 - Added `scripts/build_spanish_vocab.py`: downloads frequency and

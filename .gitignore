@@ -17,3 +17,6 @@ credentials/
 
 # Build artifacts
 build/
+
+# Runtime databases
+*.db
