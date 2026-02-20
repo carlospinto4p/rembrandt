@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.6.1 - 20th February 2026
+
+- Renamed `examples/06_load_spanish_vocab.py` →
+  `06_spanish_translation_quiz.py`: updated docstring to reflect
+  Spanish-English translation focus.
+- Added `examples/07_spanish_vocabulary.py`: monolingual Spanish
+  vocabulary quiz using definition mode with `quick_session()`.
+- Updated `README.md`: renamed example 06 and added example 07 to
+  the examples table.
+
+
 ### v0.6.0 - 20th February 2026
 
 - Added `quick_session()` factory function in `session`: creates a

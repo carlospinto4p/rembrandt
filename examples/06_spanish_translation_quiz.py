@@ -1,12 +1,13 @@
-"""Load Spanish vocabulary from the pre-built JSON file.
+"""Spanish-English translation quiz.
 
-Uses `quick_session()` to handle database creation, word loading,
-and session setup in a single call. Progress is persisted between
-runs so spaced-repetition scheduling works across sessions.
+Loads ranked Spanish vocabulary from a pre-built JSON file and
+quizzes you on English translations. Uses `quick_session()` to
+handle database creation, word loading, and session setup in a
+single call. Progress is persisted between runs.
 
 Usage::
 
-    uv run python examples/06_load_spanish_vocab.py
+    uv run python examples/06_spanish_translation_quiz.py
 """
 
 from pathlib import Path
@@ -37,7 +38,7 @@ def main() -> None:
         limit=_TOP_N,
     )
 
-    print("=== Spanish Vocabulary Quiz ===")
+    print("=== Spanish-English Translation Quiz ===")
     print("Type your answer (or 'q' to quit).\n")
 
     correct = 0

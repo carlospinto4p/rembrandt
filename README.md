@@ -121,7 +121,8 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `03_multiple_languages.py` | Multiple language pairs in one database |
 | `04_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
 | `05_definition_quiz.py` | Monolingual definition-based vocabulary learning |
-| `06_load_spanish_vocab.py` | Load ranked Spanish vocabulary from pre-built JSON |
+| `06_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
+| `07_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
 
 Run any example with:
 
