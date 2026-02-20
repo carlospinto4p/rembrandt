@@ -17,7 +17,7 @@ from rembrandt import ExerciseType, quick_session
 _DB_PATH = (
     Path(__file__).resolve().parent.parent
     / "data"
-    / "spanish_vocab.db"
+    / "spanish_definitions.db"
 )
 
 _WORDS = [
