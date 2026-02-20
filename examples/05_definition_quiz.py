@@ -6,25 +6,36 @@ translations. Uses all three definition-mode exercise types:
 multiple choice, reverse flashcard, and self-graded.
 """
 
+from pathlib import Path
+
 from rembrandt import Database, ExerciseType, Session
+
+_DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "definition_quiz.db"
+)
 
 
 def main() -> None:
-    db = Database(":memory:")
-    db.add_words([
-        ("en", "en", "ephemeral",
-         "lasting for a very short time"),
-        ("en", "en", "ubiquitous",
-         "present or found everywhere"),
-        ("en", "en", "candid",
-         "truthful and straightforward"),
-        ("en", "en", "pragmatic",
-         "dealing with things practically"),
-        ("en", "en", "verbose",
-         "using more words than needed"),
-        ("en", "en", "diligent",
-         "showing care and effort in one's work"),
-    ])
+    fresh = not _DB_PATH.exists()
+    db = Database(_DB_PATH)
+
+    if fresh:
+        db.add_words([
+            ("en", "en", "ephemeral",
+             "lasting for a very short time"),
+            ("en", "en", "ubiquitous",
+             "present or found everywhere"),
+            ("en", "en", "candid",
+             "truthful and straightforward"),
+            ("en", "en", "pragmatic",
+             "dealing with things practically"),
+            ("en", "en", "verbose",
+             "using more words than needed"),
+            ("en", "en", "diligent",
+             "showing care and effort in one's work"),
+        ])
 
     session = Session(
         db=db,

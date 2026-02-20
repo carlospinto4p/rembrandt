@@ -2,13 +2,20 @@
 
 Runs a CLI loop where you type translations for English words.
 Type 'q' or press Ctrl+C to quit. A score summary is printed
-at the end.
+at the end. Progress is persisted between runs.
 """
+
+from pathlib import Path
 
 from rembrandt import Database, ExerciseType, Session
 
+_DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "interactive_quiz.db"
+)
 
-WORDS = [
+_WORDS = [
     ("en", "es", "cat", "gato"),
     ("en", "es", "dog", "perro"),
     ("en", "es", "house", "casa"),
@@ -23,8 +30,11 @@ WORDS = [
 
 
 def main() -> None:
-    db = Database(":memory:")
-    db.add_words(WORDS)
+    fresh = not _DB_PATH.exists()
+    db = Database(_DB_PATH)
+
+    if fresh:
+        db.add_words(_WORDS)
 
     session = Session(
         db=db,

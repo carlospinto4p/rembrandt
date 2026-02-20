@@ -1,23 +1,34 @@
 """Quick-start example for Rembrandt.
 
-Creates an in-memory database, adds a small EN-ES vocabulary set,
-and runs a few exercises showing both flashcard and multiple-choice
-output.
+Adds a small EN-ES vocabulary set to a local SQLite database
+and runs a few exercises showing both flashcard and
+multiple-choice output.
 """
+
+from pathlib import Path
 
 from rembrandt import Database, ExerciseType, Session
 
+_DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "quickstart.db"
+)
+
 
 def main() -> None:
-    db = Database(":memory:")
-    db.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
-        ("en", "es", "book", "libro"),
-        ("en", "es", "water", "agua"),
-        ("en", "es", "sun", "sol"),
-    ])
+    fresh = not _DB_PATH.exists()
+    db = Database(_DB_PATH)
+
+    if fresh:
+        db.add_words([
+            ("en", "es", "cat", "gato"),
+            ("en", "es", "dog", "perro"),
+            ("en", "es", "house", "casa"),
+            ("en", "es", "book", "libro"),
+            ("en", "es", "water", "agua"),
+            ("en", "es", "sun", "sol"),
+        ])
 
     session = Session(
         db=db,

@@ -4,7 +4,15 @@ Shows that a single database can hold several language pairs
 (EN-ES and EN-FR) and that separate sessions keep them isolated.
 """
 
+from pathlib import Path
+
 from rembrandt import Database, ExerciseType, Session
+
+_DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "data"
+    / "multi_lang.db"
+)
 
 
 def run_exercise(session: Session, label: str) -> None:
@@ -28,23 +36,25 @@ def run_exercise(session: Session, label: str) -> None:
 
 
 def main() -> None:
-    db = Database(":memory:")
+    fresh = not _DB_PATH.exists()
+    db = Database(_DB_PATH)
 
-    # English -> Spanish vocabulary
-    db.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
-        ("en", "es", "water", "agua"),
-    ])
+    if fresh:
+        # English -> Spanish vocabulary
+        db.add_words([
+            ("en", "es", "cat", "gato"),
+            ("en", "es", "dog", "perro"),
+            ("en", "es", "house", "casa"),
+            ("en", "es", "water", "agua"),
+        ])
 
-    # English -> French vocabulary
-    db.add_words([
-        ("en", "fr", "cat", "chat"),
-        ("en", "fr", "dog", "chien"),
-        ("en", "fr", "house", "maison"),
-        ("en", "fr", "water", "eau"),
-    ])
+        # English -> French vocabulary
+        db.add_words([
+            ("en", "fr", "cat", "chat"),
+            ("en", "fr", "dog", "chien"),
+            ("en", "fr", "house", "maison"),
+            ("en", "fr", "water", "eau"),
+        ])
 
     es_session = Session(
         db=db,

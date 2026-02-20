@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.4.3 - 20th February 2026
+
+- Updated all examples to use persistent SQLite files in `data/`
+  instead of in-memory databases:
+  - `01_quickstart.py` → `quickstart.db`
+  - `02_interactive_quiz.py` → `interactive_quiz.db`
+  - `03_multiple_languages.py` → `multi_lang.db`
+  - `05_definition_quiz.py` → `definition_quiz.db`
+- Words are loaded only on first run; subsequent runs reuse the
+  existing database and spaced-repetition progress.
+
+
 ### v0.4.2 - 20th February 2026
 
 - Updated `examples/06_load_spanish_vocab.py`: use a persistent SQLite
