@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.4.1 - 20th February 2026
+
+- Added `scripts/build_spanish_vocab.py`: downloads frequency and
+  dictionary data from doozan/spanish_data, joins them, and outputs
+  a ranked Spanish-English vocabulary JSON file.
+- Added `data/spanish_top10000.json`: top 10,000 Spanish content words
+  with English glosses, ranked by corpus frequency.
+- Added `examples/06_load_spanish_vocab.py`: loads the pre-built
+  vocabulary into a Rembrandt database and runs an interactive quiz.
+- Updated `README.md`: added new example to the examples table.
+
+
 ### v0.4.0 - 20th February 2026
 
 - Added `LearningMode` enum in `models`: `TRANSLATION`, `DEFINITION`.
