@@ -45,6 +45,31 @@ The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
 automatically — words you get wrong come back sooner, words you know well
 are spaced further apart.
 
+## Definition Learning
+
+Rembrandt also supports monolingual definition-based learning — learn
+words through their definitions within the same language:
+
+```python
+from rembrandt import Database, Session
+
+db = Database("vocab.db")
+db.add_words([
+    ("en", "en", "ephemeral", "lasting for a very short time"),
+    ("en", "en", "ubiquitous", "present or found everywhere"),
+    ("en", "en", "candid", "truthful and straightforward"),
+])
+
+session = Session(db, user_id="user1", language_from="en",
+                  language_to="en")
+exercise = session.next_exercise()
+```
+
+When both languages are the same, Rembrandt automatically switches to
+definition mode with exercise types suited for learning definitions:
+multiple choice, reverse flashcard (definition shown, type the word),
+and self-graded (recall and rate yourself 0-5).
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:
@@ -64,6 +89,7 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `02_interactive_quiz.py` | CLI quiz loop with score tracking |
 | `03_multiple_languages.py` | Multiple language pairs in one database |
 | `04_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
+| `05_definition_quiz.py` | Monolingual definition-based vocabulary learning |
 
 Run any example with:
 

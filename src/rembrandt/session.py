@@ -55,10 +55,19 @@ class Session:
         self._current_exercise = exercise
         return exercise
 
-    def answer(self, text: str) -> AnswerResult:
+    def answer(
+        self,
+        text: str = "",
+        quality: int | None = None,
+    ) -> AnswerResult:
         """Evaluate the user's answer and update progress.
 
-        :param text: The user's answer text.
+        :param text: The user's answer text (ignored for
+            self-graded exercises).
+        :param quality: Self-assessment score 0-5 (required for
+            `SELF_GRADED` exercises). When provided, this value
+            is passed directly to the SM-2 algorithm instead of
+            the default binary 5/1.
         :return: An `AnswerResult`.
         :raises RuntimeError: If no exercise is active.
         """
@@ -67,9 +76,14 @@ class Session:
                 "No active exercise. Call next_exercise() first."
             )
 
-        result = evaluate_answer(self._current_exercise, text)
+        result = evaluate_answer(
+            self._current_exercise, text, quality=quality,
+        )
 
-        quality = 5 if result.correct else 1
+        if quality is not None:
+            sm2_quality = quality
+        else:
+            sm2_quality = 5 if result.correct else 1
         word_id = result.word.id
         progress = self.db.get_progress(
             self.user_id, word_id  # type: ignore[arg-type]
@@ -82,7 +96,7 @@ class Session:
                 word_id=word_id,  # type: ignore[arg-type]
             )
 
-        updated = review(progress, quality)
+        updated = review(progress, sm2_quality)
         self.db.upsert_progress(updated)
 
         self._current_exercise = None

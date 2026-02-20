@@ -23,11 +23,26 @@ class Word(BaseModel):
     word_to: str
 
 
+class LearningMode(str, Enum):
+    """How a word is being learned.
+
+    :cvar TRANSLATION: Bilingual — source and target languages
+        differ (e.g. EN -> ES).
+    :cvar DEFINITION: Monolingual — same language, word paired
+        with its definition (e.g. EN -> EN).
+    """
+
+    TRANSLATION = "translation"
+    DEFINITION = "definition"
+
+
 class ExerciseType(str, Enum):
     """Type of vocabulary exercise."""
 
     FLASHCARD = "flashcard"
     MULTIPLE_CHOICE = "multiple_choice"
+    REVERSE_FLASHCARD = "reverse_flashcard"
+    SELF_GRADED = "self_graded"
 
 
 class Exercise(BaseModel):
@@ -77,3 +92,16 @@ class UserProgress(BaseModel):
     next_review: datetime = Field(
         default_factory=datetime.now
     )
+
+
+def learning_mode(word: Word) -> LearningMode:
+    """Derive the learning mode from a word's language pair.
+
+    :param word: The word to check.
+    :return: `LearningMode.DEFINITION` when source and target
+        languages are the same, `LearningMode.TRANSLATION`
+        otherwise.
+    """
+    if word.language_from == word.language_to:
+        return LearningMode.DEFINITION
+    return LearningMode.TRANSLATION

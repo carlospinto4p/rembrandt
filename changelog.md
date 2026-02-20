@@ -1,6 +1,30 @@
 
 ## Changelog - Rembrandt
 
+### v0.4.0 - 20th February 2026
+
+- Added `LearningMode` enum in `models`: `TRANSLATION`, `DEFINITION`.
+- Added `learning_mode()` function: derives mode from a word's language
+  pair.
+- Added `ExerciseType` values:
+  - `REVERSE_FLASHCARD`
+  - `SELF_GRADED`
+- Added exercise generators in `exercises`:
+  - `generate_reverse_flashcard()`
+  - `generate_self_graded()`
+- Updated `generate_exercise()`: definition mode uses 40% multiple
+  choice, 30% reverse flashcard, 30% self-graded (never regular
+  flashcard).
+- Updated `evaluate_answer()`: supports reverse flashcard (compares
+  against `word_from`) and self-graded (requires `quality` param).
+- Updated `Session.answer()`: accepts optional `quality` parameter
+  for self-graded exercises, passed directly to SM-2.
+- Added `examples/05_definition_quiz.py`.
+- Updated `docs/exercise-types.md`: added reverse flashcard,
+  self-graded, learning modes, and updated exercise selection docs.
+- Updated `README.md`: added definition learning section and example.
+
+
 ### v0.3.1 - 19th February 2026
 
 - Self-refinement pass on Claude settings:

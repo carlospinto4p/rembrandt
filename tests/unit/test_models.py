@@ -8,8 +8,10 @@ from rembrandt.models import (
     AnswerResult,
     Exercise,
     ExerciseType,
+    LearningMode,
     UserProgress,
     Word,
+    learning_mode,
 )
 
 
@@ -39,12 +41,42 @@ def test_word_with_id():
     assert word.id == 1
 
 
+# --- LearningMode Tests ---
+
+
+def test_learning_mode_translation():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    assert learning_mode(word) == LearningMode.TRANSLATION
+
+
+def test_learning_mode_definition():
+    word = Word(
+        language_from="en",
+        language_to="en",
+        word_from="ephemeral",
+        word_to="lasting for a very short time",
+    )
+    assert learning_mode(word) == LearningMode.DEFINITION
+
+
+def test_learning_mode_values():
+    assert LearningMode.TRANSLATION == "translation"
+    assert LearningMode.DEFINITION == "definition"
+
+
 # --- ExerciseType Tests ---
 
 
 def test_exercise_type_values():
     assert ExerciseType.FLASHCARD == "flashcard"
     assert ExerciseType.MULTIPLE_CHOICE == "multiple_choice"
+    assert ExerciseType.REVERSE_FLASHCARD == "reverse_flashcard"
+    assert ExerciseType.SELF_GRADED == "self_graded"
 
 
 # --- Exercise Tests ---

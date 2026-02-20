@@ -26,6 +26,30 @@ def session(db):
                    language_to="es")
 
 
+@pytest.fixture
+def definition_db(tmp_path):
+    database = Database(tmp_path / "def.db")
+    database.add_words([
+        ("en", "en", "ephemeral",
+         "lasting for a very short time"),
+        ("en", "en", "ubiquitous", "present everywhere"),
+        ("en", "en", "candid",
+         "truthful and straightforward"),
+        ("en", "en", "pragmatic",
+         "dealing with things practically"),
+    ])
+    yield database
+    database.close()
+
+
+@pytest.fixture
+def definition_session(definition_db):
+    return Session(
+        definition_db, user_id="u1",
+        language_from="en", language_to="en",
+    )
+
+
 # --- Session Tests ---
 
 
@@ -85,3 +109,79 @@ def test_full_session_flow(session):
     assert ex2 is not None
     r2 = session.answer("definitely_wrong")
     assert r2.correct is False
+
+
+# --- Definition Mode Tests ---
+
+
+def test_definition_next_exercise_valid_type(
+    definition_session,
+):
+    ex = definition_session.next_exercise()
+    assert ex is not None
+    assert ex.exercise_type in (
+        ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.REVERSE_FLASHCARD,
+        ExerciseType.SELF_GRADED,
+    )
+
+
+def test_definition_reverse_flashcard_answer(
+    definition_db,
+):
+    session = Session(
+        definition_db, "u1", "en", "en",
+    )
+    # Keep generating until we get a reverse flashcard
+    for _ in range(100):
+        ex = session.next_exercise()
+        if (
+            ex is not None
+            and ex.exercise_type
+            == ExerciseType.REVERSE_FLASHCARD
+        ):
+            result = session.answer(ex.word.word_from)
+            assert result.correct is True
+            return
+    pytest.skip("Did not get a reverse flashcard exercise")
+
+
+def test_definition_self_graded_answer(definition_db):
+    session = Session(
+        definition_db, "u1", "en", "en",
+    )
+    for _ in range(100):
+        ex = session.next_exercise()
+        if (
+            ex is not None
+            and ex.exercise_type
+            == ExerciseType.SELF_GRADED
+        ):
+            result = session.answer(quality=4)
+            assert result.correct is True
+            return
+    pytest.skip("Did not get a self-graded exercise")
+
+
+def test_definition_self_graded_updates_progress(
+    definition_db,
+):
+    session = Session(
+        definition_db, "u1", "en", "en",
+    )
+    for _ in range(100):
+        ex = session.next_exercise()
+        if (
+            ex is not None
+            and ex.exercise_type
+            == ExerciseType.SELF_GRADED
+        ):
+            word_id = ex.word.id
+            session.answer(quality=4)
+            progress = definition_db.get_progress(
+                "u1", word_id,
+            )
+            assert progress is not None
+            assert progress.repetitions == 1
+            return
+    pytest.skip("Did not get a self-graded exercise")

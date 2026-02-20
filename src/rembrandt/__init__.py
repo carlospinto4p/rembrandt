@@ -7,7 +7,9 @@ from rembrandt.models import (
     AnswerResult,
     Exercise,
     ExerciseType,
+    LearningMode,
     Word,
+    learning_mode,
 )
 from rembrandt.session import Session
 
@@ -18,6 +20,8 @@ __all__ = [
     "Database",
     "Exercise",
     "ExerciseType",
+    "LearningMode",
     "Session",
     "Word",
+    "learning_mode",
 ]
