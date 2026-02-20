@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.5.0 - 20th February 2026
+
+- Added flexible answer matching in `evaluate_answer()`:
+  - `_acceptable_answers()`: strips parenthetical `(...)` and bracket
+    `[...]` content, splits semicolon-separated senses.
+  - `_answers_match()`: matches against any acceptable form, handles
+    optional "to " verb prefix differences.
+- Updated `evaluate_answer()`: multiple-choice answers can now be given
+  as option numbers (`"1"`–`"N"`) instead of full text.
+- Added 8 new tests for flexible matching and numeric option selection.
+
+
 ### v0.4.3 - 20th February 2026
 
 - Updated all examples to use persistent SQLite files in `data/`

@@ -10,7 +10,7 @@ from rembrandt.exercises import (
     generate_reverse_flashcard,
     generate_self_graded,
 )
-from rembrandt.models import ExerciseType, Word
+from rembrandt.models import Exercise, ExerciseType, Word
 
 
 # --- Fixtures ---
@@ -263,3 +263,143 @@ def test_evaluate_self_graded_invalid_quality():
     ex = generate_self_graded(words[0])
     with pytest.raises(ValueError, match="quality must be 0-5"):
         evaluate_answer(ex, quality=6)
+
+
+# --- Flexible Answer Matching Tests ---
+
+
+def test_evaluate_answer_strips_parenthetical():
+    word = Word(
+        id=1,
+        language_from="es",
+        language_to="en",
+        word_from="ser",
+        word_to="to be (essentially or identified as)",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "to be")
+    assert result.correct is True
+
+
+def test_evaluate_answer_strips_brackets():
+    word = Word(
+        id=1,
+        language_from="es",
+        language_to="en",
+        word_from="haber",
+        word_to=(
+            "have; forms the perfect aspect "
+            "[+masculine singular past participle]"
+        ),
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "have")
+    assert result.correct is True
+
+
+def test_evaluate_answer_semicolon_segment():
+    word = Word(
+        id=1,
+        language_from="es",
+        language_to="en",
+        word_from="tener",
+        word_to="to have; to possess",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "to possess")
+    assert result.correct is True
+
+
+def test_evaluate_answer_to_prefix():
+    word = Word(
+        id=1,
+        language_from="es",
+        language_to="en",
+        word_from="ser",
+        word_to="to be",
+    )
+    ex = generate_flashcard(word)
+    # "be" matches "to be"
+    assert evaluate_answer(ex, "be").correct is True
+
+    word2 = Word(
+        id=2,
+        language_from="es",
+        language_to="en",
+        word_from="tener",
+        word_to="have",
+    )
+    ex2 = generate_flashcard(word2)
+    # "to have" matches "have"
+    assert evaluate_answer(ex2, "to have").correct is True
+
+
+def test_evaluate_multiple_choice_by_number():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.MULTIPLE_CHOICE,
+        options=["perro", "gato", "casa", "libro"],
+    )
+    result = evaluate_answer(ex, "2")
+    assert result.correct is True
+    assert result.given == "gato"
+
+
+def test_evaluate_multiple_choice_by_number_wrong():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.MULTIPLE_CHOICE,
+        options=["perro", "gato", "casa", "libro"],
+    )
+    result = evaluate_answer(ex, "1")
+    assert result.correct is False
+    assert result.given == "perro"
+
+
+def test_evaluate_multiple_choice_out_of_range():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.MULTIPLE_CHOICE,
+        options=["perro", "gato", "casa", "libro"],
+    )
+    result = evaluate_answer(ex, "9")
+    assert result.correct is False
+    assert result.given == "9"
+
+
+def test_evaluate_multiple_choice_by_text_still_works():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.MULTIPLE_CHOICE,
+        options=["perro", "gato", "casa", "libro"],
+    )
+    result = evaluate_answer(ex, "gato")
+    assert result.correct is True

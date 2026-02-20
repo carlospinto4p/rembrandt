@@ -1,5 +1,6 @@
 """Exercise generation and answer evaluation."""
 
+import re
 import random
 
 from rembrandt.models import (
@@ -126,6 +127,54 @@ def generate_exercise(
     return generate_self_graded(word)
 
 
+def _acceptable_answers(expected: str) -> list[str]:
+    """Return variant forms of `expected` for flexible matching.
+
+    Strips parenthetical `(...)` and bracket `[...]` content,
+    then splits by semicolons to yield individual senses.
+
+    :param expected: The canonical expected answer.
+    :return: List of acceptable answer strings (always includes
+        the original `expected`).
+    """
+    cleaned = re.sub(r"\s*\[.*?\]", "", expected)
+    cleaned = re.sub(r"\s*\(.*?\)", "", cleaned)
+    segments = [s.strip() for s in cleaned.split(";") if s.strip()]
+    answers = [expected] + segments
+    seen: set[str] = set()
+    unique: list[str] = []
+    for a in answers:
+        low = a.lower()
+        if low not in seen:
+            seen.add(low)
+            unique.append(a)
+    return unique
+
+
+def _answers_match(given: str, expected: str) -> bool:
+    """Check if `given` matches `expected` with flexible rules.
+
+    Handles parenthetical/bracket stripping, semicolon-separated
+    senses, and optional "to " verb prefix differences.
+
+    :param given: The user's answer (already stripped).
+    :param expected: The canonical expected answer.
+    :return: ``True`` if the answers match.
+    """
+    g = given.lower()
+    candidates = _acceptable_answers(expected)
+    for c in candidates:
+        e = c.lower()
+        if g == e:
+            return True
+        # "to X" ↔ "X" handling
+        if g.startswith("to ") and g[3:] == e:
+            return True
+        if e.startswith("to ") and e[3:] == g:
+            return True
+    return False
+
+
 def evaluate_answer(
     exercise: Exercise,
     answer_text: str = "",
@@ -176,7 +225,18 @@ def evaluate_answer(
         expected = exercise.word.word_to
 
     given = answer_text.strip()
-    correct = given.lower() == expected.lower()
+
+    # Multiple choice: resolve option number to text
+    if (
+        etype == ExerciseType.MULTIPLE_CHOICE
+        and given.isdigit()
+        and exercise.options
+    ):
+        idx = int(given) - 1
+        if 0 <= idx < len(exercise.options):
+            given = exercise.options[idx]
+
+    correct = _answers_match(given, expected)
 
     return AnswerResult(
         correct=correct,
