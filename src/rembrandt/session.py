@@ -8,7 +8,7 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
 )
-from rembrandt.models import AnswerResult, Exercise
+from rembrandt.models import AnswerResult, Exercise, UserProgress
 from rembrandt.spaced_repetition import review, select_words
 
 
@@ -88,15 +88,14 @@ class Session:
         else:
             sm2_quality = 5 if result.correct else 1
         word_id = result.word.id
+        assert word_id is not None
         progress = self.db.get_progress(
-            self.user_id, word_id  # type: ignore[arg-type]
+            self.user_id, word_id
         )
         if progress is None:
-            from rembrandt.models import UserProgress
-
             progress = UserProgress(
                 user_id=self.user_id,
-                word_id=word_id,  # type: ignore[arg-type]
+                word_id=word_id,
             )
 
         updated = review(progress, sm2_quality)

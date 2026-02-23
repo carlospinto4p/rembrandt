@@ -10,7 +10,7 @@ from rembrandt.session import Session, quick_session
 
 
 @pytest.fixture
-def db(tmp_path):
+def session_db(tmp_path):
     database = Database(tmp_path / "test.db")
     database.add_words([
         ("en", "es", "cat", "gato"),
@@ -23,9 +23,11 @@ def db(tmp_path):
 
 
 @pytest.fixture
-def session(db):
-    return Session(db, user_id="u1", language_from="en",
-                   language_to="es")
+def session(session_db):
+    return Session(
+        session_db, user_id="u1",
+        language_from="en", language_to="es",
+    )
 
 
 @pytest.fixture

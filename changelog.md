@@ -1,6 +1,26 @@
 
 ## Changelog - Rembrandt
 
+### v0.7.0 - 23rd February 2026
+
+- Refactored `Database.add_words()`: batched into a single transaction
+  instead of committing per word.
+- Added `Database.get_all_progress()`: fetches progress for multiple
+  words in a single query.
+- Updated `select_words()`: uses `get_all_progress()` to eliminate
+  N+1 queries.
+- Added `__enter__`/`__exit__` to `Database` for context-manager
+  support (`with Database(...) as db:`).
+- Moved `UserProgress` import to top-level in `session`.
+- Replaced `type: ignore[arg-type]` on `word.id` with runtime
+  assertions in `session` and `spaced_repetition`.
+- Updated tests:
+  - Added `tests/unit/conftest.py` with shared `db` fixture.
+  - Converted helper functions to `@pytest.fixture` in
+    `test_exercises.py`.
+  - Added tests for `get_all_progress()` and context manager.
+
+
 ### v0.6.1 - 20th February 2026
 
 - Renamed `examples/06_load_spanish_vocab.py` →

@@ -82,7 +82,7 @@ class Database:
         self,
         words: list[tuple[str, str, str, str]],
     ) -> list[Word]:
-        """Bulk-insert words.
+        """Bulk-insert words in a single transaction.
 
         :param words: List of
             `(language_from, language_to, word_from, word_to)`
@@ -90,10 +90,24 @@ class Database:
         :return: List of inserted `Word` objects.
         """
         result: list[Word] = []
-        for lang_from, lang_to, w_from, w_to in words:
-            result.append(
-                self.add_word(lang_from, lang_to, w_from, w_to)
-            )
+        with self._conn:
+            for lang_from, lang_to, w_from, w_to in words:
+                cur = self._conn.execute(
+                    "INSERT INTO words "
+                    "(language_from, language_to, "
+                    "word_from, word_to) "
+                    "VALUES (?, ?, ?, ?)",
+                    (lang_from, lang_to, w_from, w_to),
+                )
+                result.append(
+                    Word(
+                        id=cur.lastrowid,
+                        language_from=lang_from,
+                        language_to=lang_to,
+                        word_from=w_from,
+                        word_to=w_to,
+                    )
+                )
         return result
 
     def get_words(
@@ -156,6 +170,40 @@ class Database:
             ),
         )
 
+    def get_all_progress(
+        self,
+        user_id: str,
+        word_ids: list[int],
+    ) -> dict[int, UserProgress]:
+        """Fetch progress for multiple words in a single query.
+
+        :param user_id: The user identifier.
+        :param word_ids: List of word identifiers.
+        :return: Dict mapping `word_id` to `UserProgress` for
+            words that have a progress record.
+        """
+        if not word_ids:
+            return {}
+        placeholders = ",".join("?" for _ in word_ids)
+        rows = self._conn.execute(
+            "SELECT * FROM progress "
+            f"WHERE user_id = ? AND word_id IN ({placeholders})",
+            [user_id, *word_ids],
+        ).fetchall()
+        return {
+            row["word_id"]: UserProgress(
+                user_id=row["user_id"],
+                word_id=row["word_id"],
+                easiness_factor=row["easiness_factor"],
+                interval=row["interval"],
+                repetitions=row["repetitions"],
+                next_review=datetime.strptime(
+                    row["next_review"], _ISO_FMT
+                ),
+            )
+            for row in rows
+        }
+
     def upsert_progress(self, progress: UserProgress) -> None:
         """Insert or update progress for a user-word pair.
 
@@ -185,3 +233,9 @@ class Database:
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()
+
+    def __enter__(self) -> "Database":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()

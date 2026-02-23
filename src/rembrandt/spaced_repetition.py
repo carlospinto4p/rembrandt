@@ -78,12 +78,16 @@ def select_words(
     if not all_words:
         return []
 
+    word_ids = [w.id for w in all_words if w.id is not None]
+    progress_map = db.get_all_progress(user_id, word_ids)
+
     now = datetime.now()
     due: list[Word] = []
     new: list[Word] = []
 
     for word in all_words:
-        progress = db.get_progress(user_id, word.id)  # type: ignore[arg-type]
+        assert word.id is not None
+        progress = progress_map.get(word.id)
         if progress is None:
             new.append(word)
         elif progress.next_review <= now:

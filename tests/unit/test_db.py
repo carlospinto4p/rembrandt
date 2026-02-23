@@ -2,17 +2,8 @@
 
 from datetime import datetime
 
-import pytest
-
 from rembrandt.db import Database
 from rembrandt.models import UserProgress
-
-
-@pytest.fixture
-def db(tmp_path):
-    database = Database(tmp_path / "test.db")
-    yield database
-    database.close()
 
 
 # --- Word CRUD Tests ---
@@ -119,3 +110,34 @@ def test_progress_roundtrip_datetime(db):
     loaded = db.get_progress("u1", 1)
     assert loaded is not None
     assert loaded.next_review == dt
+
+
+def test_get_all_progress(db):
+    dt = datetime(2026, 3, 1, 12, 0, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1, next_review=dt,
+    ))
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=3, next_review=dt,
+    ))
+
+    result = db.get_all_progress("u1", [1, 2, 3])
+    assert len(result) == 2
+    assert 1 in result
+    assert 3 in result
+    assert 2 not in result
+
+
+def test_get_all_progress_empty(db):
+    result = db.get_all_progress("u1", [])
+    assert result == {}
+
+
+# --- Context Manager Tests ---
+
+
+def test_context_manager(tmp_path):
+    with Database(tmp_path / "ctx.db") as db:
+        db.add_word("en", "es", "cat", "gato")
+        words = db.get_words("en", "es")
+        assert len(words) == 1
