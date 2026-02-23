@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.7.1 - 23rd February 2026
+
+- Added `scripts/build_spanish_definitions.py`: downloads Spanish
+  Wiktionary extract from kaikki.org, matches against the ranked 10K
+  word list, and outputs monolingual Spanish definitions.
+- Added `data/spanish_monolingual_10000.json`: 10,000 Spanish words
+  with Spanish-Spanish definitions and multiple senses (89.7% coverage).
+
+
 ### v0.7.0 - 23rd February 2026
 
 - Refactored `Database.add_words()`: batched into a single transaction
