@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from rembrandt.models import UserProgress, Word
+from rembrandt.models import Lesson, UserProgress, Word
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS words (
@@ -30,6 +30,27 @@ CREATE TABLE IF NOT EXISTS progress (
     next_review      TEXT    NOT NULL,
     PRIMARY KEY (user_id, word_id),
     FOREIGN KEY (word_id) REFERENCES words(id)
+);
+
+CREATE TABLE IF NOT EXISTS lessons (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    title         TEXT NOT NULL,
+    description   TEXT NOT NULL DEFAULT '',
+    language_from TEXT NOT NULL,
+    language_to   TEXT NOT NULL,
+    cefr          TEXT,
+    tags          TEXT NOT NULL DEFAULT '[]',
+    word_count    INTEGER NOT NULL DEFAULT 0,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS lesson_words (
+    lesson_id INTEGER NOT NULL,
+    word_id   INTEGER NOT NULL,
+    position  INTEGER NOT NULL,
+    PRIMARY KEY (lesson_id, word_id),
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id),
+    FOREIGN KEY (word_id)   REFERENCES words(id)
 );
 """
 
@@ -261,6 +282,184 @@ class Database:
             ),
         )
         self._conn.commit()
+
+    # -- Lessons ------------------------------------------------------
+
+    def add_lesson(self, lesson: Lesson) -> Lesson:
+        """Insert a lesson and link its words.
+
+        :param lesson: The `Lesson` to insert. The `word_ids` list
+            links the lesson to existing words in the database.
+        :return: The inserted `Lesson` with its assigned id.
+        """
+        with self._conn:
+            cur = self._conn.execute(
+                "INSERT INTO lessons "
+                "(title, description, language_from, language_to,"
+                " cefr, tags, word_count) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    lesson.title,
+                    lesson.description,
+                    lesson.language_from,
+                    lesson.language_to,
+                    lesson.cefr,
+                    json.dumps(lesson.tags),
+                    lesson.word_count,
+                ),
+            )
+            lesson_id = cur.lastrowid
+            for pos, word_id in enumerate(lesson.word_ids):
+                self._conn.execute(
+                    "INSERT INTO lesson_words "
+                    "(lesson_id, word_id, position) "
+                    "VALUES (?, ?, ?)",
+                    (lesson_id, word_id, pos),
+                )
+        return lesson.model_copy(update={"id": lesson_id})
+
+    def add_lessons(
+        self, lessons: list[Lesson],
+    ) -> list[Lesson]:
+        """Bulk-insert lessons in a single transaction.
+
+        :param lessons: List of `Lesson` objects to insert.
+        :return: List of inserted `Lesson` objects with assigned
+            ids.
+        """
+        result: list[Lesson] = []
+        with self._conn:
+            for lesson in lessons:
+                cur = self._conn.execute(
+                    "INSERT INTO lessons "
+                    "(title, description, language_from,"
+                    " language_to, cefr, tags, word_count) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        lesson.title,
+                        lesson.description,
+                        lesson.language_from,
+                        lesson.language_to,
+                        lesson.cefr,
+                        json.dumps(lesson.tags),
+                        lesson.word_count,
+                    ),
+                )
+                lesson_id = cur.lastrowid
+                for pos, wid in enumerate(lesson.word_ids):
+                    self._conn.execute(
+                        "INSERT INTO lesson_words "
+                        "(lesson_id, word_id, position) "
+                        "VALUES (?, ?, ?)",
+                        (lesson_id, wid, pos),
+                    )
+                result.append(
+                    lesson.model_copy(
+                        update={"id": lesson_id}
+                    )
+                )
+        return result
+
+    def get_lessons(
+        self,
+        language_from: str,
+        language_to: str,
+        *,
+        cefr: str | None = None,
+        tag: str | None = None,
+    ) -> list[Lesson]:
+        """Return lessons for a language pair with optional filters.
+
+        :param language_from: Source language code.
+        :param language_to: Target language code.
+        :param cefr: Filter by CEFR level.
+        :param tag: Filter by topic tag.
+        :return: List of matching `Lesson` objects with `word_ids`
+            populated.
+        """
+        clauses = [
+            "language_from = ?",
+            "language_to = ?",
+        ]
+        params: list[str] = [language_from, language_to]
+        if cefr is not None:
+            clauses.append("cefr = ?")
+            params.append(cefr)
+        if tag is not None:
+            clauses.append(
+                "EXISTS (SELECT 1 FROM json_each(tags) "
+                "WHERE json_each.value = ?)"
+            )
+            params.append(tag)
+        where = " AND ".join(clauses)
+        rows = self._conn.execute(
+            "SELECT id, title, description, language_from,"
+            " language_to, cefr, tags, word_count "
+            f"FROM lessons WHERE {where} "
+            "ORDER BY id",
+            params,
+        ).fetchall()
+        if not rows:
+            return []
+        lesson_ids = [r["id"] for r in rows]
+        placeholders = ",".join("?" for _ in lesson_ids)
+        lw_rows = self._conn.execute(
+            "SELECT lesson_id, word_id FROM lesson_words "
+            f"WHERE lesson_id IN ({placeholders}) "
+            "ORDER BY position",
+            lesson_ids,
+        ).fetchall()
+        word_map: dict[int, list[int]] = {}
+        for lw in lw_rows:
+            word_map.setdefault(
+                lw["lesson_id"], []
+            ).append(lw["word_id"])
+        return [
+            Lesson(
+                id=r["id"],
+                title=r["title"],
+                description=r["description"],
+                language_from=r["language_from"],
+                language_to=r["language_to"],
+                cefr=r["cefr"],
+                tags=json.loads(r["tags"]),
+                word_count=r["word_count"],
+                word_ids=word_map.get(r["id"], []),
+            )
+            for r in rows
+        ]
+
+    def get_lesson(self, lesson_id: int) -> Lesson | None:
+        """Fetch a single lesson by id.
+
+        :param lesson_id: The lesson identifier.
+        :return: `Lesson` with `word_ids` populated, or `None`
+            if not found.
+        """
+        row = self._conn.execute(
+            "SELECT id, title, description, language_from,"
+            " language_to, cefr, tags, word_count "
+            "FROM lessons WHERE id = ?",
+            (lesson_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        word_rows = self._conn.execute(
+            "SELECT word_id FROM lesson_words "
+            "WHERE lesson_id = ? ORDER BY position",
+            (lesson_id,),
+        ).fetchall()
+        return Lesson(
+            id=row["id"],
+            title=row["title"],
+            description=row["description"],
+            language_from=row["language_from"],
+            language_to=row["language_to"],
+            cefr=row["cefr"],
+            tags=json.loads(row["tags"]),
+            word_count=row["word_count"],
+            word_ids=[r["word_id"] for r in word_rows],
+        )
 
     def close(self) -> None:
         """Close the database connection."""

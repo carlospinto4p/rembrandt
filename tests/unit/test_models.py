@@ -9,6 +9,7 @@ from rembrandt.models import (
     Exercise,
     ExerciseType,
     LearningMode,
+    Lesson,
     UserProgress,
     Word,
     learning_mode,
@@ -257,3 +258,40 @@ def test_user_progress_validates_types():
             user_id="u1",
             word_id="not_an_int",  # type: ignore[arg-type]
         )
+
+
+# --- Lesson Tests ---
+
+
+def test_lesson_creation_defaults():
+    lesson = Lesson(
+        title="A1 - Lesson 1",
+        language_from="en",
+        language_to="es",
+    )
+    assert lesson.id is None
+    assert lesson.title == "A1 - Lesson 1"
+    assert lesson.description == ""
+    assert lesson.cefr is None
+    assert lesson.tags == []
+    assert lesson.word_count == 0
+    assert lesson.word_ids == []
+
+
+def test_lesson_all_fields():
+    lesson = Lesson(
+        id=5,
+        title="A1 Food",
+        description="A1 words related to food",
+        language_from="en",
+        language_to="es",
+        cefr="A1",
+        tags=["food"],
+        word_count=10,
+        word_ids=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    )
+    assert lesson.id == 5
+    assert lesson.cefr == "A1"
+    assert lesson.tags == ["food"]
+    assert lesson.word_count == 10
+    assert len(lesson.word_ids) == 10

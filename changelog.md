@@ -1,6 +1,24 @@
 
 ## Changelog - Rembrandt
 
+### v0.11.0 - 24th February 2026
+
+- Added `Lesson` model in `models`: named set of words with title,
+  description, CEFR level, tags, and word ids.
+- Added `Database` lesson methods:
+  - `add_lesson()`: insert a lesson and link words.
+  - `add_lessons()`: bulk-insert lessons in a single transaction.
+  - `get_lessons()`: filter by language pair, optional CEFR/tag.
+  - `get_lesson()`: fetch a single lesson by id.
+- Added `lessons` module with `load_lessons()`: resolves word ranks
+  from a vocabulary file to database ids and persists lessons.
+- Added `scripts/build_spanish_lessons.py`: generates pre-structured
+  lessons from the Spanish vocabulary data.
+- Added `data/spanish_lessons.json`: 467 pre-built lessons (400 CEFR
+  chunk lessons of ~25 words each, 67 topic lessons).
+- Exported `Lesson` and `load_lessons` from the package.
+
+
 ### v0.10.0 - 24th February 2026
 
 - Added `Word.cefr` field: optional CEFR level (`"A1"` through `"C2"`),

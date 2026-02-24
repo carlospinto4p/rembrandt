@@ -3,11 +3,13 @@
 from importlib.metadata import version
 
 from rembrandt.db import Database
+from rembrandt.lessons import load_lessons
 from rembrandt.models import (
     AnswerResult,
     Exercise,
     ExerciseType,
     LearningMode,
+    Lesson,
     Word,
     learning_mode,
 )
@@ -21,8 +23,10 @@ __all__ = [
     "Exercise",
     "ExerciseType",
     "LearningMode",
+    "Lesson",
     "Session",
     "Word",
     "learning_mode",
+    "load_lessons",
     "quick_session",
 ]

@@ -34,6 +34,33 @@ class Word(BaseModel):
     cefr: str | None = None
 
 
+class Lesson(BaseModel):
+    """A named set of words with a learning goal.
+
+    :param id: Unique identifier (assigned by the database).
+    :param title: Lesson title (e.g. `"A1 - Lesson 1"`).
+    :param description: Brief description of the lesson content.
+    :param language_from: Source language code (e.g. `"en"`).
+    :param language_to: Target language code (e.g. `"es"`).
+    :param cefr: CEFR level (`"A1"` through `"C2"`), `None`
+        when not assigned.
+    :param tags: Topic tags (e.g. `["food", "travel"]`).
+    :param word_count: Number of words in the lesson.
+    :param word_ids: List of word database ids (populated after
+        loading into a database).
+    """
+
+    id: int | None = None
+    title: str
+    description: str = ""
+    language_from: str
+    language_to: str
+    cefr: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    word_count: int = 0
+    word_ids: list[int] = Field(default_factory=list)
+
+
 class LearningMode(str, Enum):
     """How a word is being learned.
 

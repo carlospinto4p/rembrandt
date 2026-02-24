@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from rembrandt.db import Database
-from rembrandt.models import UserProgress, Word
+from rembrandt.models import Lesson, UserProgress, Word
 
 
 # --- Word CRUD Tests ---
@@ -267,3 +267,235 @@ def test_context_manager(tmp_path):
         db.add_word("en", "es", "cat", "gato")
         words = db.get_words("en", "es")
         assert len(words) == 1
+
+
+# --- Lesson CRUD Tests ---
+
+
+def test_add_lesson(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+    ])
+    lesson = db.add_lesson(Lesson(
+        title="A1 - Lesson 1",
+        description="First lesson",
+        language_from="en",
+        language_to="es",
+        cefr="A1",
+        word_count=2,
+        word_ids=[words[0].id, words[1].id],
+    ))
+    assert lesson.id is not None
+    assert lesson.title == "A1 - Lesson 1"
+    assert lesson.word_count == 2
+
+
+def test_add_lesson_word_order_preserved(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+        ),
+    ])
+    ids = [words[2].id, words[0].id, words[1].id]
+    lesson = db.add_lesson(Lesson(
+        title="Reversed order",
+        language_from="en",
+        language_to="es",
+        word_count=3,
+        word_ids=ids,
+    ))
+    loaded = db.get_lesson(lesson.id)
+    assert loaded is not None
+    assert loaded.word_ids == ids
+
+
+def test_add_lessons_bulk(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+    ])
+    lessons = db.add_lessons([
+        Lesson(
+            title="Lesson 1",
+            language_from="en",
+            language_to="es",
+            cefr="A1",
+            word_count=1,
+            word_ids=[words[0].id],
+        ),
+        Lesson(
+            title="Lesson 2",
+            language_from="en",
+            language_to="es",
+            cefr="A1",
+            word_count=1,
+            word_ids=[words[1].id],
+        ),
+    ])
+    assert len(lessons) == 2
+    assert all(ls.id is not None for ls in lessons)
+    assert lessons[0].title == "Lesson 1"
+    assert lessons[1].title == "Lesson 2"
+
+
+def test_get_lessons_by_language(db):
+    db.add_lessons([
+        Lesson(
+            title="EN-ES Lesson",
+            language_from="en",
+            language_to="es",
+        ),
+        Lesson(
+            title="EN-FR Lesson",
+            language_from="en",
+            language_to="fr",
+        ),
+    ])
+    es = db.get_lessons("en", "es")
+    assert len(es) == 1
+    assert es[0].title == "EN-ES Lesson"
+
+    fr = db.get_lessons("en", "fr")
+    assert len(fr) == 1
+    assert fr[0].title == "EN-FR Lesson"
+
+
+def test_get_lessons_filter_cefr(db):
+    db.add_lessons([
+        Lesson(
+            title="A1 Lesson",
+            language_from="en",
+            language_to="es",
+            cefr="A1",
+        ),
+        Lesson(
+            title="B1 Lesson",
+            language_from="en",
+            language_to="es",
+            cefr="B1",
+        ),
+    ])
+    result = db.get_lessons("en", "es", cefr="A1")
+    assert len(result) == 1
+    assert result[0].title == "A1 Lesson"
+
+
+def test_get_lessons_filter_tag(db):
+    db.add_lessons([
+        Lesson(
+            title="Food Lesson",
+            language_from="en",
+            language_to="es",
+            tags=["food"],
+        ),
+        Lesson(
+            title="Travel Lesson",
+            language_from="en",
+            language_to="es",
+            tags=["travel"],
+        ),
+        Lesson(
+            title="Multi Tag",
+            language_from="en",
+            language_to="es",
+            tags=["food", "travel"],
+        ),
+    ])
+    food = db.get_lessons("en", "es", tag="food")
+    assert len(food) == 2
+    titles = {ls.title for ls in food}
+    assert titles == {"Food Lesson", "Multi Tag"}
+
+
+def test_get_lesson_by_id(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+    ])
+    lesson = db.add_lesson(Lesson(
+        title="Test Lesson",
+        language_from="en",
+        language_to="es",
+        cefr="A1",
+        tags=["test"],
+        word_count=1,
+        word_ids=[words[0].id],
+    ))
+    loaded = db.get_lesson(lesson.id)
+    assert loaded is not None
+    assert loaded.title == "Test Lesson"
+    assert loaded.cefr == "A1"
+    assert loaded.tags == ["test"]
+    assert loaded.word_ids == [words[0].id]
+
+
+def test_get_lesson_not_found(db):
+    assert db.get_lesson(999) is None
+
+
+def test_lesson_with_no_words(db):
+    lesson = db.add_lesson(Lesson(
+        title="Empty Lesson",
+        language_from="en",
+        language_to="es",
+    ))
+    loaded = db.get_lesson(lesson.id)
+    assert loaded is not None
+    assert loaded.word_ids == []
+    assert loaded.word_count == 0
+
+
+def test_get_lessons_populates_word_ids(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+    ])
+    db.add_lessons([
+        Lesson(
+            title="L1",
+            language_from="en",
+            language_to="es",
+            word_count=1,
+            word_ids=[words[0].id],
+        ),
+        Lesson(
+            title="L2",
+            language_from="en",
+            language_to="es",
+            word_count=2,
+            word_ids=[words[1].id, words[0].id],
+        ),
+    ])
+    lessons = db.get_lessons("en", "es")
+    assert lessons[0].word_ids == [words[0].id]
+    assert lessons[1].word_ids == [words[1].id, words[0].id]

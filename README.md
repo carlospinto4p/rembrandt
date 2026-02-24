@@ -111,6 +111,38 @@ definition mode with exercise types suited for learning definitions:
 multiple choice, reverse flashcard (definition shown, type the word),
 and self-graded (recall and rate yourself 0-5).
 
+## Lessons
+
+Rembrandt supports structured lessons — named sets of words grouped by
+CEFR level or topic. Pre-built Spanish lessons are included:
+
+```python
+from rembrandt import Database, Lesson, load_lessons
+
+with Database("spanish.db") as db:
+    # Load vocabulary first (e.g. via quick_session or add_words)
+    # Then load pre-built lessons
+    lessons = load_lessons(
+        "data/spanish_lessons.json",
+        "data/spanish_top10000.json",
+        db,
+        language_from="en",
+        language_to="es",
+    )
+
+    # Browse lessons by CEFR level
+    a1 = db.get_lessons("en", "es", cefr="A1")
+    for lesson in a1:
+        print(f"{lesson.title}: {lesson.word_count} words")
+
+    # Filter by topic
+    food = db.get_lessons("en", "es", tag="food")
+```
+
+The `data/spanish_lessons.json` file contains 467 pre-built lessons:
+400 frequency-ordered CEFR chunk lessons (~25 words each) and 67 topic
+lessons.
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:

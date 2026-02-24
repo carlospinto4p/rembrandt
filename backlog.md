@@ -17,8 +17,8 @@
 
 ### 2026.02.23 — Spanish vocabulary: Layer 2 (structured lessons)
 
-- [ ] Add a `Lesson` model: named set of words with a learning goal
-- [ ] Pre-build lessons by CEFR level and topic
+- [x] Add a `Lesson` model: named set of words with a learning goal
+- [x] Pre-build lessons by CEFR level and topic
 - [ ] Add session modes: "learn new", "review due", "mixed"
 - [ ] Track progress per lesson (completion %, words mastered)
 
