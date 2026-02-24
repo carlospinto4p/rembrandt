@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.6 - 24th February 2026
+
+- Updated `.claude/rules/versioning.md`: added explicit BAD/GOOD
+  examples for the 3+ items sub-bullet rule to prevent inlining
+  items in parentheses or comma-separated lists.
+
+
 ### v0.16.5 - 24th February 2026
 
 - Cleaned up `__init__.py`: removed re-exports of internal symbols.

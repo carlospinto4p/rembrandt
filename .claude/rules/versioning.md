@@ -44,7 +44,19 @@ As part of the commit workflow (step 3 in `committing.md`), update the version a
   path for every sub-item or spell out base classes and enum values.
 - One bullet per logical change. **When listing 3+ items** (enums, methods,
   files, etc.), **always use sub-bullets** — never inline them in a
-  comma-separated list.
+  comma-separated list or parenthetical group. This applies everywhere:
+  removed symbols, added methods, updated files, etc.
+  ```markdown
+  # BAD — inlined in parentheses:
+  - Removed re-exports (`Foo`, `Bar`, `Baz`, `Qux`).
+
+  # GOOD — sub-bullets:
+  - Removed re-exports:
+    - `Foo`
+    - `Bar`
+    - `Baz`
+    - `Qux`
+  ```
 - **Group by folder**: When multiple files in the same directory are changed,
   group them under one bullet with sub-bullets per file:
   ```markdown
