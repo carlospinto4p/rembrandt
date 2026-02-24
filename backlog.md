@@ -10,5 +10,5 @@
 
 - [x] Verb conjugation drills (present, preterite, imperfect, subjunctive, etc.)
 - [x] Gender/article matching exercises ("el/la ___")
-- [ ] Cloze / fill-in-the-blank with example sentences
+- [x] Cloze / fill-in-the-blank with example sentences
 - [ ] Production mode (en→es) — expand after monolingual Spanish is solid

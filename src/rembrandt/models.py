@@ -117,6 +117,7 @@ class ExerciseType(str, Enum):
     SELF_GRADED = "self_graded"
     GENDER_MATCH = "gender_match"
     CONJUGATION = "conjugation"
+    CLOZE = "cloze"
 
 
 class Exercise(BaseModel):

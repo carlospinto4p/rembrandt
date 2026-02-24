@@ -165,6 +165,10 @@ def test_exercise_type_conjugation():
     assert ExerciseType.CONJUGATION == "conjugation"
 
 
+def test_exercise_type_cloze():
+    assert ExerciseType.CLOZE == "cloze"
+
+
 # --- Exercise Tests ---
 
 

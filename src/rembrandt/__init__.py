@@ -4,6 +4,7 @@ from importlib.metadata import version
 
 from rembrandt.conjugation import can_conjugate, conjugate
 from rembrandt.db import Database
+from rembrandt.sentences import generate_cloze
 from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
     AnswerResult,
@@ -33,6 +34,7 @@ __all__ = [
     "Word",
     "can_conjugate",
     "conjugate",
+    "generate_cloze",
     "learning_mode",
     "lesson_progress",
     "load_lessons",

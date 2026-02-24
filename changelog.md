@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.0 - 24th February 2026
+
+- Added `sentences` module: template-based sentence generation with
+  banks for verbs, masculine/feminine nouns, and adjectives (~10
+  templates each).
+- Added `ExerciseType.CLOZE`: fill-in-the-blank exercise type.
+- Added `generate_cloze_exercise()` in `exercises`.
+- Updated `generate_exercise()`: adds `CLOZE` unconditionally to the
+  translation-mode pool (works for any word type).
+- Updated `docs/exercise-types.md`: added cloze section.
+
+
 ### v0.15.0 - 24th February 2026
 
 - Added `conjugation` module: rule-based Spanish conjugation engine

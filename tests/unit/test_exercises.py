@@ -4,6 +4,7 @@ import pytest
 
 from rembrandt.exercises import (
     evaluate_answer,
+    generate_cloze_exercise,
     generate_conjugation,
     generate_exercise,
     generate_flashcard,
@@ -137,6 +138,7 @@ def test_generate_exercise_returns_valid_type(sample_words):
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.CLOZE,
     )
 
 
@@ -567,6 +569,7 @@ def test_generate_exercise_returns_valid_type_with_gender():
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.GENDER_MATCH,
+        ExerciseType.CLOZE,
     )
 
 
@@ -643,3 +646,89 @@ def test_generate_exercise_includes_conjugation():
         ex = generate_exercise(words[0], words)
         types.add(ex.exercise_type)
     assert ExerciseType.CONJUGATION in types
+
+
+# --- Cloze Exercise Tests ---
+
+
+def test_generate_cloze_exercise():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+        gender="m",
+    )
+    ex = generate_cloze_exercise(word)
+    assert ex.exercise_type == ExerciseType.CLOZE
+    assert "___" in ex.prompt
+    assert ex.expected_answer == "gato"
+
+
+def test_generate_cloze_exercise_verb():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="to speak",
+        word_to="hablar",
+        conjugation_group="ar",
+    )
+    ex = generate_cloze_exercise(word)
+    assert ex.exercise_type == ExerciseType.CLOZE
+    assert "___" in ex.prompt
+    assert ex.expected_answer == "hablar"
+
+
+def test_evaluate_cloze_correct():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+        gender="m",
+    )
+    ex = generate_cloze_exercise(word)
+    result = evaluate_answer(ex, "gato")
+    assert result.correct is True
+
+
+def test_evaluate_cloze_incorrect():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+        gender="m",
+    )
+    ex = generate_cloze_exercise(word)
+    result = evaluate_answer(ex, "perro")
+    assert result.correct is False
+
+
+def test_generate_exercise_includes_cloze():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+        )
+        for i, w in enumerate(
+            [
+                ("cat", "gato"),
+                ("dog", "perro"),
+                ("house", "casa"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.CLOZE in types

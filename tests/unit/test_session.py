@@ -95,6 +95,7 @@ def test_next_exercise_returns_exercise(session):
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.CLOZE,
     )
 
 

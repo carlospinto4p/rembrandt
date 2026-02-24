@@ -5,6 +5,7 @@ import random
 import unicodedata
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
+from rembrandt.sentences import generate_cloze
 from rembrandt.models import (
     AnswerResult,
     Exercise,
@@ -172,6 +173,29 @@ def generate_conjugation(word: Word) -> Exercise:
     )
 
 
+def generate_cloze_exercise(word: Word) -> Exercise:
+    """Create a cloze (fill-in-the-blank) exercise.
+
+    Uses template-based sentence generation to produce a
+    sentence with a blank where the Spanish word should go.
+
+    :param word: The word to test.
+    :return: A cloze `Exercise`.
+    """
+    spanish = _spanish_word(word)
+    sentence, answer = generate_cloze(
+        spanish,
+        gender=word.gender,
+        conjugation_group=word.conjugation_group,
+    )
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.CLOZE,
+        prompt=sentence,
+        expected_answer=answer,
+    )
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -213,6 +237,7 @@ def generate_exercise(
             )
         ):
             pool.append(ExerciseType.CONJUGATION)
+        pool.append(ExerciseType.CLOZE)
 
         chosen = random.choice(pool)
 
@@ -224,6 +249,8 @@ def generate_exercise(
             return generate_gender_match(word)
         if chosen == ExerciseType.CONJUGATION:
             return generate_conjugation(word)
+        if chosen == ExerciseType.CLOZE:
+            return generate_cloze_exercise(word)
 
     # Definition mode
     if len(all_words) < 2:
