@@ -3,10 +3,17 @@
 
 ### v0.16.5 - 24th February 2026
 
-- Cleaned up `__init__.py`: removed re-exports of internal symbols
-  (`AnswerResult`, `Exercise`, `ExerciseType`, `LearningMode`,
-  `LessonProgress`, `learning_mode`, `conjugate`, `can_conjugate`,
-  `generate_cloze`). Users import these from their actual modules.
+- Cleaned up `__init__.py`: removed re-exports of internal symbols.
+  Users import these from their actual modules:
+  - `AnswerResult`
+  - `Exercise`
+  - `ExerciseType`
+  - `LearningMode`
+  - `LessonProgress`
+  - `learning_mode`
+  - `conjugate`
+  - `can_conjugate`
+  - `generate_cloze`
 - Updated all examples to import `ExerciseType` from
   `rembrandt.models` instead of the package root.
 
