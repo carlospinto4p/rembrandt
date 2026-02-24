@@ -111,6 +111,35 @@ definition mode with exercise types suited for learning definitions:
 multiple choice, reverse flashcard (definition shown, type the word),
 and self-graded (recall and rate yourself 0-5).
 
+## Session Modes
+
+Control which words appear in a session using `SessionMode`:
+
+```python
+from rembrandt import Database, Session, SessionMode
+
+with Database("vocab.db") as db:
+    # Only new (unreviewed) words
+    s = Session(db, "user1", "en", "es",
+                mode=SessionMode.LEARN_NEW)
+
+    # Only words due for review
+    s = Session(db, "user1", "en", "es",
+                mode=SessionMode.REVIEW_DUE)
+
+    # Due first, then new (default)
+    s = Session(db, "user1", "en", "es",
+                mode=SessionMode.MIXED)
+```
+
+You can also restrict a session to a lesson's words:
+
+```python
+lesson = db.get_lessons("en", "es", cefr="A1")[0]
+s = Session(db, "user1", "en", "es",
+            word_ids=lesson.word_ids)
+```
+
 ## Lessons
 
 Rembrandt supports structured lessons — named sets of words grouped by

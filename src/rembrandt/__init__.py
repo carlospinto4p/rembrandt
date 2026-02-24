@@ -10,6 +10,7 @@ from rembrandt.models import (
     ExerciseType,
     LearningMode,
     Lesson,
+    SessionMode,
     Word,
     learning_mode,
 )
@@ -25,6 +26,7 @@ __all__ = [
     "LearningMode",
     "Lesson",
     "Session",
+    "SessionMode",
     "Word",
     "learning_mode",
     "load_lessons",

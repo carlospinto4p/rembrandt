@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 from rembrandt.db import Database
-from rembrandt.models import UserProgress, Word
+from rembrandt.models import SessionMode, UserProgress, Word
 
 
 def review(
@@ -61,25 +61,39 @@ def select_words(
     language_from: str,
     language_to: str,
     count: int = 5,
+    *,
+    mode: SessionMode = SessionMode.MIXED,
+    word_ids: list[int] | None = None,
 ) -> list[Word]:
     """Pick words for review using spaced-repetition scheduling.
-
-    Returns words that are due for review first, then fills
-    with new (unreviewed) words if not enough are due.
 
     :param db: The database instance.
     :param user_id: The user identifier.
     :param language_from: Source language code.
     :param language_to: Target language code.
     :param count: Number of words to select.
+    :param mode: Session mode controlling which words are
+        returned. `MIXED` (default) returns due words first,
+        then fills with new. `LEARN_NEW` returns only new
+        words. `REVIEW_DUE` returns only due words.
+    :param word_ids: If provided, restrict selection to these
+        word ids (e.g. from a lesson).
     :return: List of `Word` objects to review.
     """
     all_words = db.get_words(language_from, language_to)
     if not all_words:
         return []
 
-    word_ids = [w.id for w in all_words if w.id is not None]
-    progress_map = db.get_all_progress(user_id, word_ids)
+    if word_ids is not None:
+        allowed = set(word_ids)
+        all_words = [
+            w for w in all_words if w.id in allowed
+        ]
+        if not all_words:
+            return []
+
+    ids = [w.id for w in all_words if w.id is not None]
+    progress_map = db.get_all_progress(user_id, ids)
 
     now = datetime.now()
     due: list[Word] = []
@@ -92,6 +106,11 @@ def select_words(
             new.append(word)
         elif progress.next_review <= now:
             due.append(word)
+
+    if mode == SessionMode.LEARN_NEW:
+        return new[:count]
+    if mode == SessionMode.REVIEW_DUE:
+        return due[:count]
 
     selected = due[:count]
     remaining = count - len(selected)

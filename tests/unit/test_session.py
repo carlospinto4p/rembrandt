@@ -4,8 +4,15 @@ import json
 
 import pytest
 
+from datetime import datetime
+
 from rembrandt.db import Database
-from rembrandt.models import ExerciseType, Word
+from rembrandt.models import (
+    ExerciseType,
+    SessionMode,
+    UserProgress,
+    Word,
+)
 from rembrandt.session import Session, quick_session
 
 
@@ -296,6 +303,63 @@ def test_quick_session_limit(tmp_path):
     words = s.db.get_words("en", "es")
     assert len(words) == 3
     s.db.close()
+
+
+# --- Session Mode Tests ---
+
+
+def test_session_learn_new_mode(session_db):
+    all_words = session_db.get_words("en", "es")
+    due_word = all_words[0]
+    session_db.upsert_progress(UserProgress(
+        user_id="u1",
+        word_id=due_word.id,
+        next_review=datetime(2020, 1, 1),
+    ))
+
+    s = Session(
+        session_db, "u1", "en", "es",
+        mode=SessionMode.LEARN_NEW,
+    )
+    ex = s.next_exercise()
+    assert ex is not None
+    assert ex.word.id != due_word.id
+
+
+def test_session_review_due_mode(session_db):
+    all_words = session_db.get_words("en", "es")
+    due_word = all_words[0]
+    session_db.upsert_progress(UserProgress(
+        user_id="u1",
+        word_id=due_word.id,
+        next_review=datetime(2020, 1, 1),
+    ))
+
+    s = Session(
+        session_db, "u1", "en", "es",
+        mode=SessionMode.REVIEW_DUE,
+    )
+    ex = s.next_exercise()
+    assert ex is not None
+    assert ex.word.id == due_word.id
+
+
+def test_session_word_ids_filter(session_db):
+    all_words = session_db.get_words("en", "es")
+    subset = [all_words[0].id, all_words[1].id]
+
+    s = Session(
+        session_db, "u1", "en", "es",
+        word_ids=subset,
+    )
+    seen_ids = set()
+    for _ in range(10):
+        ex = s.next_exercise()
+        if ex is None:
+            break
+        seen_ids.add(ex.word.id)
+        s.answer(ex.word.word_to)
+    assert seen_ids <= set(subset)
 
 
 def test_quick_session_list_requires_db_path():

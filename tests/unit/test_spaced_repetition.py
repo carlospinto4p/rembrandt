@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from rembrandt.db import Database
-from rembrandt.models import UserProgress, Word
+from rembrandt.models import SessionMode, UserProgress, Word
 from rembrandt.spaced_repetition import review, select_words
 
 
@@ -178,3 +178,73 @@ def test_select_words_respects_count(db_with_words):
         db_with_words, "u1", "en", "es", count=2
     )
     assert len(words) == 2
+
+
+# --- Session Mode Tests ---
+
+
+def test_select_words_learn_new_only(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    due_word = all_words[0]
+    progress = UserProgress(
+        user_id="u1",
+        word_id=due_word.id,
+        next_review=datetime(2020, 1, 1),
+    )
+    db_with_words.upsert_progress(progress)
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        mode=SessionMode.LEARN_NEW,
+    )
+    ids = [w.id for w in words]
+    assert due_word.id not in ids
+    assert len(words) == 4
+
+
+def test_select_words_review_due_only(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    due_word = all_words[0]
+    progress = UserProgress(
+        user_id="u1",
+        word_id=due_word.id,
+        next_review=datetime(2020, 1, 1),
+    )
+    db_with_words.upsert_progress(progress)
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        mode=SessionMode.REVIEW_DUE,
+    )
+    assert len(words) == 1
+    assert words[0].id == due_word.id
+
+
+def test_select_words_mixed_default(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    due_word = all_words[0]
+    progress = UserProgress(
+        user_id="u1",
+        word_id=due_word.id,
+        next_review=datetime(2020, 1, 1),
+    )
+    db_with_words.upsert_progress(progress)
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=3,
+    )
+    assert len(words) == 3
+    assert words[0].id == due_word.id
+
+
+def test_select_words_word_ids_filter(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    subset_ids = [all_words[0].id, all_words[1].id]
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        word_ids=subset_ids,
+    )
+    assert len(words) == 2
+    result_ids = {w.id for w in words}
+    assert result_ids == set(subset_ids)

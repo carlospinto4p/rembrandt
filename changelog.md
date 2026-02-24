@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.12.0 - 24th February 2026
+
+- Added `SessionMode` enum in `models`: `LEARN_NEW`, `REVIEW_DUE`,
+  `MIXED`.
+- Updated `select_words()`: accepts `mode` and `word_ids` keyword
+  arguments for session mode filtering and lesson-scoped selection.
+- Updated `Session.__init__()`: accepts `mode` and `word_ids` keyword
+  arguments, passed through to `select_words()`.
+- Exported `SessionMode` from the package.
+
+
 ### v0.11.0 - 24th February 2026
 
 - Added `Lesson` model in `models`: named set of words with title,

@@ -11,6 +11,7 @@ from rembrandt.exercises import (
 from rembrandt.models import (
     AnswerResult,
     Exercise,
+    SessionMode,
     UserProgress,
     Word,
 )
@@ -24,6 +25,10 @@ class Session:
     :param user_id: Identifier for the user.
     :param language_from: Source language code.
     :param language_to: Target language code.
+    :param mode: Session mode (`MIXED`, `LEARN_NEW`, or
+        `REVIEW_DUE`).
+    :param word_ids: Restrict exercises to these word ids
+        (e.g. from a `Lesson`).
     """
 
     def __init__(
@@ -32,11 +37,16 @@ class Session:
         user_id: str,
         language_from: str,
         language_to: str,
+        *,
+        mode: SessionMode = SessionMode.MIXED,
+        word_ids: list[int] | None = None,
     ) -> None:
         self.db = db
         self.user_id = user_id
         self.language_from = language_from
         self.language_to = language_to
+        self.mode = mode
+        self._word_ids = word_ids
         self._current_exercise: Exercise | None = None
 
     def next_exercise(self) -> Exercise | None:
@@ -51,6 +61,8 @@ class Session:
             self.language_from,
             self.language_to,
             count=1,
+            mode=self.mode,
+            word_ids=self._word_ids,
         )
         if not words:
             return None

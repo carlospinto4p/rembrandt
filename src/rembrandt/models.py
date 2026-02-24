@@ -74,6 +74,19 @@ class LearningMode(str, Enum):
     DEFINITION = "definition"
 
 
+class SessionMode(str, Enum):
+    """How a session selects words.
+
+    :cvar LEARN_NEW: Only present new (unreviewed) words.
+    :cvar REVIEW_DUE: Only present words due for review.
+    :cvar MIXED: Due words first, then new words to fill.
+    """
+
+    LEARN_NEW = "learn_new"
+    REVIEW_DUE = "review_due"
+    MIXED = "mixed"
+
+
 class ExerciseType(str, Enum):
     """Type of vocabulary exercise."""
 
