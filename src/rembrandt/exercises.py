@@ -2,6 +2,7 @@
 
 import re
 import random
+import unicodedata
 
 from rembrandt.models import (
     AnswerResult,
@@ -11,6 +12,30 @@ from rembrandt.models import (
     Word,
     learning_mode,
 )
+
+
+def _strip_accents(text: str) -> str:
+    """Remove combining diacritical marks from `text`.
+
+    :param text: Input string.
+    :return: String with accents removed.
+    """
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(
+        ch for ch in nfkd
+        if unicodedata.category(ch) != "Mn"
+    )
+
+
+def _spanish_word(word: Word) -> str:
+    """Return the Spanish word from a bilingual `Word`.
+
+    :param word: The word to inspect.
+    :return: The Spanish side of the word pair.
+    """
+    if word.language_to == "es":
+        return word.word_to
+    return word.word_from
 
 
 def generate_flashcard(word: Word) -> Exercise:
@@ -85,6 +110,31 @@ def generate_self_graded(word: Word) -> Exercise:
     )
 
 
+def generate_gender_match(word: Word) -> Exercise:
+    """Create a gender/article matching exercise.
+
+    The user selects the correct article (`el` or `la`) for a
+    Spanish noun.
+
+    :param word: The noun to test.
+    :return: A gender-match `Exercise`.
+    :raises ValueError: If `word.gender` is `None`.
+    """
+    if word.gender is None:
+        raise ValueError(
+            "gender_match requires a word with gender"
+        )
+    spanish = _spanish_word(word)
+    article = "el" if word.gender == "m" else "la"
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.GENDER_MATCH,
+        options=["el", "la"],
+        prompt=f"___ {spanish}",
+        expected_answer=article,
+    )
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -92,8 +142,9 @@ def generate_exercise(
     """Generate an exercise appropriate for the word's mode.
 
     **Translation mode** (`language_from != language_to`):
-    50/50 flashcard vs. multiple choice. Falls back to
-    flashcard when fewer than 2 words are available.
+    picks randomly from a pool of eligible exercise types.
+    Falls back to flashcard when fewer than 2 words are
+    available (multiple choice needs distractors).
 
     **Definition mode** (`language_from == language_to`):
     40% multiple choice, 30% reverse flashcard, 30%
@@ -111,9 +162,22 @@ def generate_exercise(
     if mode == LearningMode.TRANSLATION:
         if len(all_words) < 2:
             return generate_flashcard(word)
-        if random.choice([True, False]):
+
+        pool: list[ExerciseType] = [
+            ExerciseType.FLASHCARD,
+            ExerciseType.MULTIPLE_CHOICE,
+        ]
+        if word.gender is not None:
+            pool.append(ExerciseType.GENDER_MATCH)
+
+        chosen = random.choice(pool)
+
+        if chosen == ExerciseType.FLASHCARD:
             return generate_flashcard(word)
-        return generate_multiple_choice(word, all_words)
+        if chosen == ExerciseType.MULTIPLE_CHOICE:
+            return generate_multiple_choice(word, all_words)
+        if chosen == ExerciseType.GENDER_MATCH:
+            return generate_gender_match(word)
 
     # Definition mode
     if len(all_words) < 2:
@@ -139,7 +203,9 @@ def _acceptable_answers(expected: str) -> list[str]:
     """
     cleaned = re.sub(r"\s*\[.*?\]", "", expected)
     cleaned = re.sub(r"\s*\(.*?\)", "", cleaned)
-    segments = [s.strip() for s in cleaned.split(";") if s.strip()]
+    segments = [
+        s.strip() for s in cleaned.split(";") if s.strip()
+    ]
     answers = [expected] + segments
     seen: set[str] = set()
     unique: list[str] = []
@@ -155,17 +221,22 @@ def _answers_match(given: str, expected: str) -> bool:
     """Check if `given` matches `expected` with flexible rules.
 
     Handles parenthetical/bracket stripping, semicolon-separated
-    senses, and optional "to " verb prefix differences.
+    senses, optional "to " verb prefix differences, and accent
+    tolerance (e.g. `"hablo"` matches `"habló"`).
 
     :param given: The user's answer (already stripped).
     :param expected: The canonical expected answer.
     :return: ``True`` if the answers match.
     """
     g = given.lower()
+    g_stripped = _strip_accents(g)
     candidates = _acceptable_answers(expected)
     for c in candidates:
         e = c.lower()
         if g == e:
+            return True
+        # Accent-tolerant comparison
+        if g_stripped == _strip_accents(e):
             return True
         # "to X" ↔ "X" handling
         if g.startswith("to ") and g[3:] == e:
@@ -183,6 +254,10 @@ def evaluate_answer(
     """Evaluate a user's answer against the expected value.
 
     Comparison is case-insensitive and strips whitespace.
+
+    For exercises with a non-empty `expected_answer` (e.g.
+    `GENDER_MATCH`, `CONJUGATION`, `CLOZE`), that value is
+    used as the expected answer directly.
 
     For `REVERSE_FLASHCARD` exercises the expected answer is
     `word_from` (the term) instead of `word_to`.
@@ -216,6 +291,28 @@ def evaluate_answer(
             correct=quality >= 3,
             expected=expected,
             given=str(quality),
+            word=exercise.word,
+        )
+
+    # Exercises with explicit expected_answer
+    if exercise.expected_answer:
+        expected = exercise.expected_answer
+        given = answer_text.strip()
+
+        # Resolve option number to text
+        if (
+            given.isdigit()
+            and exercise.options
+        ):
+            idx = int(given) - 1
+            if 0 <= idx < len(exercise.options):
+                given = exercise.options[idx]
+
+        correct = _answers_match(given, expected)
+        return AnswerResult(
+            correct=correct,
+            expected=expected,
+            given=given,
             word=exercise.word,
         )
 

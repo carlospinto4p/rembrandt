@@ -157,6 +157,10 @@ def test_exercise_type_values():
     assert ExerciseType.SELF_GRADED == "self_graded"
 
 
+def test_exercise_type_gender_match():
+    assert ExerciseType.GENDER_MATCH == "gender_match"
+
+
 # --- Exercise Tests ---
 
 
@@ -189,6 +193,40 @@ def test_exercise_multiple_choice():
     )
     assert len(ex.options) == 4
     assert "perro" in ex.options
+
+
+def test_exercise_prompt_and_expected_defaults():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.FLASHCARD,
+    )
+    assert ex.prompt == ""
+    assert ex.expected_answer == ""
+
+
+def test_exercise_prompt_and_expected_set():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="house",
+        word_to="casa",
+        gender="f",
+    )
+    ex = Exercise(
+        word=word,
+        exercise_type=ExerciseType.GENDER_MATCH,
+        options=["el", "la"],
+        prompt="___ casa",
+        expected_answer="la",
+    )
+    assert ex.prompt == "___ casa"
+    assert ex.expected_answer == "la"
 
 
 # --- AnswerResult Tests ---

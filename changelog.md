@@ -1,6 +1,25 @@
 
 ## Changelog - Rembrandt
 
+### v0.14.0 - 24th February 2026
+
+- Added `ExerciseType.GENDER_MATCH`: article matching exercise
+  for Spanish nouns (`el`/`la`).
+- Added `Exercise.prompt` and `Exercise.expected_answer` fields:
+  support display text and explicit expected answers for new
+  exercise types (defaults to `""`, backward-compatible).
+- Added `generate_gender_match()` in `exercises`.
+- Updated `generate_exercise()`: pool-based type selection in
+  translation mode; adds `GENDER_MATCH` when word has gender.
+- Updated `evaluate_answer()`: uses `expected_answer` when set,
+  with numeric option resolution for all exercise types.
+- Added `_strip_accents()` and accent-tolerant matching in
+  `_answers_match()`: `"hablo"` matches `"habló"`.
+- Added `_spanish_word()` helper in `exercises`.
+- Updated `docs/exercise-types.md`: added gender match section,
+  pool-based selection docs, accent tolerance.
+
+
 ### v0.13.0 - 24th February 2026
 
 - Added `LessonProgress` model in `models`: per-lesson progress stats

@@ -115,6 +115,7 @@ class ExerciseType(str, Enum):
     MULTIPLE_CHOICE = "multiple_choice"
     REVERSE_FLASHCARD = "reverse_flashcard"
     SELF_GRADED = "self_graded"
+    GENDER_MATCH = "gender_match"
 
 
 class Exercise(BaseModel):
@@ -123,11 +124,16 @@ class Exercise(BaseModel):
     :param word: The word being tested.
     :param exercise_type: The type of exercise.
     :param options: Answer options (for multiple choice).
+    :param prompt: Display text (sentence, tense/person label).
+    :param expected_answer: Correct answer when not derivable
+        from the `Word` fields.
     """
 
     word: Word
     exercise_type: ExerciseType
     options: list[str] = Field(default_factory=list)
+    prompt: str = ""
+    expected_answer: str = ""
 
 
 class AnswerResult(BaseModel):

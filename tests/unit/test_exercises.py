@@ -6,6 +6,7 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
     generate_flashcard,
+    generate_gender_match,
     generate_multiple_choice,
     generate_reverse_flashcard,
     generate_self_graded,
@@ -415,3 +416,154 @@ def test_evaluate_multiple_choice_by_text_still_works():
     )
     result = evaluate_answer(ex, "gato")
     assert result.correct is True
+
+
+# --- Gender Match Tests ---
+
+
+@pytest.fixture
+def masculine_word():
+    return Word(
+        id=10,
+        language_from="en",
+        language_to="es",
+        word_from="book",
+        word_to="libro",
+        gender="m",
+    )
+
+
+@pytest.fixture
+def feminine_word():
+    return Word(
+        id=11,
+        language_from="en",
+        language_to="es",
+        word_from="house",
+        word_to="casa",
+        gender="f",
+    )
+
+
+def test_generate_gender_match_masculine(masculine_word):
+    ex = generate_gender_match(masculine_word)
+    assert ex.exercise_type == ExerciseType.GENDER_MATCH
+    assert ex.expected_answer == "el"
+    assert ex.prompt == "___ libro"
+    assert ex.options == ["el", "la"]
+
+
+def test_generate_gender_match_feminine(feminine_word):
+    ex = generate_gender_match(feminine_word)
+    assert ex.exercise_type == ExerciseType.GENDER_MATCH
+    assert ex.expected_answer == "la"
+    assert ex.prompt == "___ casa"
+
+
+def test_generate_gender_match_no_gender_raises():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="speak",
+        word_to="hablar",
+    )
+    with pytest.raises(
+        ValueError, match="gender_match requires"
+    ):
+        generate_gender_match(word)
+
+
+def test_evaluate_gender_match_correct(feminine_word):
+    ex = generate_gender_match(feminine_word)
+    result = evaluate_answer(ex, "la")
+    assert result.correct is True
+    assert result.expected == "la"
+
+
+def test_evaluate_gender_match_incorrect(feminine_word):
+    ex = generate_gender_match(feminine_word)
+    result = evaluate_answer(ex, "el")
+    assert result.correct is False
+    assert result.expected == "la"
+
+
+def test_evaluate_gender_match_by_number(feminine_word):
+    ex = generate_gender_match(feminine_word)
+    # options are ["el", "la"], so "2" → "la"
+    result = evaluate_answer(ex, "2")
+    assert result.correct is True
+    assert result.given == "la"
+
+
+# --- Accent Tolerance Tests ---
+
+
+def test_evaluate_accent_tolerant():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="speak",
+        word_to="habló",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "hablo")
+    assert result.correct is True
+
+
+# --- Pool-based Exercise Selection Tests ---
+
+
+def test_generate_exercise_includes_gender_match():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+            gender=w[2],
+        )
+        for i, w in enumerate(
+            [
+                ("book", "libro", "m"),
+                ("house", "casa", "f"),
+                ("water", "agua", "f"),
+                ("cat", "gato", "m"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.GENDER_MATCH in types
+
+
+def test_generate_exercise_returns_valid_type_with_gender():
+    words = [
+        Word(
+            id=1,
+            language_from="en",
+            language_to="es",
+            word_from="book",
+            word_to="libro",
+            gender="m",
+        ),
+        Word(
+            id=2,
+            language_from="en",
+            language_to="es",
+            word_from="house",
+            word_to="casa",
+            gender="f",
+        ),
+    ]
+    ex = generate_exercise(words[0], words)
+    assert ex.exercise_type in (
+        ExerciseType.FLASHCARD,
+        ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.GENDER_MATCH,
+    )
