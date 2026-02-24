@@ -6,8 +6,11 @@ Unit tests live in `tests/unit/` and run with `uv run pytest tests/unit -v`.
 They are fast, isolated, and never depend on real data files or
 external services. Use fixtures and `tmp_path` for temporary data.
 
-Integration tests live in `tests/integration/` and run separately so
-they don't break CI when real data files are absent.
+When integration tests are added, they should live in
+`tests/integration/` and run separately so they don't break CI
+when real data files are absent. The `preCommit` hook currently
+runs all tests under `tests/` — update it to exclude integration
+tests when that directory is created.
 
 ## Style
 

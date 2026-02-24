@@ -17,6 +17,8 @@ The `backlog.md` file tracks all improvements, fixes, and refactoring proposals.
 - **When showing the backlog to the user** (e.g., to choose tasks), display
   each item with a sequential number to make it easy to pick tasks by number
 
-## Workflow Rules section
+## Workflow Rules
 
-When the user says 'implement items X, Y, Z' or 'do backlog items N-M', implement them sequentially — commit each one, run tests, then move to the next. Do not plan all of them upfront.
+When the user says "implement items X, Y, Z" or "do backlog items N-M",
+implement them sequentially — commit each one, then move to the next.
+Do not plan all of them upfront.

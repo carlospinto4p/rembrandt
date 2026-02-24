@@ -4,21 +4,24 @@
 
 **IMPORTANT**: After completing any task that involves code changes, ALWAYS follow this workflow:
 
-1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
-2. **Update tests if needed**: If the changes require test updates, fix them before committing
-3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline changes (`.claude/rules/`, `CLAUDE.md`) in the changelog too.
-4. **Update README.md if needed**: When changes affect user-facing functionality:
+1. **Fix tests if needed**: If the changes require test updates, fix
+   them before committing. The `preCommit` hook runs the full test
+   suite automatically — you do not need to run tests manually.
+2. **Update version and changelog**: Follow `versioning.md` rules. Include guideline changes (`.claude/rules/`, `CLAUDE.md`) in the changelog too.
+3. **Update README.md if needed**: When changes affect user-facing functionality:
    - New methods or classes: add usage examples
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
-5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync environment**: Run `uv sync --all-extras` to update `uv.lock`,
+4. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
+5. **Sync environment**: Run `uv sync --all-extras` to update `uv.lock`,
    then `uv pip install -e ".[dev]"` to reinstall the editable package.
-7. **Commit changes**: Create a commit with a descriptive message following
+6. **Commit changes**: Create a commit with a descriptive message following
    the format below.
    - **Always include `uv.lock`** in the commit — run `git status` to
      verify it is staged before committing.
-8. **Push to remote**: Push the changes with `git push`
+   - The `preCommit` hook will run tests; if they fail the commit is
+     aborted — fix and retry.
+7. **Push to remote**: Push the changes with `git push`
 
 This workflow is MANDATORY after every prompt that results in code changes.
 

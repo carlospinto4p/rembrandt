@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.3 - 24th February 2026
+
+- Self-refinement pass on Claude settings:
+  - `backlog.md`: fixed heading, trimmed workflow rule text.
+  - `committing.md`: removed manual test step, referenced `preCommit`
+    hook in steps 1 and 6.
+  - `testing.md`: marked integration tests as aspirational, added
+    note about updating `preCommit` hook when integration tests arrive.
+- Added backlog item to remove `__init__.py` re-exports.
+
+
 ### v0.16.2 - 24th February 2026
 
 - Updated `.claude/rules/backlog.md`: added workflow rule to implement
