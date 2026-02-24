@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.13.0 - 24th February 2026
+
+- Added `LessonProgress` model in `models`: per-lesson progress stats
+  with completion and mastery percentages.
+- Added `lesson_progress()` in `lessons`: computes studied, mastered,
+  and percentage stats for a user within a lesson.
+- Exported `LessonProgress` and `lesson_progress` from the package.
+
+
 ### v0.12.0 - 24th February 2026
 
 - Added `SessionMode` enum in `models`: `LEARN_NEW`, `REVIEW_DUE`,

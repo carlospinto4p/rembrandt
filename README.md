@@ -172,6 +172,23 @@ The `data/spanish_lessons.json` file contains 467 pre-built lessons:
 400 frequency-ordered CEFR chunk lessons (~25 words each) and 67 topic
 lessons.
 
+### Lesson Progress
+
+Track how far a user has progressed in a lesson:
+
+```python
+from rembrandt import lesson_progress
+
+lp = lesson_progress(db, "user1", lesson)
+print(f"Studied: {lp.words_studied}/{lp.words_total}"
+      f" ({lp.completion_pct}%)")
+print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
+      f" ({lp.mastery_pct}%)")
+```
+
+A word is "studied" once it has any review history, and "mastered"
+after 3+ consecutive correct recalls (SM-2 repetitions >= 3).
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:

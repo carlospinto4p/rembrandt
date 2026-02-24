@@ -61,6 +61,27 @@ class Lesson(BaseModel):
     word_ids: list[int] = Field(default_factory=list)
 
 
+class LessonProgress(BaseModel):
+    """Progress statistics for a user within a lesson.
+
+    :param lesson_id: Lesson identifier.
+    :param user_id: User identifier.
+    :param words_total: Total words in the lesson.
+    :param words_studied: Words with at least one review.
+    :param words_mastered: Words with `repetitions >= 3`.
+    :param completion_pct: `words_studied / words_total * 100`.
+    :param mastery_pct: `words_mastered / words_total * 100`.
+    """
+
+    lesson_id: int
+    user_id: str
+    words_total: int
+    words_studied: int
+    words_mastered: int
+    completion_pct: float
+    mastery_pct: float
+
+
 class LearningMode(str, Enum):
     """How a word is being learned.
 

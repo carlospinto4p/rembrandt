@@ -19,8 +19,8 @@
 
 - [x] Add a `Lesson` model: named set of words with a learning goal
 - [x] Pre-build lessons by CEFR level and topic
-- [ ] Add session modes: "learn new", "review due", "mixed"
-- [ ] Track progress per lesson (completion %, words mastered)
+- [x] Add session modes: "learn new", "review due", "mixed"
+- [x] Track progress per lesson (completion %, words mastered)
 
 ### 2026.02.23 — Spanish vocabulary: Layer 3 (Spanish-specific exercises)
 

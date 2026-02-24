@@ -10,6 +10,7 @@ from rembrandt.models import (
     ExerciseType,
     LearningMode,
     Lesson,
+    LessonProgress,
     UserProgress,
     Word,
     learning_mode,
@@ -295,3 +296,25 @@ def test_lesson_all_fields():
     assert lesson.tags == ["food"]
     assert lesson.word_count == 10
     assert len(lesson.word_ids) == 10
+
+
+# --- LessonProgress Tests ---
+
+
+def test_lesson_progress_creation():
+    lp = LessonProgress(
+        lesson_id=1,
+        user_id="u1",
+        words_total=10,
+        words_studied=5,
+        words_mastered=2,
+        completion_pct=50.0,
+        mastery_pct=20.0,
+    )
+    assert lp.lesson_id == 1
+    assert lp.user_id == "u1"
+    assert lp.words_total == 10
+    assert lp.words_studied == 5
+    assert lp.words_mastered == 2
+    assert lp.completion_pct == 50.0
+    assert lp.mastery_pct == 20.0

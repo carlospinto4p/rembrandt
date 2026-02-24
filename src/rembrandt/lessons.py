@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from rembrandt.db import Database
-from rembrandt.models import Lesson
+from rembrandt.models import Lesson, LessonProgress
 
 logger = logging.getLogger(__name__)
 
@@ -84,3 +84,49 @@ def load_lessons(
             word_ids=word_ids,
         ))
     return db.add_lessons(lessons)
+
+
+def lesson_progress(
+    db: Database,
+    user_id: str,
+    lesson: Lesson,
+) -> LessonProgress:
+    """Compute progress statistics for a user in a lesson.
+
+    :param db: The database instance.
+    :param user_id: The user identifier.
+    :param lesson: The lesson to check progress for.
+    :return: A `LessonProgress` with completion and mastery
+        statistics.
+    """
+    total = len(lesson.word_ids)
+    if total == 0:
+        return LessonProgress(
+            lesson_id=lesson.id or 0,
+            user_id=user_id,
+            words_total=0,
+            words_studied=0,
+            words_mastered=0,
+            completion_pct=0.0,
+            mastery_pct=0.0,
+        )
+
+    progress_map = db.get_all_progress(
+        user_id, lesson.word_ids,
+    )
+
+    studied = len(progress_map)
+    mastered = sum(
+        1 for p in progress_map.values()
+        if p.repetitions >= 3
+    )
+
+    return LessonProgress(
+        lesson_id=lesson.id or 0,
+        user_id=user_id,
+        words_total=total,
+        words_studied=studied,
+        words_mastered=mastered,
+        completion_pct=round(studied / total * 100, 1),
+        mastery_pct=round(mastered / total * 100, 1),
+    )
