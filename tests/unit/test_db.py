@@ -102,6 +102,44 @@ def test_add_words_bulk_with_metadata(db):
     assert loaded[1].conjugation_group == "ar"
 
 
+def test_add_word_with_cefr(db):
+    word = db.add_word(
+        "es", "en", "ser", "to be", cefr="A1",
+    )
+    assert word.cefr == "A1"
+    loaded = db.get_words("es", "en")
+    assert loaded[0].cefr == "A1"
+
+
+def test_cefr_default_none(db):
+    db.add_word("en", "es", "cat", "gato")
+    loaded = db.get_words("en", "es")
+    assert loaded[0].cefr is None
+
+
+def test_cefr_bulk_roundtrip(db):
+    db.add_words([
+        Word(
+            language_from="es", language_to="en",
+            word_from="ser", word_to="to be",
+            cefr="A1",
+        ),
+        Word(
+            language_from="es", language_to="en",
+            word_from="prescindir", word_to="to do without",
+            cefr="C1",
+        ),
+        Word(
+            language_from="es", language_to="en",
+            word_from="casa", word_to="house",
+        ),
+    ])
+    loaded = db.get_words("es", "en")
+    assert loaded[0].cefr == "A1"
+    assert loaded[1].cefr == "C1"
+    assert loaded[2].cefr is None
+
+
 def test_tags_default_empty(db):
     db.add_word("en", "es", "cat", "gato")
     loaded = db.get_words("en", "es")

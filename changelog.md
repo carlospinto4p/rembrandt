@@ -1,6 +1,21 @@
 
 ## Changelog - Rembrandt
 
+### v0.10.0 - 24th February 2026
+
+- Added `Word.cefr` field: optional CEFR level (`"A1"` through `"C2"`),
+  `None` when not assigned.
+- Updated `Database`: `cefr` column in `words` table, persisted and
+  read in `add_word()`, `add_words()`, and `get_words()`.
+- Updated `quick_session()`: reads `cefr` from JSON entries.
+- Updated `scripts/build_spanish_vocab.py`: added `_cefr_level()` helper
+  that maps frequency rank to CEFR bands (A1: 1–500, A2: 501–1500,
+  B1: 1501–3500, B2: 3501–6500, C1: 6501–8500, C2: 8501–10000).
+- Updated `scripts/build_spanish_definitions.py`: carries `cefr` from
+  the bilingual file into monolingual output.
+- Rebuilt data files with CEFR levels.
+
+
 ### v0.9.0 - 24th February 2026
 
 - Added `Word.tags` field: topic tags as a list of strings (default

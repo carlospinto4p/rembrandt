@@ -62,6 +62,27 @@ def test_word_tags_explicit():
     assert word.tags == ["food"]
 
 
+def test_word_cefr_default_none():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    assert word.cefr is None
+
+
+def test_word_cefr_explicit():
+    word = Word(
+        language_from="es",
+        language_to="en",
+        word_from="ser",
+        word_to="to be",
+        cefr="A1",
+    )
+    assert word.cefr == "A1"
+
+
 def test_word_gender_and_conjugation_defaults():
     word = Word(
         language_from="en",

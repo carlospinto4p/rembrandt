@@ -19,6 +19,8 @@ class Word(BaseModel):
     :param conjugation_group: Verb conjugation group
         (`"ar"`, `"er"`, or `"ir"`), `None` for non-verbs.
     :param tags: Topic tags (e.g. `["food", "travel"]`).
+    :param cefr: CEFR level (`"A1"` through `"C2"`), `None`
+        when not assigned.
     """
 
     id: int | None = None
@@ -29,6 +31,7 @@ class Word(BaseModel):
     gender: str | None = None
     conjugation_group: str | None = None
     tags: list[str] = Field(default_factory=list)
+    cefr: str | None = None
 
 
 class LearningMode(str, Enum):

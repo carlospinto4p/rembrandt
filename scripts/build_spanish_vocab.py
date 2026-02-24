@@ -124,6 +124,25 @@ def _parse_dictionary(
     return dictionary
 
 
+def _cefr_level(rank: int) -> str:
+    """Map a frequency rank to a CEFR level.
+
+    :param rank: 1-based frequency rank.
+    :return: CEFR level string (`"A1"` through `"C2"`).
+    """
+    if rank <= 500:
+        return "A1"
+    if rank <= 1500:
+        return "A2"
+    if rank <= 3500:
+        return "B1"
+    if rank <= 6500:
+        return "B2"
+    if rank <= 8500:
+        return "C1"
+    return "C2"
+
+
 def _conjugation_group(word: str, pos: str) -> str | None:
     """Derive the conjugation group from a verb's infinitive.
 
@@ -204,6 +223,7 @@ def main() -> None:
             "gender": gender,
             "conjugation_group": conj,
             "tags": tags,
+            "cefr": _cefr_level(rank),
         })
         if rank >= _TARGET_COUNT:
             break

@@ -172,6 +172,7 @@ def quick_session(
                     "conjugation_group"
                 ),
                 tags=e.get("tags", []),
+                cefr=e.get("cefr"),
             )
             for e in entries[:limit]
         ]
