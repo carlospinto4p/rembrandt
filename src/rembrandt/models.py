@@ -116,6 +116,7 @@ class ExerciseType(str, Enum):
     REVERSE_FLASHCARD = "reverse_flashcard"
     SELF_GRADED = "self_graded"
     GENDER_MATCH = "gender_match"
+    CONJUGATION = "conjugation"
 
 
 class Exercise(BaseModel):

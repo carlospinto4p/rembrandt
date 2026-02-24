@@ -161,6 +161,10 @@ def test_exercise_type_gender_match():
     assert ExerciseType.GENDER_MATCH == "gender_match"
 
 
+def test_exercise_type_conjugation():
+    assert ExerciseType.CONJUGATION == "conjugation"
+
+
 # --- Exercise Tests ---
 
 

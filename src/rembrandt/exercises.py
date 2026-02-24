@@ -4,6 +4,7 @@ import re
 import random
 import unicodedata
 
+from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
 from rembrandt.models import (
     AnswerResult,
     Exercise,
@@ -135,6 +136,42 @@ def generate_gender_match(word: Word) -> Exercise:
     )
 
 
+def generate_conjugation(word: Word) -> Exercise:
+    """Create a verb conjugation drill exercise.
+
+    Picks a random tense and person, then conjugates the verb.
+
+    :param word: The verb to test.
+    :return: A conjugation `Exercise`.
+    :raises ValueError: If `word.conjugation_group` is `None`
+        or the verb cannot be conjugated.
+    """
+    if word.conjugation_group is None:
+        raise ValueError(
+            "conjugation requires a word with "
+            "conjugation_group"
+        )
+    infinitive = _spanish_word(word)
+    group = word.conjugation_group
+
+    if not can_conjugate(infinitive, group):
+        raise ValueError(
+            f"Cannot conjugate {infinitive!r} "
+            f"(group={group!r})"
+        )
+
+    tense = random.choice(TENSES)
+    person_idx = random.randint(0, 5)
+    form = conjugate(infinitive, group, tense, person_idx)
+
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.CONJUGATION,
+        prompt=f"{infinitive} — {tense}, {PERSONS[person_idx]}",
+        expected_answer=form,
+    )
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -169,6 +206,13 @@ def generate_exercise(
         ]
         if word.gender is not None:
             pool.append(ExerciseType.GENDER_MATCH)
+        if (
+            word.conjugation_group is not None
+            and can_conjugate(
+                _spanish_word(word), word.conjugation_group,
+            )
+        ):
+            pool.append(ExerciseType.CONJUGATION)
 
         chosen = random.choice(pool)
 
@@ -178,6 +222,8 @@ def generate_exercise(
             return generate_multiple_choice(word, all_words)
         if chosen == ExerciseType.GENDER_MATCH:
             return generate_gender_match(word)
+        if chosen == ExerciseType.CONJUGATION:
+            return generate_conjugation(word)
 
     # Definition mode
     if len(all_words) < 2:

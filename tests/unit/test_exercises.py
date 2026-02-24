@@ -4,6 +4,7 @@ import pytest
 
 from rembrandt.exercises import (
     evaluate_answer,
+    generate_conjugation,
     generate_exercise,
     generate_flashcard,
     generate_gender_match,
@@ -567,3 +568,78 @@ def test_generate_exercise_returns_valid_type_with_gender():
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.GENDER_MATCH,
     )
+
+
+# --- Conjugation Exercise Tests ---
+
+
+@pytest.fixture
+def verb_word():
+    return Word(
+        id=20,
+        language_from="en",
+        language_to="es",
+        word_from="to speak",
+        word_to="hablar",
+        conjugation_group="ar",
+    )
+
+
+def test_generate_conjugation(verb_word):
+    ex = generate_conjugation(verb_word)
+    assert ex.exercise_type == ExerciseType.CONJUGATION
+    assert "hablar" in ex.prompt
+    assert " — " in ex.prompt
+    assert ex.expected_answer != ""
+
+
+def test_generate_conjugation_no_group_raises():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="house",
+        word_to="casa",
+    )
+    with pytest.raises(
+        ValueError, match="conjugation requires"
+    ):
+        generate_conjugation(word)
+
+
+def test_evaluate_conjugation_correct(verb_word):
+    ex = generate_conjugation(verb_word)
+    result = evaluate_answer(ex, ex.expected_answer)
+    assert result.correct is True
+
+
+def test_evaluate_conjugation_incorrect(verb_word):
+    ex = generate_conjugation(verb_word)
+    result = evaluate_answer(ex, "wrong_answer")
+    assert result.correct is False
+
+
+def test_generate_exercise_includes_conjugation():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+            conjugation_group=w[2],
+        )
+        for i, w in enumerate(
+            [
+                ("to speak", "hablar", "ar"),
+                ("to eat", "comer", "er"),
+                ("to live", "vivir", "ir"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.CONJUGATION in types

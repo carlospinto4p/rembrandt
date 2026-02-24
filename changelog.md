@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.15.0 - 24th February 2026
+
+- Added `conjugation` module: rule-based Spanish conjugation engine
+  with regular -ar/-er/-ir endings and 15 common irregular verbs
+  across presente, pretérito, and imperfecto tenses.
+- Added `ExerciseType.CONJUGATION`: verb conjugation drill exercise.
+- Added `generate_conjugation()` in `exercises`.
+- Updated `generate_exercise()`: adds `CONJUGATION` to the pool
+  when the word has a conjugation group and is conjugable.
+- Updated `docs/exercise-types.md`: added conjugation section.
+
+
 ### v0.14.0 - 24th February 2026
 
 - Added `ExerciseType.GENDER_MATCH`: article matching exercise
