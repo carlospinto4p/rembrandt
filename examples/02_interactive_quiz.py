@@ -7,7 +7,8 @@ at the end. Progress is persisted between runs.
 
 from pathlib import Path
 
-from rembrandt import Database, ExerciseType, Session, Word
+from rembrandt import Database, Session, Word
+from rembrandt.models import ExerciseType
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent

@@ -12,7 +12,8 @@ Usage::
 
 from pathlib import Path
 
-from rembrandt import ExerciseType, quick_session
+from rembrandt import quick_session
+from rembrandt.models import ExerciseType
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent

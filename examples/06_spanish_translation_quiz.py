@@ -12,7 +12,8 @@ Usage::
 
 from pathlib import Path
 
-from rembrandt import ExerciseType, quick_session
+from rembrandt import quick_session
+from rembrandt.models import ExerciseType
 
 _ROOT = Path(__file__).resolve().parent.parent
 _VOCAB_PATH = _ROOT / "data" / "spanish_top10000.json"

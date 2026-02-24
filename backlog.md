@@ -15,4 +15,4 @@
 
 ### 2026.02.24 — Self-refinement pass
 
-- [ ] Remove re-exports from `__init__.py` (`conjugate`, `can_conjugate`, `generate_cloze`) — let users import from the actual modules
+- [x] Remove re-exports from `__init__.py` (`conjugate`, `can_conjugate`, `generate_cloze`) — let users import from the actual modules
