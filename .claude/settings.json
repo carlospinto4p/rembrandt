@@ -1,4 +1,14 @@
 {
+  "hooks": {
+      "postEdit": {
+        "command": "echo ${file} | grep -q '\\.py$' && uv run ruff check --fix ${file} && uv run ruff format ${file} || true",
+        "description": "Auto-lint and format after every file edit"
+      },
+      "preCommit": {
+        "command": "uv run pytest tests/ --tb=short -q",
+        "description": "Run tests before every commit"
+      }
+  },
   "permissions": {
     "allow": [
       "Bash(pytest:*)",

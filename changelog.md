@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.1 - 24th February 2026
+
+- Updated `.claude/settings.json`: added `postEdit` hook (auto-lint
+  and format Python files) and `preCommit` hook (run tests before
+  every commit).
+
+
 ### v0.16.0 - 24th February 2026
 
 - Added `sentences` module: template-based sentence generation with
