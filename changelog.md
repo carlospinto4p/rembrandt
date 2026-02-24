@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.2 - 24th February 2026
+
+- Updated `.claude/rules/backlog.md`: added workflow rule to implement
+  backlog items sequentially (commit each one) rather than planning
+  all upfront.
+
+
 ### v0.16.1 - 24th February 2026
 
 - Updated `.claude/settings.json`: added `postEdit` hook (auto-lint
