@@ -8,7 +8,7 @@ multiple choice, reverse flashcard, and self-graded.
 
 from pathlib import Path
 
-from rembrandt import Database, ExerciseType, Session
+from rembrandt import Database, ExerciseType, Session, Word
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent
@@ -23,18 +23,39 @@ def main() -> None:
 
     if fresh:
         db.add_words([
-            ("en", "en", "ephemeral",
-             "lasting for a very short time"),
-            ("en", "en", "ubiquitous",
-             "present or found everywhere"),
-            ("en", "en", "candid",
-             "truthful and straightforward"),
-            ("en", "en", "pragmatic",
-             "dealing with things practically"),
-            ("en", "en", "verbose",
-             "using more words than needed"),
-            ("en", "en", "diligent",
-             "showing care and effort in one's work"),
+            Word(
+                language_from="en", language_to="en",
+                word_from="ephemeral",
+                word_to="lasting for a very short time",
+            ),
+            Word(
+                language_from="en", language_to="en",
+                word_from="ubiquitous",
+                word_to="present or found everywhere",
+            ),
+            Word(
+                language_from="en", language_to="en",
+                word_from="candid",
+                word_to="truthful and straightforward",
+            ),
+            Word(
+                language_from="en", language_to="en",
+                word_from="pragmatic",
+                word_to="dealing with things practically",
+            ),
+            Word(
+                language_from="en", language_to="en",
+                word_from="verbose",
+                word_to="using more words than needed",
+            ),
+            Word(
+                language_from="en", language_to="en",
+                word_from="diligent",
+                word_to=(
+                    "showing care and effort in one's"
+                    " work"
+                ),
+            ),
         ])
 
     session = Session(

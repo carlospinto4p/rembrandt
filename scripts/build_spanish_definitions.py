@@ -61,6 +61,34 @@ def _load_frequency_list(
     return lookup
 
 
+def _extract_gender(entry: dict) -> str | None:
+    """Extract noun gender from a kaikki entry's tags.
+
+    Looks for `"masculine"` or `"feminine"` in the top-level
+    `tags` list.
+    """
+    for tag in entry.get("tags", []):
+        if tag == "masculine":
+            return "m"
+        if tag == "feminine":
+            return "f"
+    return None
+
+
+def _conjugation_group(word: str, pos: str) -> str | None:
+    """Derive conjugation group from a verb's infinitive.
+
+    :return: `"ar"`, `"er"`, or `"ir"` for verbs, `None`
+        otherwise.
+    """
+    if pos != "v":
+        return None
+    for suffix in ("ar", "er", "ir"):
+        if word.endswith(suffix):
+            return suffix
+    return None
+
+
 def _parse_kaikki(
     gz_path: Path,
     words: dict[tuple[str, str], dict],
@@ -154,6 +182,10 @@ def main() -> None:
             "frequency": entry["frequency"],
             "senses": senses,
             "definition": definition,
+            "gender": entry.get("gender"),
+            "conjugation_group": entry.get(
+                "conjugation_group"
+            ),
         })
 
         if senses:

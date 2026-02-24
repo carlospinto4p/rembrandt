@@ -6,7 +6,7 @@ Shows that a single database can hold several language pairs
 
 from pathlib import Path
 
-from rembrandt import Database, ExerciseType, Session
+from rembrandt import Database, ExerciseType, Session, Word
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent
@@ -42,18 +42,42 @@ def main() -> None:
     if fresh:
         # English -> Spanish vocabulary
         db.add_words([
-            ("en", "es", "cat", "gato"),
-            ("en", "es", "dog", "perro"),
-            ("en", "es", "house", "casa"),
-            ("en", "es", "water", "agua"),
+            Word(
+                language_from="en", language_to="es",
+                word_from="cat", word_to="gato",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="dog", word_to="perro",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="house", word_to="casa",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="water", word_to="agua",
+            ),
         ])
 
         # English -> French vocabulary
         db.add_words([
-            ("en", "fr", "cat", "chat"),
-            ("en", "fr", "dog", "chien"),
-            ("en", "fr", "house", "maison"),
-            ("en", "fr", "water", "eau"),
+            Word(
+                language_from="en", language_to="fr",
+                word_from="cat", word_to="chat",
+            ),
+            Word(
+                language_from="en", language_to="fr",
+                word_from="dog", word_to="chien",
+            ),
+            Word(
+                language_from="en", language_to="fr",
+                word_from="house", word_to="maison",
+            ),
+            Word(
+                language_from="en", language_to="fr",
+                word_from="water", word_to="eau",
+            ),
         ])
 
     es_session = Session(

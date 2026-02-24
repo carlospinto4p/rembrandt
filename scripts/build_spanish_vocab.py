@@ -63,15 +63,17 @@ def _parse_frequency(
 
 def _parse_dictionary(
     path: Path,
-) -> dict[str, list[tuple[str, str]]]:
-    """Parse es-en.data into {lemma: [(pos, gloss), ...]}.
+) -> dict[str, list[tuple[str, str, str | None]]]:
+    """Parse es-en.data into {lemma: [(pos, gloss, gender), ...]}.
 
     Each entry in the file is separated by a line of
     underscores. Within an entry the first line is the lemma,
-    subsequent indented lines carry POS and gloss information.
-    Only the first gloss per POS section is kept.
+    subsequent indented lines carry POS, gloss, and gender
+    information.  Only the first gloss per POS section is kept.
     """
-    dictionary: dict[str, list[tuple[str, str]]] = {}
+    dictionary: dict[
+        str, list[tuple[str, str, str | None]]
+    ] = {}
 
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
@@ -85,6 +87,7 @@ def _parse_dictionary(
         lemma = lines[0].strip()
 
         current_pos: str | None = None
+        current_gender: str | None = None
         got_gloss = False
 
         for line in lines[1:]:
@@ -92,7 +95,14 @@ def _parse_dictionary(
 
             if stripped.startswith("pos: "):
                 current_pos = stripped[5:].strip()
+                current_gender = None
                 got_gloss = False
+                continue
+
+            if stripped.startswith("g: "):
+                g = stripped[3:].strip()
+                if g in ("m", "f"):
+                    current_gender = g
                 continue
 
             if (
@@ -102,34 +112,52 @@ def _parse_dictionary(
             ):
                 gloss = stripped[7:].strip()
                 dictionary.setdefault(lemma, []).append(
-                    (current_pos, gloss)
+                    (current_pos, gloss, current_gender)
                 )
                 got_gloss = True
 
     return dictionary
 
 
+def _conjugation_group(word: str, pos: str) -> str | None:
+    """Derive the conjugation group from a verb's infinitive.
+
+    :param word: The lemma (infinitive form for verbs).
+    :param pos: Part-of-speech tag.
+    :return: `"ar"`, `"er"`, or `"ir"` for verbs, `None`
+        otherwise.
+    """
+    if pos != "v":
+        return None
+    for suffix in ("ar", "er", "ir"):
+        if word.endswith(suffix):
+            return suffix
+    return None
+
+
 def _lookup_gloss(
-    dictionary: dict[str, list[tuple[str, str]]],
+    dictionary: dict[str, list[tuple[str, str, str | None]]],
     lemma: str,
     pos: str,
-) -> str | None:
-    """Find the best gloss for `lemma` with `pos`.
+) -> tuple[str, str | None] | None:
+    """Find the best gloss and gender for `lemma` with `pos`.
 
     Tries an exact (lemma, pos) match first, then falls back
     to the first gloss for that lemma regardless of POS.
+
+    :return: `(gloss, gender)` or `None` if no entry found.
     """
     entries = dictionary.get(lemma)
     if not entries:
         return None
 
     # Exact POS match.
-    for entry_pos, gloss in entries:
+    for entry_pos, gloss, gender in entries:
         if entry_pos == pos:
-            return gloss
+            return gloss, gender
 
     # Fallback: first available gloss.
-    return entries[0][1]
+    return entries[0][1], entries[0][2]
 
 
 def main() -> None:
@@ -152,10 +180,13 @@ def main() -> None:
     rank = 0
 
     for lemma, pos, count in freq_list:
-        gloss = _lookup_gloss(dictionary, lemma, pos)
-        if gloss is None:
+        result = _lookup_gloss(dictionary, lemma, pos)
+        if result is None:
             skipped += 1
             continue
+
+        gloss, gender = result
+        conj = _conjugation_group(lemma, pos)
 
         rank += 1
         vocab.append({
@@ -164,6 +195,8 @@ def main() -> None:
             "pos": pos,
             "definition": gloss,
             "frequency": count,
+            "gender": gender,
+            "conjugation_group": conj,
         })
         if rank >= _TARGET_COUNT:
             break

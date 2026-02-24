@@ -7,7 +7,7 @@ at the end. Progress is persisted between runs.
 
 from pathlib import Path
 
-from rembrandt import Database, ExerciseType, Session
+from rembrandt import Database, ExerciseType, Session, Word
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent
@@ -16,16 +16,46 @@ _DB_PATH = (
 )
 
 _WORDS = [
-    ("en", "es", "cat", "gato"),
-    ("en", "es", "dog", "perro"),
-    ("en", "es", "house", "casa"),
-    ("en", "es", "book", "libro"),
-    ("en", "es", "water", "agua"),
-    ("en", "es", "sun", "sol"),
-    ("en", "es", "moon", "luna"),
-    ("en", "es", "tree", "arbol"),
-    ("en", "es", "fire", "fuego"),
-    ("en", "es", "sky", "cielo"),
+    Word(
+        language_from="en", language_to="es",
+        word_from="cat", word_to="gato",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="dog", word_to="perro",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="house", word_to="casa",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="book", word_to="libro",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="water", word_to="agua",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="sun", word_to="sol",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="moon", word_to="luna",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="tree", word_to="arbol",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="fire", word_to="fuego",
+    ),
+    Word(
+        language_from="en", language_to="es",
+        word_from="sky", word_to="cielo",
+    ),
 ]
 
 

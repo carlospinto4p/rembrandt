@@ -8,7 +8,12 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
 )
-from rembrandt.models import AnswerResult, Exercise, UserProgress
+from rembrandt.models import (
+    AnswerResult,
+    Exercise,
+    UserProgress,
+    Word,
+)
 from rembrandt.spaced_repetition import review, select_words
 
 
@@ -157,11 +162,15 @@ def quick_session(
             with open(vocab, encoding="utf-8") as fh:
                 entries = json.load(fh)
         words = [
-            (
-                language_from,
-                language_to,
-                e[word_key],
-                e[definition_key],
+            Word(
+                language_from=language_from,
+                language_to=language_to,
+                word_from=e[word_key],
+                word_to=e[definition_key],
+                gender=e.get("gender"),
+                conjugation_group=e.get(
+                    "conjugation_group"
+                ),
             )
             for e in entries[:limit]
         ]

@@ -12,15 +12,19 @@ pip install rembrandt
 ## Quick Start
 
 ```python
-from rembrandt import Database, Session
+from rembrandt import Database, Session, Word
 
 # Set up database and add vocabulary
 with Database("vocab.db") as db:
     db.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
-        ("en", "es", "book", "libro"),
+        Word(language_from="en", language_to="es",
+             word_from="cat", word_to="gato"),
+        Word(language_from="en", language_to="es",
+             word_from="dog", word_to="perro"),
+        Word(language_from="en", language_to="es",
+             word_from="house", word_to="casa"),
+        Word(language_from="en", language_to="es",
+             word_from="book", word_to="libro"),
     ])
 
     # Start a session
@@ -82,13 +86,19 @@ Rembrandt also supports monolingual definition-based learning — learn
 words through their definitions within the same language:
 
 ```python
-from rembrandt import Database, Session
+from rembrandt import Database, Session, Word
 
 db = Database("vocab.db")
 db.add_words([
-    ("en", "en", "ephemeral", "lasting for a very short time"),
-    ("en", "en", "ubiquitous", "present or found everywhere"),
-    ("en", "en", "candid", "truthful and straightforward"),
+    Word(language_from="en", language_to="en",
+         word_from="ephemeral",
+         word_to="lasting for a very short time"),
+    Word(language_from="en", language_to="en",
+         word_from="ubiquitous",
+         word_to="present or found everywhere"),
+    Word(language_from="en", language_to="en",
+         word_from="candid",
+         word_to="truthful and straightforward"),
 ])
 
 session = Session(db, user_id="user1", language_from="en",

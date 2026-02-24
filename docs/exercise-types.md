@@ -94,8 +94,12 @@ No model or database changes are needed — simply add words where
 both languages are the same:
 
 ```python
+from rembrandt import Word
+
 db.add_words([
-    ("en", "en", "ephemeral", "lasting for a very short time"),
+    Word(language_from="en", language_to="en",
+         word_from="ephemeral",
+         word_to="lasting for a very short time"),
 ])
 session = Session(db, "user1", "en", "en")
 ```

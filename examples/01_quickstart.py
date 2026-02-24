@@ -7,7 +7,7 @@ multiple-choice output.
 
 from pathlib import Path
 
-from rembrandt import Database, ExerciseType, Session
+from rembrandt import Database, ExerciseType, Session, Word
 
 _DB_PATH = (
     Path(__file__).resolve().parent.parent
@@ -22,12 +22,30 @@ def main() -> None:
 
     if fresh:
         db.add_words([
-            ("en", "es", "cat", "gato"),
-            ("en", "es", "dog", "perro"),
-            ("en", "es", "house", "casa"),
-            ("en", "es", "book", "libro"),
-            ("en", "es", "water", "agua"),
-            ("en", "es", "sun", "sol"),
+            Word(
+                language_from="en", language_to="es",
+                word_from="cat", word_to="gato",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="dog", word_to="perro",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="house", word_to="casa",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="book", word_to="libro",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="water", word_to="agua",
+            ),
+            Word(
+                language_from="en", language_to="es",
+                word_from="sun", word_to="sol",
+            ),
         ])
 
     session = Session(

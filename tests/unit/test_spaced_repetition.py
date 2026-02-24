@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from rembrandt.db import Database
-from rembrandt.models import UserProgress
+from rembrandt.models import UserProgress, Word
 from rembrandt.spaced_repetition import review, select_words
 
 
@@ -116,11 +116,26 @@ def test_review_next_review_in_future():
 def db_with_words(tmp_path):
     db = Database(tmp_path / "test.db")
     db.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
-        ("en", "es", "book", "libro"),
-        ("en", "es", "water", "agua"),
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="book", word_to="libro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="water", word_to="agua",
+        ),
     ])
     yield db
     db.close()

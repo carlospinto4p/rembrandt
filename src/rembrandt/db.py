@@ -8,12 +8,14 @@ from rembrandt.models import UserProgress, Word
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS words (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    language_from TEXT NOT NULL,
-    language_to   TEXT NOT NULL,
-    word_from     TEXT NOT NULL,
-    word_to       TEXT NOT NULL,
-    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    language_from     TEXT NOT NULL,
+    language_to       TEXT NOT NULL,
+    word_from         TEXT NOT NULL,
+    word_to           TEXT NOT NULL,
+    gender            TEXT,
+    conjugation_group TEXT,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS progress (
@@ -54,6 +56,9 @@ class Database:
         language_to: str,
         word_from: str,
         word_to: str,
+        *,
+        gender: str | None = None,
+        conjugation_group: str | None = None,
     ) -> Word:
         """Insert a single word and return it with its new id.
 
@@ -61,13 +66,21 @@ class Database:
         :param language_to: Target language code.
         :param word_from: Word in source language.
         :param word_to: Translation in target language.
+        :param gender: Noun gender (`"m"` or `"f"`).
+        :param conjugation_group: Verb conjugation group
+            (`"ar"`, `"er"`, or `"ir"`).
         :return: The inserted `Word` with its assigned id.
         """
         cur = self._conn.execute(
             "INSERT INTO words "
-            "(language_from, language_to, word_from, word_to) "
-            "VALUES (?, ?, ?, ?)",
-            (language_from, language_to, word_from, word_to),
+            "(language_from, language_to, word_from, word_to,"
+            " gender, conjugation_group) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                language_from, language_to,
+                word_from, word_to,
+                gender, conjugation_group,
+            ),
         )
         self._conn.commit()
         return Word(
@@ -76,37 +89,37 @@ class Database:
             language_to=language_to,
             word_from=word_from,
             word_to=word_to,
+            gender=gender,
+            conjugation_group=conjugation_group,
         )
 
     def add_words(
         self,
-        words: list[tuple[str, str, str, str]],
+        words: list[Word],
     ) -> list[Word]:
         """Bulk-insert words in a single transaction.
 
-        :param words: List of
-            `(language_from, language_to, word_from, word_to)`
-            tuples.
-        :return: List of inserted `Word` objects.
+        :param words: List of `Word` objects to insert (the `id`
+            field is ignored and assigned by the database).
+        :return: List of inserted `Word` objects with assigned ids.
         """
         result: list[Word] = []
         with self._conn:
-            for lang_from, lang_to, w_from, w_to in words:
+            for w in words:
                 cur = self._conn.execute(
                     "INSERT INTO words "
                     "(language_from, language_to, "
-                    "word_from, word_to) "
-                    "VALUES (?, ?, ?, ?)",
-                    (lang_from, lang_to, w_from, w_to),
+                    "word_from, word_to, "
+                    "gender, conjugation_group) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        w.language_from, w.language_to,
+                        w.word_from, w.word_to,
+                        w.gender, w.conjugation_group,
+                    ),
                 )
                 result.append(
-                    Word(
-                        id=cur.lastrowid,
-                        language_from=lang_from,
-                        language_to=lang_to,
-                        word_from=w_from,
-                        word_to=w_to,
-                    )
+                    w.model_copy(update={"id": cur.lastrowid})
                 )
         return result
 
@@ -123,7 +136,8 @@ class Database:
         """
         rows = self._conn.execute(
             "SELECT id, language_from, language_to, "
-            "word_from, word_to "
+            "word_from, word_to, "
+            "gender, conjugation_group "
             "FROM words "
             "WHERE language_from = ? AND language_to = ?",
             (language_from, language_to),
@@ -135,6 +149,8 @@ class Database:
                 language_to=r["language_to"],
                 word_from=r["word_from"],
                 word_to=r["word_to"],
+                gender=r["gender"],
+                conjugation_group=r["conjugation_group"],
             )
             for r in rows
         ]

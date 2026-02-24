@@ -5,7 +5,7 @@ import json
 import pytest
 
 from rembrandt.db import Database
-from rembrandt.models import ExerciseType
+from rembrandt.models import ExerciseType, Word
 from rembrandt.session import Session, quick_session
 
 
@@ -13,10 +13,22 @@ from rembrandt.session import Session, quick_session
 def session_db(tmp_path):
     database = Database(tmp_path / "test.db")
     database.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
-        ("en", "es", "book", "libro"),
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="book", word_to="libro",
+        ),
     ])
     yield database
     database.close()
@@ -34,13 +46,26 @@ def session(session_db):
 def definition_db(tmp_path):
     database = Database(tmp_path / "def.db")
     database.add_words([
-        ("en", "en", "ephemeral",
-         "lasting for a very short time"),
-        ("en", "en", "ubiquitous", "present everywhere"),
-        ("en", "en", "candid",
-         "truthful and straightforward"),
-        ("en", "en", "pragmatic",
-         "dealing with things practically"),
+        Word(
+            language_from="en", language_to="en",
+            word_from="ephemeral",
+            word_to="lasting for a very short time",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="ubiquitous",
+            word_to="present everywhere",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="candid",
+            word_to="truthful and straightforward",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="pragmatic",
+            word_to="dealing with things practically",
+        ),
     ])
     yield database
     database.close()

@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from rembrandt.db import Database
-from rembrandt.models import UserProgress
+from rembrandt.models import UserProgress, Word
 
 
 # --- Word CRUD Tests ---
@@ -18,9 +18,18 @@ def test_add_word(db):
 
 def test_add_words_bulk(db):
     words = db.add_words([
-        ("en", "es", "cat", "gato"),
-        ("en", "es", "dog", "perro"),
-        ("en", "es", "house", "casa"),
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+        ),
     ])
     assert len(words) == 3
     assert all(w.id is not None for w in words)
@@ -50,6 +59,47 @@ def test_add_word_auto_increments_id(db):
     w1 = db.add_word("en", "es", "cat", "gato")
     w2 = db.add_word("en", "es", "dog", "perro")
     assert w2.id == w1.id + 1
+
+
+def test_add_word_with_gender(db):
+    word = db.add_word(
+        "es", "en", "casa", "house", gender="f",
+    )
+    assert word.gender == "f"
+    loaded = db.get_words("es", "en")
+    assert loaded[0].gender == "f"
+    assert loaded[0].conjugation_group is None
+
+
+def test_add_word_with_conjugation_group(db):
+    word = db.add_word(
+        "es", "en", "hablar", "to speak",
+        conjugation_group="ar",
+    )
+    assert word.conjugation_group == "ar"
+    loaded = db.get_words("es", "en")
+    assert loaded[0].conjugation_group == "ar"
+    assert loaded[0].gender is None
+
+
+def test_add_words_bulk_with_metadata(db):
+    words = db.add_words([
+        Word(
+            language_from="es", language_to="en",
+            word_from="casa", word_to="house",
+            gender="f",
+        ),
+        Word(
+            language_from="es", language_to="en",
+            word_from="hablar", word_to="to speak",
+            conjugation_group="ar",
+        ),
+    ])
+    assert words[0].gender == "f"
+    assert words[1].conjugation_group == "ar"
+    loaded = db.get_words("es", "en")
+    assert loaded[0].gender == "f"
+    assert loaded[1].conjugation_group == "ar"
 
 
 # --- Progress CRUD Tests ---

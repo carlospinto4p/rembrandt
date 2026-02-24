@@ -1,6 +1,27 @@
 
 ## Changelog - Rembrandt
 
+### v0.8.0 - 24th February 2026
+
+- Added `Word.gender` and `Word.conjugation_group` fields: optional
+  metadata for noun gender (`"m"`/`"f"`) and verb conjugation group
+  (`"ar"`/`"er"`/`"ir"`).
+- Refactored `Database.add_words()`: accepts `list[Word]` instead of
+  `list[tuple]` for extensibility.
+- Updated `Database.add_word()`: accepts optional `gender` and
+  `conjugation_group` keyword arguments.
+- Updated `quick_session()`: reads `gender` and `conjugation_group`
+  from JSON entries when building `Word` objects.
+- Updated `scripts/build_spanish_vocab.py`:
+  - `_parse_dictionary()` extracts gender from `g:` lines.
+  - Added `_conjugation_group()` helper for verb endings.
+  - Output JSON includes `gender` and `conjugation_group`.
+- Updated `scripts/build_spanish_definitions.py`: carries over `gender`
+  and `conjugation_group` from the bilingual file.
+- Updated all examples, tests, README, and docs for the new
+  `add_words(list[Word])` signature.
+
+
 ### v0.7.1 - 23rd February 2026
 
 - Added `scripts/build_spanish_definitions.py`: downloads Spanish

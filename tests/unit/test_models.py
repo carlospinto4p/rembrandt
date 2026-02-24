@@ -41,6 +41,40 @@ def test_word_with_id():
     assert word.id == 1
 
 
+def test_word_gender_and_conjugation_defaults():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    assert word.gender is None
+    assert word.conjugation_group is None
+
+
+def test_word_gender_and_conjugation_explicit():
+    word = Word(
+        language_from="es",
+        language_to="en",
+        word_from="casa",
+        word_to="house",
+        gender="f",
+        conjugation_group=None,
+    )
+    assert word.gender == "f"
+    assert word.conjugation_group is None
+
+    verb = Word(
+        language_from="es",
+        language_to="en",
+        word_from="hablar",
+        word_to="to speak",
+        conjugation_group="ar",
+    )
+    assert verb.conjugation_group == "ar"
+    assert verb.gender is None
+
+
 # --- LearningMode Tests ---
 
 

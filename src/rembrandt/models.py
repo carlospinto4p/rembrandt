@@ -14,6 +14,10 @@ class Word(BaseModel):
     :param language_to: Target language code (e.g. `"es"`).
     :param word_from: Word in the source language.
     :param word_to: Translation in the target language.
+    :param gender: Noun gender (`"m"` or `"f"`), `None` for
+        non-nouns.
+    :param conjugation_group: Verb conjugation group
+        (`"ar"`, `"er"`, or `"ir"`), `None` for non-verbs.
     """
 
     id: int | None = None
@@ -21,6 +25,8 @@ class Word(BaseModel):
     language_to: str
     word_from: str
     word_to: str
+    gender: str | None = None
+    conjugation_group: str | None = None
 
 
 class LearningMode(str, Enum):
