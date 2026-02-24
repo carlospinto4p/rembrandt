@@ -18,6 +18,7 @@ class Word(BaseModel):
         non-nouns.
     :param conjugation_group: Verb conjugation group
         (`"ar"`, `"er"`, or `"ir"`), `None` for non-verbs.
+    :param tags: Topic tags (e.g. `["food", "travel"]`).
     """
 
     id: int | None = None
@@ -27,6 +28,7 @@ class Word(BaseModel):
     word_to: str
     gender: str | None = None
     conjugation_group: str | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class LearningMode(str, Enum):

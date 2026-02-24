@@ -1,5 +1,6 @@
 """SQLite database layer for words and user progress."""
 
+import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ CREATE TABLE IF NOT EXISTS words (
     word_to           TEXT NOT NULL,
     gender            TEXT,
     conjugation_group TEXT,
+    tags              TEXT NOT NULL DEFAULT '[]',
     created_at        TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -59,6 +61,7 @@ class Database:
         *,
         gender: str | None = None,
         conjugation_group: str | None = None,
+        tags: list[str] | None = None,
     ) -> Word:
         """Insert a single word and return it with its new id.
 
@@ -69,17 +72,20 @@ class Database:
         :param gender: Noun gender (`"m"` or `"f"`).
         :param conjugation_group: Verb conjugation group
             (`"ar"`, `"er"`, or `"ir"`).
+        :param tags: Topic tags.
         :return: The inserted `Word` with its assigned id.
         """
+        tags = tags or []
         cur = self._conn.execute(
             "INSERT INTO words "
             "(language_from, language_to, word_from, word_to,"
-            " gender, conjugation_group) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            " gender, conjugation_group, tags) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
                 language_from, language_to,
                 word_from, word_to,
                 gender, conjugation_group,
+                json.dumps(tags),
             ),
         )
         self._conn.commit()
@@ -91,6 +97,7 @@ class Database:
             word_to=word_to,
             gender=gender,
             conjugation_group=conjugation_group,
+            tags=tags,
         )
 
     def add_words(
@@ -110,12 +117,13 @@ class Database:
                     "INSERT INTO words "
                     "(language_from, language_to, "
                     "word_from, word_to, "
-                    "gender, conjugation_group) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    "gender, conjugation_group, tags) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
                         w.language_from, w.language_to,
                         w.word_from, w.word_to,
                         w.gender, w.conjugation_group,
+                        json.dumps(w.tags),
                     ),
                 )
                 result.append(
@@ -137,7 +145,7 @@ class Database:
         rows = self._conn.execute(
             "SELECT id, language_from, language_to, "
             "word_from, word_to, "
-            "gender, conjugation_group "
+            "gender, conjugation_group, tags "
             "FROM words "
             "WHERE language_from = ? AND language_to = ?",
             (language_from, language_to),
@@ -151,6 +159,7 @@ class Database:
                 word_to=r["word_to"],
                 gender=r["gender"],
                 conjugation_group=r["conjugation_group"],
+                tags=json.loads(r["tags"]),
             )
             for r in rows
         ]

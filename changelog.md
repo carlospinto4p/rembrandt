@@ -1,6 +1,22 @@
 
 ## Changelog - Rembrandt
 
+### v0.9.0 - 24th February 2026
+
+- Added `Word.tags` field: topic tags as a list of strings (default
+  empty).
+- Updated `Database`: `tags` column stored as JSON text, serialized
+  on insert and deserialized on read.
+- Added `scripts/topic_classifier.py`: keyword-based topic classifier
+  with 12 topic categories (food, travel, body, emotions, family,
+  home, nature, work, time, clothing, health, education).
+- Updated `scripts/build_spanish_vocab.py`: classifies each gloss
+  and includes `tags` in the output JSON.
+- Updated `scripts/build_spanish_definitions.py`: carries `tags`
+  from the bilingual file into monolingual output.
+- Updated `quick_session()`: reads `tags` from JSON entries.
+
+
 ### v0.8.0 - 24th February 2026
 
 - Added `Word.gender` and `Word.conjugation_group` fields: optional

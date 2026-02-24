@@ -12,7 +12,7 @@
 - [x] Add multiple senses per word (not just one gloss)
 - [x] Add noun gender (`m`/`f`) and verb conjugation group to word metadata
 - [ ] Add CEFR-level tagging (A1–C2) based on frequency bands
-- [ ] Add topic tags (food, travel, body, emotions, etc.)
+- [x] Add topic tags (food, travel, body, emotions, etc.)
 - [x] Update `build_spanish_vocab.py` (or add a new script) to produce the enriched dataset
 
 ### 2026.02.23 — Spanish vocabulary: Layer 2 (structured lessons)

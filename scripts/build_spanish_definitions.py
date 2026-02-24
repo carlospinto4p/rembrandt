@@ -186,6 +186,7 @@ def main() -> None:
             "conjugation_group": entry.get(
                 "conjugation_group"
             ),
+            "tags": entry.get("tags", []),
         })
 
         if senses:

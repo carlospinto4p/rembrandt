@@ -102,6 +102,44 @@ def test_add_words_bulk_with_metadata(db):
     assert loaded[1].conjugation_group == "ar"
 
 
+def test_tags_default_empty(db):
+    db.add_word("en", "es", "cat", "gato")
+    loaded = db.get_words("en", "es")
+    assert loaded[0].tags == []
+
+
+def test_tags_roundtrip(db):
+    db.add_word(
+        "en", "es", "bread", "pan",
+        tags=["food"],
+    )
+    loaded = db.get_words("en", "es")
+    assert loaded[0].tags == ["food"]
+
+
+def test_tags_bulk_roundtrip(db):
+    db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="bread", word_to="pan",
+            tags=["food"],
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="mother", word_to="madre",
+            tags=["family"],
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+    ])
+    loaded = db.get_words("en", "es")
+    assert loaded[0].tags == ["food"]
+    assert loaded[1].tags == ["family"]
+    assert loaded[2].tags == []
+
+
 # --- Progress CRUD Tests ---
 
 

@@ -41,6 +41,27 @@ def test_word_with_id():
     assert word.id == 1
 
 
+def test_word_tags_default_empty():
+    word = Word(
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    assert word.tags == []
+
+
+def test_word_tags_explicit():
+    word = Word(
+        language_from="es",
+        language_to="en",
+        word_from="pan",
+        word_to="bread",
+        tags=["food"],
+    )
+    assert word.tags == ["food"]
+
+
 def test_word_gender_and_conjugation_defaults():
     word = Word(
         language_from="en",

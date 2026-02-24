@@ -12,9 +12,14 @@ Usage::
 
 import csv
 import json
+import sys
 import tempfile
 import urllib.request
 from pathlib import Path
+
+# Allow importing sibling scripts when run directly.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from topic_classifier import classify  # noqa: E402
 
 _BASE_URL = (
     "https://raw.githubusercontent.com"
@@ -187,6 +192,7 @@ def main() -> None:
 
         gloss, gender = result
         conj = _conjugation_group(lemma, pos)
+        tags = classify(gloss)
 
         rank += 1
         vocab.append({
@@ -197,6 +203,7 @@ def main() -> None:
             "frequency": count,
             "gender": gender,
             "conjugation_group": conj,
+            "tags": tags,
         })
         if rank >= _TARGET_COUNT:
             break

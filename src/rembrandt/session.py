@@ -171,6 +171,7 @@ def quick_session(
                 conjugation_group=e.get(
                     "conjugation_group"
                 ),
+                tags=e.get("tags", []),
             )
             for e in entries[:limit]
         ]
