@@ -1,13 +1,27 @@
 {
   "hooks": {
-      "postEdit": {
-        "command": "echo ${file} | grep -q '\\.py$' && uv run ruff check --fix ${file} && uv run ruff format ${file} || true",
-        "description": "Auto-lint and format after every file edit"
-      },
-      "preCommit": {
-        "command": "uv run pytest tests/ --tb=short -q",
-        "description": "Run tests before every commit"
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo $CLAUDE_FILE | grep -q '\\.py$' && uv run ruff check --fix $CLAUDE_FILE && uv run ruff format $CLAUDE_FILE || true"
+          }
+        ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo $CLAUDE_TOOL_INPUT | grep -q '\"command\":.*git commit' && uv run pytest tests/ --tb=short -q || true"
+          }
+        ]
+      }
+    ]
   },
   "permissions": {
     "allow": [

@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.16.4 - 24th February 2026
+
+- Fixed `.claude/settings.json`: rewrote hooks to use correct Claude
+  Code format (`PostToolUse` with `Write|Edit` matcher for auto-lint,
+  `PreToolUse` with `Bash` matcher for pre-commit tests).
+
+
 ### v0.16.3 - 24th February 2026
 
 - Self-refinement pass on Claude settings:
