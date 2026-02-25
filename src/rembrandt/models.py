@@ -79,6 +79,23 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
 
 
+class UserSession(BaseModel):
+    """An active login session for a user.
+
+    :param id: Unique identifier (assigned by the database).
+    :param user_id: References `User.id`.
+    :param token: Unique session token.
+    :param created_at: Session creation timestamp.
+    :param expires_at: Session expiry timestamp.
+    """
+
+    id: int | None = None
+    user_id: int
+    token: str
+    created_at: datetime = Field(default_factory=datetime.now)
+    expires_at: datetime
+
+
 class LessonProgress(BaseModel):
     """Progress statistics for a user within a lesson.
 

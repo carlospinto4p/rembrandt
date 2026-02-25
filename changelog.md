@@ -1,6 +1,20 @@
 
 ## Changelog - Rembrandt
 
+### v0.19.0 - 25th February 2026
+
+- Added `UserSession` model in `models`: session token, user
+  reference, creation and expiry timestamps.
+- Added `user_sessions` table in `db`: stores login sessions with
+  unique tokens and foreign key to `users`.
+- Added `Database` session methods:
+  - `create_session()`: generate a session token with configurable TTL.
+  - `get_session()`: fetch a session by token (returns `None` if expired).
+  - `delete_session()`: remove a single session.
+  - `delete_user_sessions()`: remove all sessions for a user.
+- Exported `UserSession` from the package.
+
+
 ### v0.18.0 - 25th February 2026
 
 - Added `User` model in `models`: username, display name, hashed

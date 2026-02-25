@@ -13,6 +13,7 @@ from rembrandt.models import (
     LessonProgress,
     User,
     UserProgress,
+    UserSession,
     Word,
     learning_mode,
 )
@@ -36,6 +37,21 @@ def test_user_password_hash_excluded_from_dump():
     )
     data = user.model_dump()
     assert "password_hash" not in data
+
+
+# --- UserSession Tests ---
+
+
+def test_user_session_creation():
+    expires = datetime(2026, 3, 2, 12, 0, 0)
+    session = UserSession(
+        user_id=1, token="abc123", expires_at=expires,
+    )
+    assert session.id is None
+    assert session.user_id == 1
+    assert session.token == "abc123"
+    assert isinstance(session.created_at, datetime)
+    assert session.expires_at == expires
 
 
 # --- Word Tests ---

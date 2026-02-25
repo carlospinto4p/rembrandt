@@ -3,11 +3,18 @@
 import hashlib
 import json
 import os
+import secrets
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
-from rembrandt.models import Lesson, User, UserProgress, Word
+from rembrandt.models import (
+    Lesson,
+    User,
+    UserProgress,
+    UserSession,
+    Word,
+)
 
 _SCHEMA = """\
 CREATE TABLE IF NOT EXISTS users (
@@ -16,6 +23,15 @@ CREATE TABLE IF NOT EXISTS users (
     display_name  TEXT,
     password_hash TEXT NOT NULL,
     created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    token      TEXT    NOT NULL UNIQUE,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT    NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS words (
@@ -90,6 +106,21 @@ def _row_to_user(r: sqlite3.Row) -> User:
         password_hash=r["password_hash"],
         created_at=datetime.strptime(
             r["created_at"], _ISO_FMT
+        ),
+    )
+
+
+def _row_to_user_session(r: sqlite3.Row) -> UserSession:
+    """Convert a SQLite row to a `UserSession` model."""
+    return UserSession(
+        id=r["id"],
+        user_id=r["user_id"],
+        token=r["token"],
+        created_at=datetime.strptime(
+            r["created_at"], _ISO_FMT
+        ),
+        expires_at=datetime.strptime(
+            r["expires_at"], _ISO_FMT
         ),
     )
 
@@ -210,6 +241,87 @@ class Database:
         if not _verify_password(password, row["password_hash"]):
             return None
         return _row_to_user(row)
+
+    # -- User Sessions ------------------------------------------------
+
+    def create_session(
+        self,
+        user_id: int,
+        *,
+        ttl_hours: int = 24,
+    ) -> UserSession:
+        """Create a new login session for a user.
+
+        :param user_id: The user's database id.
+        :param ttl_hours: Hours until the session expires.
+        :return: The created `UserSession`.
+        """
+        token = secrets.token_hex(32)
+        now = datetime.now()
+        expires = now + timedelta(hours=ttl_hours)
+        cur = self._conn.execute(
+            "INSERT INTO user_sessions "
+            "(user_id, token, created_at, expires_at) "
+            "VALUES (?, ?, ?, ?)",
+            (
+                user_id,
+                token,
+                now.strftime(_ISO_FMT),
+                expires.strftime(_ISO_FMT),
+            ),
+        )
+        self._conn.commit()
+        return UserSession(
+            id=cur.lastrowid,
+            user_id=user_id,
+            token=token,
+            created_at=now,
+            expires_at=expires,
+        )
+
+    def get_session(self, token: str) -> UserSession | None:
+        """Fetch a session by token.
+
+        Returns `None` if the token does not exist or the
+        session has expired.
+
+        :param token: The session token.
+        :return: `UserSession` or `None`.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM user_sessions "
+            "WHERE token = ?",
+            (token,),
+        ).fetchone()
+        if row is None:
+            return None
+        session = _row_to_user_session(row)
+        if session.expires_at <= datetime.now():
+            return None
+        return session
+
+    def delete_session(self, token: str) -> None:
+        """Delete a single session by token.
+
+        :param token: The session token to remove.
+        """
+        self._conn.execute(
+            "DELETE FROM user_sessions WHERE token = ?",
+            (token,),
+        )
+        self._conn.commit()
+
+    def delete_user_sessions(self, user_id: int) -> None:
+        """Delete all sessions for a user.
+
+        :param user_id: The user's database id.
+        """
+        self._conn.execute(
+            "DELETE FROM user_sessions "
+            "WHERE user_id = ?",
+            (user_id,),
+        )
+        self._conn.commit()
 
     # -- Words --------------------------------------------------------
 

@@ -1,6 +1,6 @@
 """Tests for rembrandt.db."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -56,6 +56,60 @@ def test_authenticate_user_wrong_password(db):
 
 def test_authenticate_user_unknown_username(db):
     assert db.authenticate_user("ghost", "pass") is None
+
+
+# --- User Session Tests ---
+
+
+def test_create_session(db):
+    user = db.register_user("alice", "pass")
+    session = db.create_session(user.id)
+    assert session.id is not None
+    assert session.user_id == user.id
+    assert len(session.token) == 64  # 32 bytes hex
+    assert session.expires_at > session.created_at
+
+
+def test_create_session_custom_ttl(db):
+    user = db.register_user("alice", "pass")
+    session = db.create_session(user.id, ttl_hours=48)
+    diff = session.expires_at - session.created_at
+    assert abs(diff.total_seconds() - 48 * 3600) < 2
+
+
+def test_get_session_valid(db):
+    user = db.register_user("alice", "pass")
+    session = db.create_session(user.id)
+    loaded = db.get_session(session.token)
+    assert loaded is not None
+    assert loaded.token == session.token
+    assert loaded.user_id == user.id
+
+
+def test_get_session_not_found(db):
+    assert db.get_session("nonexistent") is None
+
+
+def test_get_session_expired(db):
+    user = db.register_user("alice", "pass")
+    session = db.create_session(user.id, ttl_hours=0)
+    assert db.get_session(session.token) is None
+
+
+def test_delete_session(db):
+    user = db.register_user("alice", "pass")
+    session = db.create_session(user.id)
+    db.delete_session(session.token)
+    assert db.get_session(session.token) is None
+
+
+def test_delete_user_sessions(db):
+    user = db.register_user("alice", "pass")
+    s1 = db.create_session(user.id)
+    s2 = db.create_session(user.id)
+    db.delete_user_sessions(user.id)
+    assert db.get_session(s1.token) is None
+    assert db.get_session(s2.token) is None
 
 
 # --- Word CRUD Tests ---
