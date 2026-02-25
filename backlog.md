@@ -13,3 +13,13 @@
 - [x] Add `Database.update_lesson()` and `Database.delete_lesson()` for lesson CRUD
 - [x] Add `Session.skip()`: move to next exercise without affecting progress
 - [x] Add hint system: request partial hints (first letter, word length) before answering
+
+### 2026.02.26 (v0.24.0 refactor review)
+
+- [ ] Extract `_insert_lesson_words()` helper in `db.py` — identical loop in `add_lessons()` and `update_lesson()`
+- [ ] Replace `assert` with explicit `ValueError` in `session.py` and `spaced_repetition.py` — assertions can be disabled with `-O`
+- [ ] Fix `type: ignore[assignment]` in `lessons.py:52` — guard `w.id` against `None` instead of suppressing
+- [ ] Extract `_update_stats()` helper from `Session.answer()` — method is ~54 lines mixing evaluation, progress, and stats
+- [ ] Add section comments to `exercises.py` — 15 functions with no grouping (generators vs evaluation vs helpers)
+- [ ] Remove lambda wrappers in `generate_exercise()` dispatch dict — use `functools.partial` for callables that need extra args
+- [ ] Add examples for newer features: user registration/auth, session tokens, hints, skip, session stats, word/lesson update/delete
