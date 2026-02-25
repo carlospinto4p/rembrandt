@@ -11,7 +11,7 @@
 - [x] Verb conjugation drills (present, preterite, imperfect, subjunctive, etc.)
 - [x] Gender/article matching exercises ("el/la ___")
 - [x] Cloze / fill-in-the-blank with example sentences
-- [ ] Production mode (en→es) — expand after monolingual Spanish is solid
+- [x] Production mode (en→es) — expand after monolingual Spanish is solid
 
 ### 2026.02.24 — Self-refinement pass
 
