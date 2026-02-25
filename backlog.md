@@ -12,7 +12,7 @@
 - [x] Fix stale "production" wording in `sentences.py` module docstring
 - [x] Fix stale `PRODUCTION` / `generate_production()` references in `changelog.md` v0.17.0 entry
 - [x] Add `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and update the pool description
-- [ ] Add `TRANSLATION_CLOZE` enum value test in `test_models.py`
+- [x] Add `TRANSLATION_CLOZE` enum value test in `test_models.py`
 - [ ] Extract dispatch dict in `generate_exercise()` to replace if/elif chain (`exercises.py`)
 - [ ] Extract `_resolve_option_number()` helper to deduplicate option-number resolution in `evaluate_answer()` (`exercises.py`)
 - [ ] Extract `_row_to_word()` / `_row_to_progress()` helpers in `db.py` to deduplicate Row→Model mapping

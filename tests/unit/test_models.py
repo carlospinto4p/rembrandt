@@ -169,6 +169,10 @@ def test_exercise_type_cloze():
     assert ExerciseType.CLOZE == "cloze"
 
 
+def test_exercise_type_translation_cloze():
+    assert ExerciseType.TRANSLATION_CLOZE == "translation_cloze"
+
+
 # --- Exercise Tests ---
 
 

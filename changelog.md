@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.6 - 25th February 2026
+
+- Added `TRANSLATION_CLOZE` enum value test in `test_models.py`.
+
+
 ### v0.17.5 - 25th February 2026
 
 - Added `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and
