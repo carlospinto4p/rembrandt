@@ -710,6 +710,75 @@ class Database:
             word_ids=[r["word_id"] for r in word_rows],
         )
 
+    def update_lesson(self, lesson: Lesson) -> Lesson:
+        """Update an existing lesson and its word links.
+
+        :param lesson: The `Lesson` with updated fields. The
+            `id` must be set. The `word_ids` list replaces the
+            current word links entirely.
+        :return: The updated `Lesson`.
+        :raises ValueError: If the lesson id is `None` or the
+            lesson does not exist.
+        """
+        if lesson.id is None:
+            raise ValueError("Lesson id must be set")
+        with self._conn:
+            cur = self._conn.execute(
+                "UPDATE lessons SET "
+                "title = ?, description = ?, "
+                "language_from = ?, language_to = ?, "
+                "cefr = ?, tags = ?, word_count = ? "
+                "WHERE id = ?",
+                (
+                    lesson.title,
+                    lesson.description,
+                    lesson.language_from,
+                    lesson.language_to,
+                    lesson.cefr,
+                    json.dumps(lesson.tags),
+                    lesson.word_count,
+                    lesson.id,
+                ),
+            )
+            if cur.rowcount == 0:
+                raise ValueError(
+                    f"Lesson not found: {lesson.id}"
+                )
+            self._conn.execute(
+                "DELETE FROM lesson_words "
+                "WHERE lesson_id = ?",
+                (lesson.id,),
+            )
+            for pos, wid in enumerate(lesson.word_ids):
+                self._conn.execute(
+                    "INSERT INTO lesson_words "
+                    "(lesson_id, word_id, position) "
+                    "VALUES (?, ?, ?)",
+                    (lesson.id, wid, pos),
+                )
+        return lesson
+
+    def delete_lesson(self, lesson_id: int) -> None:
+        """Delete a lesson and its word links.
+
+        :param lesson_id: The lesson identifier.
+        :raises ValueError: If the lesson does not exist.
+        """
+        with self._conn:
+            self._conn.execute(
+                "DELETE FROM lesson_words "
+                "WHERE lesson_id = ?",
+                (lesson_id,),
+            )
+            cur = self._conn.execute(
+                "DELETE FROM lessons WHERE id = ?",
+                (lesson_id,),
+            )
+            if cur.rowcount == 0:
+                raise ValueError(
+                    f"Lesson not found: {lesson_id}"
+                )
+
     def close(self) -> None:
         """Close the database connection."""
         self._conn.close()

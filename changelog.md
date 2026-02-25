@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.22.0 - 25th February 2026
+
+- Added `Database.update_lesson()`: update metadata and replace word
+  links for an existing lesson.
+- Added `Database.delete_lesson()`: delete a lesson and its word links.
+
+
 ### v0.21.0 - 25th February 2026
 
 - Added `Database.update_word()`: update all fields of an existing word.

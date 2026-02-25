@@ -664,3 +664,116 @@ def test_get_lessons_populates_word_ids(db):
     lessons = db.get_lessons("en", "es")
     assert lessons[0].word_ids == [words[0].id]
     assert lessons[1].word_ids == [words[1].id, words[0].id]
+
+
+# --- Lesson Update/Delete Tests ---
+
+
+def test_update_lesson_metadata(db):
+    lesson = db.add_lesson(Lesson(
+        title="Old Title",
+        language_from="en",
+        language_to="es",
+    ))
+    updated = db.update_lesson(
+        lesson.model_copy(update={
+            "title": "New Title",
+            "description": "Updated",
+            "cefr": "B1",
+            "tags": ["food"],
+        }),
+    )
+    assert updated.title == "New Title"
+    loaded = db.get_lesson(lesson.id)
+    assert loaded.title == "New Title"
+    assert loaded.description == "Updated"
+    assert loaded.cefr == "B1"
+    assert loaded.tags == ["food"]
+
+
+def test_update_lesson_replaces_word_ids(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="dog", word_to="perro",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+        ),
+    ])
+    lesson = db.add_lesson(Lesson(
+        title="Test",
+        language_from="en",
+        language_to="es",
+        word_count=2,
+        word_ids=[words[0].id, words[1].id],
+    ))
+    db.update_lesson(
+        lesson.model_copy(update={
+            "word_count": 2,
+            "word_ids": [words[1].id, words[2].id],
+        }),
+    )
+    loaded = db.get_lesson(lesson.id)
+    assert loaded.word_ids == [words[1].id, words[2].id]
+
+
+def test_update_lesson_none_id_raises(db):
+    lesson = Lesson(
+        title="Test",
+        language_from="en",
+        language_to="es",
+    )
+    with pytest.raises(ValueError, match="id must be set"):
+        db.update_lesson(lesson)
+
+
+def test_update_lesson_not_found_raises(db):
+    lesson = Lesson(
+        id=999,
+        title="Test",
+        language_from="en",
+        language_to="es",
+    )
+    with pytest.raises(ValueError, match="not found"):
+        db.update_lesson(lesson)
+
+
+def test_delete_lesson(db):
+    lesson = db.add_lesson(Lesson(
+        title="Doomed",
+        language_from="en",
+        language_to="es",
+    ))
+    db.delete_lesson(lesson.id)
+    assert db.get_lesson(lesson.id) is None
+
+
+def test_delete_lesson_removes_word_links(db):
+    words = db.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="cat", word_to="gato",
+        ),
+    ])
+    lesson = db.add_lesson(Lesson(
+        title="Linked",
+        language_from="en",
+        language_to="es",
+        word_count=1,
+        word_ids=[words[0].id],
+    ))
+    db.delete_lesson(lesson.id)
+    assert db.get_lesson(lesson.id) is None
+    # Word itself still exists
+    assert len(db.get_words("en", "es")) == 1
+
+
+def test_delete_lesson_not_found_raises(db):
+    with pytest.raises(ValueError, match="not found"):
+        db.delete_lesson(999)
