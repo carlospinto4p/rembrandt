@@ -136,13 +136,13 @@ _EN_ADJECTIVE_TEMPLATES: list[str] = [
 ]
 
 
-def generate_production_cloze(
+def generate_translation_cloze_sentence(
     word: str,
     *,
     gender: str | None = None,
     conjugation_group: str | None = None,
 ) -> tuple[str, str]:
-    """Generate an English cloze sentence for production mode.
+    """Generate an English cloze sentence for translation cloze.
 
     Picks a template bank based on POS heuristic:
     `conjugation_group` set -> verb, `gender` set -> noun,

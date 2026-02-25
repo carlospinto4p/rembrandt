@@ -5,7 +5,7 @@ import random
 import unicodedata
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
-from rembrandt.sentences import generate_cloze, generate_production_cloze
+from rembrandt.sentences import generate_cloze, generate_translation_cloze_sentence
 from rembrandt.models import (
     AnswerResult,
     Exercise,
@@ -206,7 +206,7 @@ def generate_translation_cloze(word: Word) -> Exercise:
     :param word: The word to test.
     :return: A translation-cloze `Exercise`.
     """
-    sentence, hint = generate_production_cloze(
+    sentence, hint = generate_translation_cloze_sentence(
         word.word_from,
         gender=word.gender,
         conjugation_group=word.conjugation_group,

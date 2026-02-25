@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.2 - 25th February 2026
+
+- Renamed `generate_production_cloze()` to
+  `generate_translation_cloze_sentence()` in `sentences.py` for
+  consistency with the `TRANSLATION_CLOZE` exercise type.
+
+
 ### v0.17.1 - 25th February 2026
 
 - Renamed `PRODUCTION` to `TRANSLATION_CLOZE` in `ExerciseType` and all

@@ -1,6 +1,6 @@
 """Tests for rembrandt.sentences."""
 
-from rembrandt.sentences import generate_cloze, generate_production_cloze
+from rembrandt.sentences import generate_cloze, generate_translation_cloze_sentence
 
 
 # --- Verb Cloze Tests ---
@@ -70,8 +70,8 @@ def test_generate_cloze_sentence_is_string():
 # --- Translation Cloze (English) Tests ---
 
 
-def test_generate_production_cloze_verb():
-    sentence, hint = generate_production_cloze(
+def test_generate_translation_cloze_sentence_verb():
+    sentence, hint = generate_translation_cloze_sentence(
         "speak", conjugation_group="ar",
     )
     assert "___" in sentence
@@ -79,8 +79,8 @@ def test_generate_production_cloze_verb():
     assert hint == "speak"
 
 
-def test_generate_production_cloze_noun_m():
-    sentence, hint = generate_production_cloze(
+def test_generate_translation_cloze_sentence_noun_m():
+    sentence, hint = generate_translation_cloze_sentence(
         "book", gender="m",
     )
     assert "___" in sentence
@@ -88,8 +88,8 @@ def test_generate_production_cloze_noun_m():
     assert hint == "book"
 
 
-def test_generate_production_cloze_noun_f():
-    sentence, hint = generate_production_cloze(
+def test_generate_translation_cloze_sentence_noun_f():
+    sentence, hint = generate_translation_cloze_sentence(
         "house", gender="f",
     )
     assert "___" in sentence
@@ -97,8 +97,8 @@ def test_generate_production_cloze_noun_f():
     assert hint == "house"
 
 
-def test_generate_production_cloze_adjective():
-    sentence, hint = generate_production_cloze("big")
+def test_generate_translation_cloze_sentence_adjective():
+    sentence, hint = generate_translation_cloze_sentence("big")
     assert "___" in sentence
     assert "big" not in sentence
     assert hint == "big"
