@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.4 - 25th February 2026
+
+- Fixed stale `PRODUCTION` / `generate_production()` references in
+  `changelog.md` v0.17.0 entry to match current names.
+
+
 ### v0.17.3 - 25th February 2026
 
 - Fixed stale "production" wording in `sentences.py` module docstring
@@ -22,13 +28,14 @@
 
 ### v0.17.0 - 25th February 2026
 
-- Added `PRODUCTION` to `ExerciseType` enum.
-- Added `generate_production_cloze()` in `sentences.py`: English
-  template banks for verbs, nouns, and adjectives.
-- Added `generate_production()` in `exercises.py`: creates EN->ES
-  fill-in-the-blank exercises with English context and Spanish answer.
-- Added `PRODUCTION` to the translation mode exercise pool in
-  `generate_exercise()`.
+- Added `TRANSLATION_CLOZE` to `ExerciseType` enum.
+- Added `generate_translation_cloze_sentence()` in `sentences.py`:
+  English template banks for verbs, nouns, and adjectives.
+- Added `generate_translation_cloze()` in `exercises.py`: creates
+  EN->ES fill-in-the-blank exercises with English context and
+  Spanish answer.
+- Added `TRANSLATION_CLOZE` to the translation mode exercise pool
+  in `generate_exercise()`.
 
 
 ### v0.16.6 - 24th February 2026
