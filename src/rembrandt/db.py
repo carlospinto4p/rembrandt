@@ -57,6 +57,35 @@ CREATE TABLE IF NOT EXISTS lesson_words (
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
 
+def _row_to_word(r: sqlite3.Row) -> Word:
+    """Convert a SQLite row to a `Word` model."""
+    return Word(
+        id=r["id"],
+        language_from=r["language_from"],
+        language_to=r["language_to"],
+        word_from=r["word_from"],
+        word_to=r["word_to"],
+        gender=r["gender"],
+        conjugation_group=r["conjugation_group"],
+        tags=json.loads(r["tags"]),
+        cefr=r["cefr"],
+    )
+
+
+def _row_to_progress(r: sqlite3.Row) -> UserProgress:
+    """Convert a SQLite row to a `UserProgress` model."""
+    return UserProgress(
+        user_id=r["user_id"],
+        word_id=r["word_id"],
+        easiness_factor=r["easiness_factor"],
+        interval=r["interval"],
+        repetitions=r["repetitions"],
+        next_review=datetime.strptime(
+            r["next_review"], _ISO_FMT
+        ),
+    )
+
+
 class Database:
     """Thin SQLite wrapper for vocabulary words and progress.
 
@@ -177,20 +206,7 @@ class Database:
             "WHERE language_from = ? AND language_to = ?",
             (language_from, language_to),
         ).fetchall()
-        return [
-            Word(
-                id=r["id"],
-                language_from=r["language_from"],
-                language_to=r["language_to"],
-                word_from=r["word_from"],
-                word_to=r["word_to"],
-                gender=r["gender"],
-                conjugation_group=r["conjugation_group"],
-                tags=json.loads(r["tags"]),
-                cefr=r["cefr"],
-            )
-            for r in rows
-        ]
+        return [_row_to_word(r) for r in rows]
 
     # -- Progress -----------------------------------------------------
 
@@ -212,16 +228,7 @@ class Database:
         ).fetchone()
         if row is None:
             return None
-        return UserProgress(
-            user_id=row["user_id"],
-            word_id=row["word_id"],
-            easiness_factor=row["easiness_factor"],
-            interval=row["interval"],
-            repetitions=row["repetitions"],
-            next_review=datetime.strptime(
-                row["next_review"], _ISO_FMT
-            ),
-        )
+        return _row_to_progress(row)
 
     def get_all_progress(
         self,
@@ -244,16 +251,7 @@ class Database:
             [user_id, *word_ids],
         ).fetchall()
         return {
-            row["word_id"]: UserProgress(
-                user_id=row["user_id"],
-                word_id=row["word_id"],
-                easiness_factor=row["easiness_factor"],
-                interval=row["interval"],
-                repetitions=row["repetitions"],
-                next_review=datetime.strptime(
-                    row["next_review"], _ISO_FMT
-                ),
-            )
+            row["word_id"]: _row_to_progress(row)
             for row in rows
         }
 

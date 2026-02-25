@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.9 - 25th February 2026
+
+- Extracted `_row_to_word()` and `_row_to_progress()` helpers in
+  `db.py` to deduplicate Row→Model mapping.
+
+
 ### v0.17.8 - 25th February 2026
 
 - Extracted `_resolve_option_number()` helper in `exercises.py` to
