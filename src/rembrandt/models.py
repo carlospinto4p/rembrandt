@@ -61,6 +61,24 @@ class Lesson(BaseModel):
     word_ids: list[int] = Field(default_factory=list)
 
 
+class User(BaseModel):
+    """A registered user.
+
+    :param id: Unique identifier (assigned by the database).
+    :param username: Unique login name.
+    :param display_name: Optional display name.
+    :param password_hash: Hashed password (excluded from
+        serialization).
+    :param created_at: Account creation timestamp.
+    """
+
+    id: int | None = None
+    username: str
+    display_name: str | None = None
+    password_hash: str = Field(exclude=True, default="")
+    created_at: datetime = Field(default_factory=datetime.now)
+
+
 class LessonProgress(BaseModel):
     """Progress statistics for a user within a lesson.
 

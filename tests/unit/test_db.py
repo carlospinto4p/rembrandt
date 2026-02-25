@@ -2,8 +2,60 @@
 
 from datetime import datetime
 
+import pytest
+
 from rembrandt.db import Database
 from rembrandt.models import Lesson, UserProgress, Word
+
+
+# --- User CRUD Tests ---
+
+
+def test_register_user(db):
+    user = db.register_user("alice", "s3cret")
+    assert user.id is not None
+    assert user.username == "alice"
+    assert user.display_name is None
+
+
+def test_register_user_with_display_name(db):
+    user = db.register_user(
+        "bob", "pass", display_name="Bob S.",
+    )
+    assert user.display_name == "Bob S."
+
+
+def test_register_user_duplicate_raises(db):
+    db.register_user("alice", "pass1")
+    with pytest.raises(ValueError, match="already exists"):
+        db.register_user("alice", "pass2")
+
+
+def test_get_user_found(db):
+    db.register_user("alice", "pass")
+    user = db.get_user("alice")
+    assert user is not None
+    assert user.username == "alice"
+
+
+def test_get_user_not_found(db):
+    assert db.get_user("ghost") is None
+
+
+def test_authenticate_user_valid(db):
+    db.register_user("alice", "s3cret")
+    user = db.authenticate_user("alice", "s3cret")
+    assert user is not None
+    assert user.username == "alice"
+
+
+def test_authenticate_user_wrong_password(db):
+    db.register_user("alice", "s3cret")
+    assert db.authenticate_user("alice", "wrong") is None
+
+
+def test_authenticate_user_unknown_username(db):
+    assert db.authenticate_user("ghost", "pass") is None
 
 
 # --- Word CRUD Tests ---

@@ -11,10 +11,31 @@ from rembrandt.models import (
     LearningMode,
     Lesson,
     LessonProgress,
+    User,
     UserProgress,
     Word,
     learning_mode,
 )
+
+
+# --- User Tests ---
+
+
+def test_user_creation_defaults():
+    user = User(username="alice")
+    assert user.id is None
+    assert user.username == "alice"
+    assert user.display_name is None
+    assert user.password_hash == ""
+    assert isinstance(user.created_at, datetime)
+
+
+def test_user_password_hash_excluded_from_dump():
+    user = User(
+        username="alice", password_hash="salt$hash",
+    )
+    data = user.model_dump()
+    assert "password_hash" not in data
 
 
 # --- Word Tests ---

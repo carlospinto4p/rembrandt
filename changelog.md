@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v0.18.0 - 25th February 2026
+
+- Added `User` model in `models`: username, display name, hashed
+  password (excluded from serialization), and creation timestamp.
+- Added `users` table in `db`: stores registered users with unique
+  usernames and salted SHA-256 password hashes.
+- Added `Database` user methods:
+  - `register_user()`: create a new user with hashed password.
+  - `get_user()`: look up a user by username.
+  - `authenticate_user()`: verify username and password.
+- Exported `User` from the package.
+
+
 ### v0.17.11 - 25th February 2026
 
 - Extracted `_select_template()` helper in `sentences.py` to share

@@ -1,13 +1,23 @@
 """SQLite database layer for words and user progress."""
 
+import hashlib
 import json
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from rembrandt.models import Lesson, UserProgress, Word
+from rembrandt.models import Lesson, User, UserProgress, Word
 
 _SCHEMA = """\
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT NOT NULL UNIQUE,
+    display_name  TEXT,
+    password_hash TEXT NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS words (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     language_from     TEXT NOT NULL,
@@ -57,6 +67,33 @@ CREATE TABLE IF NOT EXISTS lesson_words (
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
 
+def _hash_password(password: str) -> str:
+    """Hash a password with a random salt using SHA-256."""
+    salt = os.urandom(16).hex()
+    h = hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+    return f"{salt}${h}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    """Verify a password against a stored salt$hash string."""
+    salt, expected = stored.split("$", 1)
+    h = hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+    return h == expected
+
+
+def _row_to_user(r: sqlite3.Row) -> User:
+    """Convert a SQLite row to a `User` model."""
+    return User(
+        id=r["id"],
+        username=r["username"],
+        display_name=r["display_name"],
+        password_hash=r["password_hash"],
+        created_at=datetime.strptime(
+            r["created_at"], _ISO_FMT
+        ),
+    )
+
+
 def _row_to_word(r: sqlite3.Row) -> Word:
     """Convert a SQLite row to a `Word` model."""
     return Word(
@@ -100,6 +137,79 @@ class Database:
         )
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
+
+    # -- Users --------------------------------------------------------
+
+    def register_user(
+        self,
+        username: str,
+        password: str,
+        *,
+        display_name: str | None = None,
+    ) -> User:
+        """Register a new user.
+
+        :param username: Unique login name.
+        :param password: Plain-text password (hashed before storage).
+        :param display_name: Optional display name.
+        :return: The created `User`.
+        :raises ValueError: If the username already exists.
+        """
+        pw_hash = _hash_password(password)
+        try:
+            cur = self._conn.execute(
+                "INSERT INTO users "
+                "(username, display_name, password_hash) "
+                "VALUES (?, ?, ?)",
+                (username, display_name, pw_hash),
+            )
+            self._conn.commit()
+        except sqlite3.IntegrityError:
+            raise ValueError(
+                f"Username already exists: {username!r}"
+            )
+        return User(
+            id=cur.lastrowid,
+            username=username,
+            display_name=display_name,
+            password_hash=pw_hash,
+        )
+
+    def get_user(self, username: str) -> User | None:
+        """Fetch a user by username.
+
+        :param username: The username to look up.
+        :return: `User` or `None` if not found.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+        if row is None:
+            return None
+        return _row_to_user(row)
+
+    def authenticate_user(
+        self,
+        username: str,
+        password: str,
+    ) -> User | None:
+        """Authenticate a user by username and password.
+
+        :param username: The username.
+        :param password: The plain-text password.
+        :return: `User` if credentials are valid, `None`
+            otherwise.
+        """
+        row = self._conn.execute(
+            "SELECT * FROM users WHERE username = ?",
+            (username,),
+        ).fetchone()
+        if row is None:
+            return None
+        if not _verify_password(password, row["password_hash"]):
+            return None
+        return _row_to_user(row)
 
     # -- Words --------------------------------------------------------
 
