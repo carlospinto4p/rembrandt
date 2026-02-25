@@ -9,7 +9,7 @@
 ### 2026.02.25 (v0.17.1 refactor review)
 
 - [x] Rename `generate_production_cloze()` → `generate_translation_cloze_sentence()` in `sentences.py` and update import in `exercises.py`
-- [ ] Fix stale "production" wording in `sentences.py` module docstring
+- [x] Fix stale "production" wording in `sentences.py` module docstring
 - [ ] Fix stale `PRODUCTION` / `generate_production()` references in `changelog.md` v0.17.0 entry
 - [ ] Add `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and update the pool description
 - [ ] Add `TRANSLATION_CLOZE` enum value test in `test_models.py`

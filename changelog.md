@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.3 - 25th February 2026
+
+- Fixed stale "production" wording in `sentences.py` module docstring
+  and comment header.
+
+
 ### v0.17.2 - 25th February 2026
 
 - Renamed `generate_production_cloze()` to

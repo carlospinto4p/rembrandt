@@ -3,7 +3,7 @@
 Provides fill-in-the-blank sentences for Spanish vocabulary
 practice, with template banks for verbs, masculine nouns,
 feminine nouns, and adjectives.  Also provides English
-templates for production (EN->ES) exercises.
+templates for translation cloze (EN->ES) exercises.
 """
 
 import random
@@ -94,7 +94,7 @@ def generate_cloze(
     return sentence, word
 
 
-# --- English templates for production exercises ---
+# --- English templates for translation cloze exercises ---
 
 _EN_VERB_TEMPLATES: list[str] = [
     "I want to {word} tomorrow",
