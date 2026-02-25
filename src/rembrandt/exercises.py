@@ -354,6 +354,27 @@ def _answers_match(given: str, expected: str) -> bool:
     return False
 
 
+def _resolve_option_number(
+    text: str,
+    options: list[str],
+) -> str:
+    """Resolve a numeric answer to its option text.
+
+    If `text` is a digit string and falls within the valid
+    range of `options`, return the corresponding option.
+    Otherwise return `text` unchanged.
+
+    :param text: The user's raw answer.
+    :param options: The exercise option list.
+    :return: Resolved option text or the original `text`.
+    """
+    if text.isdigit() and options:
+        idx = int(text) - 1
+        if 0 <= idx < len(options):
+            return options[idx]
+    return text
+
+
 def evaluate_answer(
     exercise: Exercise,
     answer_text: str = "",
@@ -405,16 +426,9 @@ def evaluate_answer(
     # Exercises with explicit expected_answer
     if exercise.expected_answer:
         expected = exercise.expected_answer
-        given = answer_text.strip()
-
-        # Resolve option number to text
-        if (
-            given.isdigit()
-            and exercise.options
-        ):
-            idx = int(given) - 1
-            if 0 <= idx < len(exercise.options):
-                given = exercise.options[idx]
+        given = _resolve_option_number(
+            answer_text.strip(), exercise.options,
+        )
 
         correct = _answers_match(given, expected)
         return AnswerResult(
@@ -429,17 +443,9 @@ def evaluate_answer(
     else:
         expected = exercise.word.word_to
 
-    given = answer_text.strip()
-
-    # Multiple choice: resolve option number to text
-    if (
-        etype == ExerciseType.MULTIPLE_CHOICE
-        and given.isdigit()
-        and exercise.options
-    ):
-        idx = int(given) - 1
-        if 0 <= idx < len(exercise.options):
-            given = exercise.options[idx]
+    given = _resolve_option_number(
+        answer_text.strip(), exercise.options,
+    )
 
     correct = _answers_match(given, expected)
 

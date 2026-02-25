@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.8 - 25th February 2026
+
+- Extracted `_resolve_option_number()` helper in `exercises.py` to
+  deduplicate option-number resolution in `evaluate_answer()`.
+
+
 ### v0.17.7 - 25th February 2026
 
 - Refactored `generate_exercise()` in `exercises.py`: replaced if/elif
