@@ -290,31 +290,7 @@ class Database:
             links the lesson to existing words in the database.
         :return: The inserted `Lesson` with its assigned id.
         """
-        with self._conn:
-            cur = self._conn.execute(
-                "INSERT INTO lessons "
-                "(title, description, language_from, language_to,"
-                " cefr, tags, word_count) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (
-                    lesson.title,
-                    lesson.description,
-                    lesson.language_from,
-                    lesson.language_to,
-                    lesson.cefr,
-                    json.dumps(lesson.tags),
-                    lesson.word_count,
-                ),
-            )
-            lesson_id = cur.lastrowid
-            for pos, word_id in enumerate(lesson.word_ids):
-                self._conn.execute(
-                    "INSERT INTO lesson_words "
-                    "(lesson_id, word_id, position) "
-                    "VALUES (?, ?, ?)",
-                    (lesson_id, word_id, pos),
-                )
-        return lesson.model_copy(update={"id": lesson_id})
+        return self.add_lessons([lesson])[0]
 
     def add_lessons(
         self, lessons: list[Lesson],

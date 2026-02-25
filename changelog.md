@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.10 - 25th February 2026
+
+- Simplified `Database.add_lesson()` in `db.py`: now delegates to
+  `add_lessons()` instead of duplicating the insert logic.
+
+
 ### v0.17.9 - 25th February 2026
 
 - Extracted `_row_to_word()` and `_row_to_progress()` helpers in
