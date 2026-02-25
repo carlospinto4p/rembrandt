@@ -214,6 +214,43 @@ def test_summary_accuracy_pct(session):
     assert stats.accuracy_pct == 50.0
 
 
+# --- Hint Tests ---
+
+
+def test_hint_returns_first_letter_and_length(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    h = session.hint()
+    expected = ex.word.word_to
+    if ex.expected_answer:
+        expected = ex.expected_answer
+    assert h.first_letter == expected[0]
+    assert h.word_length == len(expected)
+
+
+def test_hint_pattern_format(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    h = session.hint()
+    assert h.pattern[0] == h.first_letter
+    assert h.pattern.count("_") == h.word_length - 1
+    assert len(h.pattern) == h.word_length
+
+
+def test_hint_without_exercise_raises(session):
+    with pytest.raises(RuntimeError, match="No active exercise"):
+        session.hint()
+
+
+def test_hint_does_not_consume_exercise(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.hint()
+    # Can still answer after getting a hint
+    result = session.answer(ex.word.word_to)
+    assert result is not None
+
+
 # --- Skip Tests ---
 
 

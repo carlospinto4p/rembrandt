@@ -5,6 +5,7 @@ from importlib.metadata import version
 from rembrandt.db import Database
 from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
+    Hint,
     Lesson,
     SessionMode,
     SessionStats,
@@ -18,6 +19,7 @@ __version__ = version("rembrandt")
 
 __all__ = [
     "Database",
+    "Hint",
     "Lesson",
     "Session",
     "SessionMode",

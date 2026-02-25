@@ -61,6 +61,18 @@ print(f"Streak: {stats.streak}"
       f" (best: {stats.best_streak})")
 ```
 
+### Hints
+
+Request a hint before answering — reveals the first letter, word length,
+and a masked pattern:
+
+```python
+exercise = session.next_exercise()
+h = session.hint()
+print(f"Hint: {h.pattern} ({h.word_length} letters)")
+# e.g. "g___ (4 letters)"
+```
+
 ### Quick Session
 
 For even faster setup, use `quick_session()` to handle database creation,

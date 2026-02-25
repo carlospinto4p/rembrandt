@@ -11,6 +11,8 @@ from rembrandt.exercises import (
 from rembrandt.models import (
     AnswerResult,
     Exercise,
+    ExerciseType,
+    Hint,
     SessionMode,
     SessionStats,
     UserProgress,
@@ -148,6 +150,36 @@ class Session:
         skipped = self._current_exercise
         self._current_exercise = None
         return skipped
+
+    def hint(self) -> Hint:
+        """Return a partial hint for the current exercise.
+
+        The hint reveals the first letter, total length, and
+        a masked pattern (e.g. `"g___"`) of the expected
+        answer.
+
+        :return: A `Hint`.
+        :raises RuntimeError: If no exercise is active.
+        """
+        if self._current_exercise is None:
+            raise RuntimeError(
+                "No active exercise. Call next_exercise() first."
+            )
+        ex = self._current_exercise
+        if ex.expected_answer:
+            answer = ex.expected_answer
+        elif ex.exercise_type == ExerciseType.REVERSE_FLASHCARD:
+            answer = ex.word.word_from
+        else:
+            answer = ex.word.word_to
+        first = answer[0] if answer else ""
+        length = len(answer)
+        pattern = first + "_" * (length - 1) if length else ""
+        return Hint(
+            first_letter=first,
+            word_length=length,
+            pattern=pattern,
+        )
 
     def summary(self) -> SessionStats:
         """Return statistics for the current session.

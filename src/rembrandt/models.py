@@ -189,6 +189,22 @@ class AnswerResult(BaseModel):
     word: Word
 
 
+class Hint(BaseModel):
+    """A partial hint for the current exercise.
+
+    :param first_letter: The first character of the expected
+        answer.
+    :param word_length: The number of characters in the
+        expected answer.
+    :param pattern: A masked pattern where only the first
+        letter is revealed (e.g. `"g___"`).
+    """
+
+    first_letter: str
+    word_length: int
+    pattern: str
+
+
 class SessionStats(BaseModel):
     """Statistics for a vocabulary exercise session.
 

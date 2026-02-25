@@ -8,6 +8,7 @@ from rembrandt.models import (
     AnswerResult,
     Exercise,
     ExerciseType,
+    Hint,
     LearningMode,
     Lesson,
     LessonProgress,
@@ -406,6 +407,18 @@ def test_lesson_progress_creation():
     assert lp.words_mastered == 2
     assert lp.completion_pct == 50.0
     assert lp.mastery_pct == 20.0
+
+
+# --- Hint Tests ---
+
+
+def test_hint_creation():
+    h = Hint(
+        first_letter="g", word_length=4, pattern="g___",
+    )
+    assert h.first_letter == "g"
+    assert h.word_length == 4
+    assert h.pattern == "g___"
 
 
 # --- SessionStats Tests ---

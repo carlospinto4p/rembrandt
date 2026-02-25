@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.0 - 25th February 2026
+
+- Added `Hint` model in `models`: first letter, word length, and masked
+  pattern for the expected answer.
+- Added `Session.hint()`: returns a partial hint for the current exercise
+  without consuming it.
+- Exported `Hint` from the package.
+
+
 ### v0.23.0 - 25th February 2026
 
 - Added `Session.skip()`: move to the next exercise without affecting
