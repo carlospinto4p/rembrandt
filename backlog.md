@@ -17,4 +17,4 @@
 - [x] Extract `_resolve_option_number()` helper to deduplicate option-number resolution in `evaluate_answer()` (`exercises.py`)
 - [x] Extract `_row_to_word()` / `_row_to_progress()` helpers in `db.py` to deduplicate Row→Model mapping
 - [x] DRY `add_lesson()` by delegating to `add_lessons()` in `db.py`
-- [ ] Extract `_select_templates()` helper in `sentences.py` to share POS-heuristic logic between `generate_cloze()` and `generate_translation_cloze_sentence()`
+- [x] Extract `_select_templates()` helper in `sentences.py` to share POS-heuristic logic between `generate_cloze()` and `generate_translation_cloze_sentence()`

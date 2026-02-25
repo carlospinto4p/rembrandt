@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.11 - 25th February 2026
+
+- Extracted `_select_template()` helper in `sentences.py` to share
+  POS-heuristic logic between `generate_cloze()` and
+  `generate_translation_cloze_sentence()`.
+
+
 ### v0.17.10 - 25th February 2026
 
 - Simplified `Database.add_lesson()` in `db.py`: now delegates to

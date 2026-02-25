@@ -61,6 +61,38 @@ _ADJECTIVE_TEMPLATES: list[str] = [
 ]
 
 
+def _select_template(
+    *,
+    verb: list[str],
+    noun_m: list[str],
+    noun_f: list[str],
+    adjective: list[str],
+    gender: str | None,
+    conjugation_group: str | None,
+) -> str:
+    """Pick a template based on POS heuristic.
+
+    :param verb: Verb template bank.
+    :param noun_m: Masculine noun template bank.
+    :param noun_f: Feminine noun template bank.
+    :param adjective: Adjective template bank.
+    :param gender: Noun gender, or `None`.
+    :param conjugation_group: Verb group, or `None`.
+    :return: A randomly chosen template string.
+    """
+    if conjugation_group is not None:
+        templates = verb
+    elif gender == "m":
+        templates = noun_m
+    elif gender == "f":
+        templates = noun_f
+    elif gender is not None:
+        templates = noun_m
+    else:
+        templates = adjective
+    return random.choice(templates)
+
+
 def generate_cloze(
     word: str,
     *,
@@ -80,16 +112,14 @@ def generate_cloze(
     :return: A tuple of `(sentence_with_blank, answer)` where
         the blank is `"___"`.
     """
-    if conjugation_group is not None:
-        templates = _VERB_TEMPLATES
-    elif gender == "m":
-        templates = _NOUN_M_TEMPLATES
-    elif gender == "f":
-        templates = _NOUN_F_TEMPLATES
-    else:
-        templates = _ADJECTIVE_TEMPLATES
-
-    template = random.choice(templates)
+    template = _select_template(
+        verb=_VERB_TEMPLATES,
+        noun_m=_NOUN_M_TEMPLATES,
+        noun_f=_NOUN_F_TEMPLATES,
+        adjective=_ADJECTIVE_TEMPLATES,
+        gender=gender,
+        conjugation_group=conjugation_group,
+    )
     sentence = template.replace("{word}", "___")
     return sentence, word
 
@@ -155,13 +185,13 @@ def generate_translation_cloze_sentence(
     :return: A tuple of `(sentence_with_blank, hint)` where
         the blank is `"___"` and hint is the English word.
     """
-    if conjugation_group is not None:
-        templates = _EN_VERB_TEMPLATES
-    elif gender is not None:
-        templates = _EN_NOUN_TEMPLATES
-    else:
-        templates = _EN_ADJECTIVE_TEMPLATES
-
-    template = random.choice(templates)
+    template = _select_template(
+        verb=_EN_VERB_TEMPLATES,
+        noun_m=_EN_NOUN_TEMPLATES,
+        noun_f=_EN_NOUN_TEMPLATES,
+        adjective=_EN_ADJECTIVE_TEMPLATES,
+        gender=gender,
+        conjugation_group=conjugation_group,
+    )
     sentence = template.replace("{word}", "___")
     return sentence, word
