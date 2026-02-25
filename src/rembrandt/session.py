@@ -135,6 +135,20 @@ class Session:
         self._current_exercise = None
         return result
 
+    def skip(self) -> Exercise:
+        """Skip the current exercise without affecting progress.
+
+        :return: The skipped `Exercise`.
+        :raises RuntimeError: If no exercise is active.
+        """
+        if self._current_exercise is None:
+            raise RuntimeError(
+                "No active exercise. Call next_exercise() first."
+            )
+        skipped = self._current_exercise
+        self._current_exercise = None
+        return skipped
+
     def summary(self) -> SessionStats:
         """Return statistics for the current session.
 

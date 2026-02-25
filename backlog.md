@@ -11,5 +11,5 @@
 - [x] Add session statistics: track correct/incorrect counts, streak, and provide a session summary
 - [x] Add `Database.update_word()` and `Database.delete_word()` for word CRUD
 - [x] Add `Database.update_lesson()` and `Database.delete_lesson()` for lesson CRUD
-- [ ] Add `Session.skip()`: move to next exercise without affecting progress
+- [x] Add `Session.skip()`: move to next exercise without affecting progress
 - [ ] Add hint system: request partial hints (first letter, word length) before answering

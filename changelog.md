@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.23.0 - 25th February 2026
+
+- Added `Session.skip()`: move to the next exercise without affecting
+  progress or session statistics.
+
+
 ### v0.22.0 - 25th February 2026
 
 - Added `Database.update_lesson()`: update metadata and replace word

@@ -214,6 +214,47 @@ def test_summary_accuracy_pct(session):
     assert stats.accuracy_pct == 50.0
 
 
+# --- Skip Tests ---
+
+
+def test_skip_returns_exercise(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    skipped = session.skip()
+    assert skipped is ex
+
+
+def test_skip_does_not_affect_progress(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    word_id = ex.word.id
+    session.skip()
+    assert session.db.get_progress("u1", word_id) is None
+
+
+def test_skip_does_not_affect_stats(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.skip()
+    stats = session.summary()
+    assert stats.total == 0
+    assert stats.correct == 0
+    assert stats.incorrect == 0
+
+
+def test_skip_without_exercise_raises(session):
+    with pytest.raises(RuntimeError, match="No active exercise"):
+        session.skip()
+
+
+def test_skip_allows_next_exercise(session):
+    ex1 = session.next_exercise()
+    assert ex1 is not None
+    session.skip()
+    ex2 = session.next_exercise()
+    assert ex2 is not None
+
+
 # --- Definition Mode Tests ---
 
 
