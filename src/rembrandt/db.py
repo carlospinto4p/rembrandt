@@ -430,6 +430,59 @@ class Database:
         ).fetchall()
         return [_row_to_word(r) for r in rows]
 
+    def update_word(self, word: Word) -> Word:
+        """Update an existing word.
+
+        :param word: The `Word` with updated fields. The `id`
+            must be set.
+        :return: The updated `Word`.
+        :raises ValueError: If the word id is `None` or the
+            word does not exist.
+        """
+        if word.id is None:
+            raise ValueError("Word id must be set")
+        cur = self._conn.execute(
+            "UPDATE words SET "
+            "language_from = ?, language_to = ?, "
+            "word_from = ?, word_to = ?, "
+            "gender = ?, conjugation_group = ?, "
+            "tags = ?, cefr = ? "
+            "WHERE id = ?",
+            (
+                word.language_from,
+                word.language_to,
+                word.word_from,
+                word.word_to,
+                word.gender,
+                word.conjugation_group,
+                json.dumps(word.tags),
+                word.cefr,
+                word.id,
+            ),
+        )
+        if cur.rowcount == 0:
+            raise ValueError(
+                f"Word not found: {word.id}"
+            )
+        self._conn.commit()
+        return word
+
+    def delete_word(self, word_id: int) -> None:
+        """Delete a word by id.
+
+        :param word_id: The word identifier.
+        :raises ValueError: If the word does not exist.
+        """
+        cur = self._conn.execute(
+            "DELETE FROM words WHERE id = ?",
+            (word_id,),
+        )
+        if cur.rowcount == 0:
+            raise ValueError(
+                f"Word not found: {word_id}"
+            )
+        self._conn.commit()
+
     # -- Progress -----------------------------------------------------
 
     def get_progress(

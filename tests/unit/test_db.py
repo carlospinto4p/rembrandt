@@ -284,6 +284,65 @@ def test_tags_bulk_roundtrip(db):
     assert loaded[2].tags == []
 
 
+# --- Word Update/Delete Tests ---
+
+
+def test_update_word(db):
+    word = db.add_word("en", "es", "cat", "gato")
+    updated = db.update_word(
+        word.model_copy(update={"word_to": "gatito"}),
+    )
+    assert updated.word_to == "gatito"
+    loaded = db.get_words("en", "es")
+    assert loaded[0].word_to == "gatito"
+
+
+def test_update_word_all_fields(db):
+    word = db.add_word("en", "es", "cat", "gato")
+    modified = word.model_copy(update={
+        "word_from": "kitten",
+        "word_to": "gatito",
+        "gender": "m",
+        "tags": ["animals"],
+        "cefr": "A1",
+    })
+    updated = db.update_word(modified)
+    assert updated.word_from == "kitten"
+    assert updated.gender == "m"
+    assert updated.tags == ["animals"]
+    assert updated.cefr == "A1"
+
+
+def test_update_word_none_id_raises(db):
+    word = Word(
+        language_from="en", language_to="es",
+        word_from="cat", word_to="gato",
+    )
+    with pytest.raises(ValueError, match="id must be set"):
+        db.update_word(word)
+
+
+def test_update_word_not_found_raises(db):
+    word = Word(
+        id=999,
+        language_from="en", language_to="es",
+        word_from="cat", word_to="gato",
+    )
+    with pytest.raises(ValueError, match="not found"):
+        db.update_word(word)
+
+
+def test_delete_word(db):
+    word = db.add_word("en", "es", "cat", "gato")
+    db.delete_word(word.id)
+    assert db.get_words("en", "es") == []
+
+
+def test_delete_word_not_found_raises(db):
+    with pytest.raises(ValueError, match="not found"):
+        db.delete_word(999)
+
+
 # --- Progress CRUD Tests ---
 
 

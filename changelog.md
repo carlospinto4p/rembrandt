@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.21.0 - 25th February 2026
+
+- Added `Database.update_word()`: update all fields of an existing word.
+- Added `Database.delete_word()`: delete a word by id.
+
+
 ### v0.20.0 - 25th February 2026
 
 - Added `SessionStats` model in `models`: tracks total, correct,
