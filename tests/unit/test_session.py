@@ -149,6 +149,71 @@ def test_full_session_flow(session):
     assert r2.correct is False
 
 
+# --- Session Stats Tests ---
+
+
+def test_summary_initial(session):
+    stats = session.summary()
+    assert stats.total == 0
+    assert stats.correct == 0
+    assert stats.incorrect == 0
+    assert stats.streak == 0
+    assert stats.best_streak == 0
+    assert stats.accuracy_pct == 0.0
+
+
+def test_summary_after_correct(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer(ex.word.word_to)
+    stats = session.summary()
+    assert stats.total == 1
+    assert stats.correct == 1
+    assert stats.incorrect == 0
+    assert stats.streak == 1
+    assert stats.best_streak == 1
+    assert stats.accuracy_pct == 100.0
+
+
+def test_summary_after_incorrect(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer("wrong_answer_xyz")
+    stats = session.summary()
+    assert stats.total == 1
+    assert stats.correct == 0
+    assert stats.incorrect == 1
+    assert stats.streak == 0
+
+
+def test_summary_streak_resets(session):
+    # correct
+    ex = session.next_exercise()
+    session.answer(ex.word.word_to)
+    # correct
+    ex = session.next_exercise()
+    session.answer(ex.word.word_to)
+    # incorrect — resets streak
+    ex = session.next_exercise()
+    session.answer("wrong_answer_xyz")
+
+    stats = session.summary()
+    assert stats.streak == 0
+    assert stats.best_streak == 2
+    assert stats.total == 3
+    assert stats.correct == 2
+    assert stats.incorrect == 1
+
+
+def test_summary_accuracy_pct(session):
+    ex = session.next_exercise()
+    session.answer(ex.word.word_to)
+    ex = session.next_exercise()
+    session.answer("wrong_answer_xyz")
+    stats = session.summary()
+    assert stats.accuracy_pct == 50.0
+
+
 # --- Definition Mode Tests ---
 
 

@@ -12,6 +12,7 @@ from rembrandt.models import (
     AnswerResult,
     Exercise,
     SessionMode,
+    SessionStats,
     UserProgress,
     Word,
 )
@@ -48,6 +49,10 @@ class Session:
         self.mode = mode
         self._word_ids = word_ids
         self._current_exercise: Exercise | None = None
+        self._correct = 0
+        self._incorrect = 0
+        self._streak = 0
+        self._best_streak = 0
 
     def next_exercise(self) -> Exercise | None:
         """Select a word and generate an exercise.
@@ -118,8 +123,35 @@ class Session:
         updated = review(progress, sm2_quality)
         self.db.upsert_progress(updated)
 
+        if result.correct:
+            self._correct += 1
+            self._streak += 1
+            if self._streak > self._best_streak:
+                self._best_streak = self._streak
+        else:
+            self._incorrect += 1
+            self._streak = 0
+
         self._current_exercise = None
         return result
+
+    def summary(self) -> SessionStats:
+        """Return statistics for the current session.
+
+        :return: A `SessionStats` snapshot.
+        """
+        total = self._correct + self._incorrect
+        pct = (
+            self._correct / total * 100.0 if total else 0.0
+        )
+        return SessionStats(
+            total=total,
+            correct=self._correct,
+            incorrect=self._incorrect,
+            streak=self._streak,
+            best_streak=self._best_streak,
+            accuracy_pct=round(pct, 1),
+        )
 
 
 def quick_session(

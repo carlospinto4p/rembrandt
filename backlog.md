@@ -8,7 +8,7 @@
 
 ### 2026.02.25 — Client readiness
 
-- [ ] Add session statistics: track correct/incorrect counts, streak, and provide a session summary
+- [x] Add session statistics: track correct/incorrect counts, streak, and provide a session summary
 - [ ] Add `Database.update_word()` and `Database.delete_word()` for word CRUD
 - [ ] Add `Database.update_lesson()` and `Database.delete_lesson()` for lesson CRUD
 - [ ] Add `Session.skip()`: move to next exercise without affecting progress

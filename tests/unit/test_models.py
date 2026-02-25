@@ -11,6 +11,7 @@ from rembrandt.models import (
     LearningMode,
     Lesson,
     LessonProgress,
+    SessionStats,
     User,
     UserProgress,
     UserSession,
@@ -405,3 +406,29 @@ def test_lesson_progress_creation():
     assert lp.words_mastered == 2
     assert lp.completion_pct == 50.0
     assert lp.mastery_pct == 20.0
+
+
+# --- SessionStats Tests ---
+
+
+def test_session_stats_defaults():
+    stats = SessionStats()
+    assert stats.total == 0
+    assert stats.correct == 0
+    assert stats.incorrect == 0
+    assert stats.streak == 0
+    assert stats.best_streak == 0
+    assert stats.accuracy_pct == 0.0
+
+
+def test_session_stats_custom():
+    stats = SessionStats(
+        total=10,
+        correct=7,
+        incorrect=3,
+        streak=2,
+        best_streak=4,
+        accuracy_pct=70.0,
+    )
+    assert stats.total == 10
+    assert stats.accuracy_pct == 70.0

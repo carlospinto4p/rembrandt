@@ -189,6 +189,27 @@ class AnswerResult(BaseModel):
     word: Word
 
 
+class SessionStats(BaseModel):
+    """Statistics for a vocabulary exercise session.
+
+    :param total: Total number of answers given.
+    :param correct: Number of correct answers.
+    :param incorrect: Number of incorrect answers.
+    :param streak: Current consecutive correct streak.
+    :param best_streak: Best consecutive correct streak in
+        the session.
+    :param accuracy_pct: `correct / total * 100` (0.0 when
+        no answers have been given).
+    """
+
+    total: int = 0
+    correct: int = 0
+    incorrect: int = 0
+    streak: int = 0
+    best_streak: int = 0
+    accuracy_pct: float = 0.0
+
+
 class UserProgress(BaseModel):
     """Spaced-repetition progress for a user-word pair.
 

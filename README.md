@@ -49,6 +49,18 @@ The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
 automatically — words you get wrong come back sooner, words you know well
 are spaced further apart.
 
+### Session Statistics
+
+Call `summary()` at any time to get session stats:
+
+```python
+stats = session.summary()
+print(f"Score: {stats.correct}/{stats.total}"
+      f" ({stats.accuracy_pct}%)")
+print(f"Streak: {stats.streak}"
+      f" (best: {stats.best_streak})")
+```
+
 ### Quick Session
 
 For even faster setup, use `quick_session()` to handle database creation,

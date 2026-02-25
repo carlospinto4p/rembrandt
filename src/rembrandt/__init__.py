@@ -7,6 +7,7 @@ from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
     Lesson,
     SessionMode,
+    SessionStats,
     User,
     UserSession,
     Word,
@@ -20,6 +21,7 @@ __all__ = [
     "Lesson",
     "Session",
     "SessionMode",
+    "SessionStats",
     "User",
     "UserSession",
     "Word",

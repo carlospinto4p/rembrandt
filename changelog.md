@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.20.0 - 25th February 2026
+
+- Added `SessionStats` model in `models`: tracks total, correct,
+  incorrect, streak, best streak, and accuracy percentage.
+- Added `Session.summary()`: returns a `SessionStats` snapshot for the
+  current session.
+- Updated `Session.answer()`: tracks correct/incorrect counts and
+  streak automatically.
+- Exported `SessionStats` from the package.
+
+
 ### v0.19.0 - 25th February 2026
 
 - Added `UserSession` model in `models`: session token, user
