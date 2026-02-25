@@ -10,6 +10,7 @@ from rembrandt.exercises import (
     generate_flashcard,
     generate_gender_match,
     generate_multiple_choice,
+    generate_production,
     generate_reverse_flashcard,
     generate_self_graded,
 )
@@ -139,6 +140,7 @@ def test_generate_exercise_returns_valid_type(sample_words):
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.CLOZE,
+        ExerciseType.PRODUCTION,
     )
 
 
@@ -570,6 +572,7 @@ def test_generate_exercise_returns_valid_type_with_gender():
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.GENDER_MATCH,
         ExerciseType.CLOZE,
+        ExerciseType.PRODUCTION,
     )
 
 
@@ -732,3 +735,91 @@ def test_generate_exercise_includes_cloze():
         ex = generate_exercise(words[0], words)
         types.add(ex.exercise_type)
     assert ExerciseType.CLOZE in types
+
+
+# --- Production Exercise Tests ---
+
+
+def test_generate_production():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="book",
+        word_to="libro",
+        gender="m",
+    )
+    ex = generate_production(word)
+    assert ex.exercise_type == ExerciseType.PRODUCTION
+    assert "___" in ex.prompt
+    assert "(book)" in ex.prompt
+    assert ex.expected_answer == "libro"
+
+
+def test_generate_production_verb():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="to speak",
+        word_to="hablar",
+        conjugation_group="ar",
+    )
+    ex = generate_production(word)
+    assert ex.exercise_type == ExerciseType.PRODUCTION
+    assert "___" in ex.prompt
+    assert "(to speak)" in ex.prompt
+    assert ex.expected_answer == "hablar"
+
+
+def test_evaluate_production_correct():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="book",
+        word_to="libro",
+        gender="m",
+    )
+    ex = generate_production(word)
+    result = evaluate_answer(ex, "libro")
+    assert result.correct is True
+
+
+def test_evaluate_production_incorrect():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="book",
+        word_to="libro",
+        gender="m",
+    )
+    ex = generate_production(word)
+    result = evaluate_answer(ex, "casa")
+    assert result.correct is False
+
+
+def test_generate_exercise_includes_production():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+        )
+        for i, w in enumerate(
+            [
+                ("cat", "gato"),
+                ("dog", "perro"),
+                ("house", "casa"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.PRODUCTION in types

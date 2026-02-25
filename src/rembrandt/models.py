@@ -118,6 +118,7 @@ class ExerciseType(str, Enum):
     GENDER_MATCH = "gender_match"
     CONJUGATION = "conjugation"
     CLOZE = "cloze"
+    PRODUCTION = "production"
 
 
 class Exercise(BaseModel):

@@ -96,6 +96,7 @@ def test_next_exercise_returns_exercise(session):
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.CLOZE,
+        ExerciseType.PRODUCTION,
     )
 
 

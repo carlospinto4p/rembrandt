@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.0 - 25th February 2026
+
+- Added `PRODUCTION` to `ExerciseType` enum.
+- Added `generate_production_cloze()` in `sentences.py`: English
+  template banks for verbs, nouns, and adjectives.
+- Added `generate_production()` in `exercises.py`: creates EN->ES
+  fill-in-the-blank exercises with English context and Spanish answer.
+- Added `PRODUCTION` to the translation mode exercise pool in
+  `generate_exercise()`.
+
+
 ### v0.16.6 - 24th February 2026
 
 - Updated `.claude/rules/versioning.md`: added explicit BAD/GOOD

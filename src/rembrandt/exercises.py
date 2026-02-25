@@ -5,7 +5,7 @@ import random
 import unicodedata
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
-from rembrandt.sentences import generate_cloze
+from rembrandt.sentences import generate_cloze, generate_production_cloze
 from rembrandt.models import (
     AnswerResult,
     Exercise,
@@ -196,6 +196,29 @@ def generate_cloze_exercise(word: Word) -> Exercise:
     )
 
 
+def generate_production(word: Word) -> Exercise:
+    """Create a production (EN->ES) exercise.
+
+    Shows an English context sentence with a blank and the
+    English word as a hint; the user types the Spanish
+    translation.
+
+    :param word: The word to test.
+    :return: A production `Exercise`.
+    """
+    sentence, hint = generate_production_cloze(
+        word.word_from,
+        gender=word.gender,
+        conjugation_group=word.conjugation_group,
+    )
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.PRODUCTION,
+        prompt=f"{sentence} ({hint})",
+        expected_answer=word.word_to,
+    )
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -238,6 +261,7 @@ def generate_exercise(
         ):
             pool.append(ExerciseType.CONJUGATION)
         pool.append(ExerciseType.CLOZE)
+        pool.append(ExerciseType.PRODUCTION)
 
         chosen = random.choice(pool)
 
@@ -251,6 +275,8 @@ def generate_exercise(
             return generate_conjugation(word)
         if chosen == ExerciseType.CLOZE:
             return generate_cloze_exercise(word)
+        if chosen == ExerciseType.PRODUCTION:
+            return generate_production(word)
 
     # Definition mode
     if len(all_words) < 2:
