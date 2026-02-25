@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.1 - 25th February 2026
+
+- Renamed `PRODUCTION` to `TRANSLATION_CLOZE` in `ExerciseType` and all
+  related functions/tests for clarity.
+
+
 ### v0.17.0 - 25th February 2026
 
 - Added `PRODUCTION` to `ExerciseType` enum.

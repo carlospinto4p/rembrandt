@@ -196,15 +196,15 @@ def generate_cloze_exercise(word: Word) -> Exercise:
     )
 
 
-def generate_production(word: Word) -> Exercise:
-    """Create a production (EN->ES) exercise.
+def generate_translation_cloze(word: Word) -> Exercise:
+    """Create a translation cloze (EN->ES) exercise.
 
     Shows an English context sentence with a blank and the
     English word as a hint; the user types the Spanish
     translation.
 
     :param word: The word to test.
-    :return: A production `Exercise`.
+    :return: A translation-cloze `Exercise`.
     """
     sentence, hint = generate_production_cloze(
         word.word_from,
@@ -213,7 +213,7 @@ def generate_production(word: Word) -> Exercise:
     )
     return Exercise(
         word=word,
-        exercise_type=ExerciseType.PRODUCTION,
+        exercise_type=ExerciseType.TRANSLATION_CLOZE,
         prompt=f"{sentence} ({hint})",
         expected_answer=word.word_to,
     )
@@ -261,7 +261,7 @@ def generate_exercise(
         ):
             pool.append(ExerciseType.CONJUGATION)
         pool.append(ExerciseType.CLOZE)
-        pool.append(ExerciseType.PRODUCTION)
+        pool.append(ExerciseType.TRANSLATION_CLOZE)
 
         chosen = random.choice(pool)
 
@@ -275,8 +275,8 @@ def generate_exercise(
             return generate_conjugation(word)
         if chosen == ExerciseType.CLOZE:
             return generate_cloze_exercise(word)
-        if chosen == ExerciseType.PRODUCTION:
-            return generate_production(word)
+        if chosen == ExerciseType.TRANSLATION_CLOZE:
+            return generate_translation_cloze(word)
 
     # Definition mode
     if len(all_words) < 2:

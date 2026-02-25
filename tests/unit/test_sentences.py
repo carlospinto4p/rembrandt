@@ -67,7 +67,7 @@ def test_generate_cloze_sentence_is_string():
     assert isinstance(answer, str)
 
 
-# --- Production Cloze Tests ---
+# --- Translation Cloze (English) Tests ---
 
 
 def test_generate_production_cloze_verb():
