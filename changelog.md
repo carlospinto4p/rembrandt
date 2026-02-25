@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.7 - 25th February 2026
+
+- Refactored `generate_exercise()` in `exercises.py`: replaced if/elif
+  dispatch chain with a dispatch dict for cleaner type→generator mapping.
+
+
 ### v0.17.6 - 25th February 2026
 
 - Added `TRANSLATION_CLOZE` enum value test in `test_models.py`.

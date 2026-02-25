@@ -263,20 +263,29 @@ def generate_exercise(
         pool.append(ExerciseType.CLOZE)
         pool.append(ExerciseType.TRANSLATION_CLOZE)
 
-        chosen = random.choice(pool)
+        dispatch = {
+            ExerciseType.FLASHCARD: lambda: (
+                generate_flashcard(word)
+            ),
+            ExerciseType.MULTIPLE_CHOICE: lambda: (
+                generate_multiple_choice(word, all_words)
+            ),
+            ExerciseType.GENDER_MATCH: lambda: (
+                generate_gender_match(word)
+            ),
+            ExerciseType.CONJUGATION: lambda: (
+                generate_conjugation(word)
+            ),
+            ExerciseType.CLOZE: lambda: (
+                generate_cloze_exercise(word)
+            ),
+            ExerciseType.TRANSLATION_CLOZE: lambda: (
+                generate_translation_cloze(word)
+            ),
+        }
 
-        if chosen == ExerciseType.FLASHCARD:
-            return generate_flashcard(word)
-        if chosen == ExerciseType.MULTIPLE_CHOICE:
-            return generate_multiple_choice(word, all_words)
-        if chosen == ExerciseType.GENDER_MATCH:
-            return generate_gender_match(word)
-        if chosen == ExerciseType.CONJUGATION:
-            return generate_conjugation(word)
-        if chosen == ExerciseType.CLOZE:
-            return generate_cloze_exercise(word)
-        if chosen == ExerciseType.TRANSLATION_CLOZE:
-            return generate_translation_cloze(word)
+        chosen = random.choice(pool)
+        return dispatch[chosen]()
 
     # Definition mode
     if len(all_words) < 2:
