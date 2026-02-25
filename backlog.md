@@ -11,7 +11,7 @@
 - [x] Rename `generate_production_cloze()` → `generate_translation_cloze_sentence()` in `sentences.py` and update import in `exercises.py`
 - [x] Fix stale "production" wording in `sentences.py` module docstring
 - [x] Fix stale `PRODUCTION` / `generate_production()` references in `changelog.md` v0.17.0 entry
-- [ ] Add `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and update the pool description
+- [x] Add `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and update the pool description
 - [ ] Add `TRANSLATION_CLOZE` enum value test in `test_models.py`
 - [ ] Extract dispatch dict in `generate_exercise()` to replace if/elif chain (`exercises.py`)
 - [ ] Extract `_resolve_option_number()` helper to deduplicate option-number resolution in `evaluate_answer()` (`exercises.py`)

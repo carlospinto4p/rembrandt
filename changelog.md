@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.17.5 - 25th February 2026
+
+- Added `TRANSLATION_CLOZE` section to `docs/exercise-types.md` and
+  updated the translation mode pool description.
+
+
 ### v0.17.4 - 25th February 2026
 
 - Fixed stale `PRODUCTION` / `generate_production()` references in
