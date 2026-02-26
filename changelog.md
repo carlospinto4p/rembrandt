@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.6 - 26th February 2026
+
+- Replaced lambda wrappers with `functools.partial` in the
+  `generate_exercise()` dispatch dict.
+
+
 ### v0.24.5 - 26th February 2026
 
 - Added section comments to `exercises.py`: grouped 15 functions into

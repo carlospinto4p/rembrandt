@@ -3,6 +3,7 @@
 import re
 import random
 import unicodedata
+from functools import partial
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
 from rembrandt.sentences import generate_cloze, generate_translation_cloze_sentence
@@ -270,23 +271,23 @@ def generate_exercise(
         pool.append(ExerciseType.TRANSLATION_CLOZE)
 
         dispatch = {
-            ExerciseType.FLASHCARD: lambda: (
-                generate_flashcard(word)
+            ExerciseType.FLASHCARD: partial(
+                generate_flashcard, word,
             ),
-            ExerciseType.MULTIPLE_CHOICE: lambda: (
-                generate_multiple_choice(word, all_words)
+            ExerciseType.MULTIPLE_CHOICE: partial(
+                generate_multiple_choice, word, all_words,
             ),
-            ExerciseType.GENDER_MATCH: lambda: (
-                generate_gender_match(word)
+            ExerciseType.GENDER_MATCH: partial(
+                generate_gender_match, word,
             ),
-            ExerciseType.CONJUGATION: lambda: (
-                generate_conjugation(word)
+            ExerciseType.CONJUGATION: partial(
+                generate_conjugation, word,
             ),
-            ExerciseType.CLOZE: lambda: (
-                generate_cloze_exercise(word)
+            ExerciseType.CLOZE: partial(
+                generate_cloze_exercise, word,
             ),
-            ExerciseType.TRANSLATION_CLOZE: lambda: (
-                generate_translation_cloze(word)
+            ExerciseType.TRANSLATION_CLOZE: partial(
+                generate_translation_cloze, word,
             ),
         }
 
