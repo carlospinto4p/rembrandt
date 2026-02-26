@@ -22,4 +22,4 @@
 - [x] Extract `_update_stats()` helper from `Session.answer()` — method is ~54 lines mixing evaluation, progress, and stats
 - [x] Add section comments to `exercises.py` — 15 functions with no grouping (generators vs evaluation vs helpers)
 - [x] Remove lambda wrappers in `generate_exercise()` dispatch dict — use `functools.partial` for callables that need extra args
-- [ ] Add examples for newer features: user registration/auth, session tokens, hints, skip, session stats, word/lesson update/delete
+- [x] Add examples for newer features: user registration/auth, session tokens, hints, skip, session stats, word/lesson update/delete
