@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.11 - 26th February 2026
+
+- Fixed `generate_translation_cloze()`: uses `_non_spanish_word()` and
+  `_spanish_word()` to detect the correct sides regardless of language
+  orientation (es→en or en→es).
+- Fixed `generate_exercise()`: only adds `CLOZE` and `TRANSLATION_CLOZE` to
+  the exercise pool when the word has `gender` or `conjugation_group`,
+  avoiding nonsensical cloze sentences for adverbs and particles.
+- Added `_non_spanish_word()` helper in `exercises.py`.
+
+
 ### v0.24.10 - 26th February 2026
 
 - Fixed `_acceptable_answers()`: now splits on commas in addition to

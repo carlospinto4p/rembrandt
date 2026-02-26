@@ -736,6 +736,7 @@ def test_generate_exercise_includes_cloze():
             language_to="es",
             word_from=w[0],
             word_to=w[1],
+            gender="m",
         )
         for i, w in enumerate(
             [
@@ -824,6 +825,7 @@ def test_generate_exercise_includes_translation_cloze():
             language_to="es",
             word_from=w[0],
             word_to=w[1],
+            gender="m",
         )
         for i, w in enumerate(
             [

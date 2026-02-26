@@ -44,6 +44,17 @@ def _spanish_word(word: Word) -> str:
     return word.word_from
 
 
+def _non_spanish_word(word: Word) -> str:
+    """Return the non-Spanish word from a bilingual `Word`.
+
+    :param word: The word to inspect.
+    :return: The non-Spanish side of the word pair.
+    """
+    if word.language_to == "es":
+        return word.word_from
+    return word.word_to
+
+
 # --- Exercise Generators ---
 
 
@@ -204,17 +215,19 @@ def generate_cloze_exercise(word: Word) -> Exercise:
 
 
 def generate_translation_cloze(word: Word) -> Exercise:
-    """Create a translation cloze (EN->ES) exercise.
+    """Create a translation cloze exercise.
 
     Shows an English context sentence with a blank and the
     English word as a hint; the user types the Spanish
-    translation.
+    translation.  Works regardless of language orientation.
 
     :param word: The word to test.
     :return: A translation-cloze `Exercise`.
     """
+    english = _non_spanish_word(word)
+    spanish = _spanish_word(word)
     sentence, hint = generate_translation_cloze_sentence(
-        word.word_from,
+        english,
         gender=word.gender,
         conjugation_group=word.conjugation_group,
     )
@@ -222,7 +235,7 @@ def generate_translation_cloze(word: Word) -> Exercise:
         word=word,
         exercise_type=ExerciseType.TRANSLATION_CLOZE,
         prompt=f"{sentence} ({hint})",
-        expected_answer=word.word_to,
+        expected_answer=spanish,
     )
 
 
@@ -267,8 +280,17 @@ def generate_exercise(
             )
         ):
             pool.append(ExerciseType.CONJUGATION)
-        pool.append(ExerciseType.CLOZE)
-        pool.append(ExerciseType.TRANSLATION_CLOZE)
+        # Only add cloze types for words with known POS
+        # (nouns have gender, verbs have conjugation_group).
+        # Words without either (adverbs, particles, etc.)
+        # fall back to the generic adjective templates which
+        # often produce nonsensical sentences.
+        if (
+            word.gender is not None
+            or word.conjugation_group is not None
+        ):
+            pool.append(ExerciseType.CLOZE)
+            pool.append(ExerciseType.TRANSLATION_CLOZE)
 
         dispatch = {
             ExerciseType.FLASHCARD: partial(
