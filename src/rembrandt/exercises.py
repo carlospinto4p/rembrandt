@@ -16,6 +16,9 @@ from rembrandt.models import (
 )
 
 
+# --- Helpers ---
+
+
 def _strip_accents(text: str) -> str:
     """Remove combining diacritical marks from `text`.
 
@@ -38,6 +41,9 @@ def _spanish_word(word: Word) -> str:
     if word.language_to == "es":
         return word.word_to
     return word.word_from
+
+
+# --- Exercise Generators ---
 
 
 def generate_flashcard(word: Word) -> Exercise:
@@ -297,6 +303,9 @@ def generate_exercise(
     if roll < 0.7:
         return generate_reverse_flashcard(word)
     return generate_self_graded(word)
+
+
+# --- Answer Evaluation ---
 
 
 def _acceptable_answers(expected: str) -> list[str]:

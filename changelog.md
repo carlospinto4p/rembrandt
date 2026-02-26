@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.5 - 26th February 2026
+
+- Added section comments to `exercises.py`: grouped 15 functions into
+  Helpers, Exercise Generators, and Answer Evaluation.
+
+
 ### v0.24.4 - 26th February 2026
 
 - Extracted `Session._update_stats()` from `Session.answer()`: separates
