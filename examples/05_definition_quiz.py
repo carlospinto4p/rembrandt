@@ -139,8 +139,18 @@ def main() -> None:
                     print(
                         f"  -> {exercise.word.word_to}"
                     )
-                    print("Rate your recall (0-5):")
-                    answer = input("> ").strip()
+                    while True:
+                        answer = input(
+                            "Rate your recall (0-5): "
+                        ).strip()
+                        if answer.lower() == "q":
+                            break
+                        if (
+                            answer.isdigit()
+                            and 0 <= int(answer) <= 5
+                        ):
+                            break
+                        print("  Please enter 0-5.")
                     if answer.lower() == "q":
                         break
                     result = session.answer(

@@ -45,32 +45,44 @@ def main() -> None:
     correct = 0
     total = 0
 
-    while True:
-        exercise = session.next_exercise()
-        if exercise is None:
-            break
+    try:
+        while True:
+            exercise = session.next_exercise()
+            if exercise is None:
+                break
 
-        total += 1
-        etype = exercise.exercise_type
+            total += 1
+            etype = exercise.exercise_type
 
-        print(f"--- Question {total} ---")
-        print(f"What does '{exercise.word.word_from}' mean?")
+            print(f"--- Question {total} ---")
+            print(
+                "What does "
+                f"'{exercise.word.word_from}' mean?"
+            )
 
-        if etype == ExerciseType.MULTIPLE_CHOICE:
-            for idx, opt in enumerate(exercise.options, 1):
-                print(f"  {idx}. {opt}")
+            if etype == ExerciseType.MULTIPLE_CHOICE:
+                for idx, opt in enumerate(
+                    exercise.options, 1
+                ):
+                    print(f"  {idx}. {opt}")
 
-        answer = input("> ").strip()
-        if answer.lower() == "q":
-            total -= 1
-            break
+            answer = input("> ").strip()
+            if answer.lower() == "q":
+                total -= 1
+                break
 
-        result = session.answer(answer)
-        if result.correct:
-            correct += 1
-            print("Correct!\n")
-        else:
-            print(f"Wrong — expected: {result.expected}\n")
+            result = session.answer(answer)
+            if result.correct:
+                correct += 1
+                print("Correct!\n")
+            else:
+                print(
+                    "Wrong — expected: "
+                    f"{result.expected}\n"
+                )
+
+    except (KeyboardInterrupt, EOFError):
+        print()
 
     if total > 0:
         pct = correct / total * 100

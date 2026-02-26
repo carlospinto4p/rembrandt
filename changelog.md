@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.9 - 26th February 2026
+
+- Fixed input validation in interactive examples:
+  - `05_definition_quiz.py`: validate quality score (0-5) with retry loop.
+  - `07_spanish_vocabulary.py`: same quality validation plus
+    `KeyboardInterrupt`/`EOFError` handling.
+  - `06_spanish_translation_quiz.py`: added `KeyboardInterrupt`/`EOFError`
+    handling.
+
+
 ### v0.24.8 - 26th February 2026
 
 - Rewrote `01_quickstart.py`: uses `quick_session()` with inline word list

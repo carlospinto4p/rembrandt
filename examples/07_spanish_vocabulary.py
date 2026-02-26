@@ -82,67 +82,99 @@ def main() -> None:
     correct = 0
     total = 0
 
-    while True:
-        exercise = session.next_exercise()
-        if exercise is None:
-            break
-
-        total += 1
-        etype = exercise.exercise_type
-        print(f"--- Pregunta {total} ---")
-
-        if etype == ExerciseType.MULTIPLE_CHOICE:
-            print(
-                "¿Qué significa "
-                f"'{exercise.word.word_from}'?"
-            )
-            for idx, opt in enumerate(exercise.options, 1):
-                print(f"  {idx}. {opt}")
-            answer = input("> ").strip()
-            if answer.lower() == "q":
-                total -= 1
+    try:
+        while True:
+            exercise = session.next_exercise()
+            if exercise is None:
                 break
-            result = session.answer(answer)
 
-        elif etype == ExerciseType.REVERSE_FLASHCARD:
-            print(
-                "Definición: "
-                f"{exercise.word.word_to}"
-            )
-            print("¿Cuál es la palabra?")
-            answer = input("> ").strip()
-            if answer.lower() == "q":
-                total -= 1
-                break
-            result = session.answer(answer)
+            total += 1
+            etype = exercise.exercise_type
+            print(f"--- Pregunta {total} ---")
 
-        else:  # SELF_GRADED
-            print(
-                f"Palabra: {exercise.word.word_from}"
-            )
-            print("(Piensa en la definición...)")
-            input("Pulsa Enter para ver la respuesta.")
-            print(
-                f"  → {exercise.word.word_to}"
-            )
-            print("Puntúa tu respuesta (0-5):")
-            answer = input("> ").strip()
-            if answer.lower() == "q":
-                total -= 1
-                break
-            quality = int(answer)
-            result = session.answer(quality=quality)
+            if etype == ExerciseType.MULTIPLE_CHOICE:
+                print(
+                    "¿Qué significa "
+                    f"'{exercise.word.word_from}'?"
+                )
+                for idx, opt in enumerate(
+                    exercise.options, 1
+                ):
+                    print(f"  {idx}. {opt}")
+                answer = input("> ").strip()
+                if answer.lower() == "q":
+                    total -= 1
+                    break
+                result = session.answer(answer)
 
-        if result.correct:
-            correct += 1
-            print("¡Correcto!\n")
-        else:
-            expected = result.expected
-            print(f"Incorrecto — respuesta: {expected}\n")
+            elif etype == (
+                ExerciseType.REVERSE_FLASHCARD
+            ):
+                print(
+                    "Definición: "
+                    f"{exercise.word.word_to}"
+                )
+                print("¿Cuál es la palabra?")
+                answer = input("> ").strip()
+                if answer.lower() == "q":
+                    total -= 1
+                    break
+                result = session.answer(answer)
+
+            else:  # SELF_GRADED
+                print(
+                    f"Palabra: "
+                    f"{exercise.word.word_from}"
+                )
+                print("(Piensa en la definición...)")
+                input(
+                    "Pulsa Enter para ver la "
+                    "respuesta."
+                )
+                print(
+                    f"  → {exercise.word.word_to}"
+                )
+                while True:
+                    answer = input(
+                        "Puntúa tu respuesta "
+                        "(0-5): "
+                    ).strip()
+                    if answer.lower() == "q":
+                        break
+                    if (
+                        answer.isdigit()
+                        and 0 <= int(answer) <= 5
+                    ):
+                        break
+                    print(
+                        "  Introduce un número 0-5."
+                    )
+                if answer.lower() == "q":
+                    total -= 1
+                    break
+                result = session.answer(
+                    quality=int(answer),
+                )
+
+            if result.correct:
+                correct += 1
+                print("¡Correcto!\n")
+            else:
+                expected = result.expected
+                print(
+                    "Incorrecto — respuesta: "
+                    f"{expected}\n"
+                )
+
+    except (KeyboardInterrupt, EOFError):
+        print()
 
     if total > 0:
         pct = correct / total * 100
-        print(f"Puntuación: {correct}/{total} ({pct:.0f}%)")
+        print(
+            f"Puntuación: {correct}/{total} "
+            f"({pct:.0f}%)"
+        )
 
     session.db.close()
 
