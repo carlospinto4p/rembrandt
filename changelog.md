@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.10 - 26th February 2026
+
+- Fixed `_acceptable_answers()`: now splits on commas in addition to
+  semicolons, so ``"to say"`` matches ``"to say, to tell"``.
+- Fixed `06_spanish_translation_quiz.py`: handles all exercise types
+  (gender match, conjugation, cloze, translation cloze) with appropriate
+  prompts instead of always showing "What does X mean?".
+- Fixed unused `timedelta` import in `test_db.py`.
+
+
 ### v0.24.9 - 26th February 2026
 
 - Fixed input validation in interactive examples:

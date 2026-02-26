@@ -328,6 +328,22 @@ def test_evaluate_answer_semicolon_segment():
     assert result.correct is True
 
 
+def test_evaluate_answer_comma_segment():
+    word = Word(
+        id=1,
+        language_from="es",
+        language_to="en",
+        word_from="decir",
+        word_to="to say, to tell",
+    )
+    ex = generate_flashcard(word)
+    assert evaluate_answer(ex, "to say").correct is True
+    assert evaluate_answer(ex, "to tell").correct is True
+    assert evaluate_answer(
+        ex, "to say, to tell"
+    ).correct is True
+
+
 def test_evaluate_answer_to_prefix():
     word = Word(
         id=1,

@@ -26,7 +26,8 @@ def main() -> None:
         print(
             f"Vocabulary file not found: {_VOCAB_PATH}\n"
             "Run the build script first:\n"
-            "  uv run python scripts/build_spanish_vocab.py"
+            "  uv run python "
+            "scripts/build_spanish_vocab.py"
         )
         return
 
@@ -53,18 +54,39 @@ def main() -> None:
 
             total += 1
             etype = exercise.exercise_type
+            w = exercise.word
 
             print(f"--- Question {total} ---")
-            print(
-                "What does "
-                f"'{exercise.word.word_from}' mean?"
-            )
 
             if etype == ExerciseType.MULTIPLE_CHOICE:
+                print(f"What does '{w.word_from}' mean?")
                 for idx, opt in enumerate(
                     exercise.options, 1
                 ):
                     print(f"  {idx}. {opt}")
+
+            elif etype == ExerciseType.GENDER_MATCH:
+                print(
+                    "Pick the article: "
+                    f"{exercise.prompt}"
+                )
+                print(f"  Options: {exercise.options}")
+
+            elif etype == ExerciseType.CONJUGATION:
+                print(f"Conjugate: {exercise.prompt}")
+
+            elif etype == ExerciseType.CLOZE:
+                print(
+                    "Fill the blank: "
+                    f"{exercise.prompt}"
+                )
+
+            elif etype == ExerciseType.TRANSLATION_CLOZE:
+                print(f"Translate: {exercise.prompt}")
+
+            else:
+                # FLASHCARD / REVERSE_FLASHCARD
+                print(f"What does '{w.word_from}' mean?")
 
             answer = input("> ").strip()
             if answer.lower() == "q":

@@ -313,7 +313,8 @@ def _acceptable_answers(expected: str) -> list[str]:
     """Return variant forms of `expected` for flexible matching.
 
     Strips parenthetical `(...)` and bracket `[...]` content,
-    then splits by semicolons to yield individual senses.
+    then splits by semicolons and commas to yield individual
+    senses (e.g. ``"to say, to tell"`` accepts ``"to say"``).
 
     :param expected: The canonical expected answer.
     :return: List of acceptable answer strings (always includes
@@ -324,7 +325,14 @@ def _acceptable_answers(expected: str) -> list[str]:
     segments = [
         s.strip() for s in cleaned.split(";") if s.strip()
     ]
-    answers = [expected] + segments
+    # Also split comma-separated alternatives
+    parts: list[str] = []
+    for seg in segments:
+        parts.extend(
+            p.strip() for p in seg.split(",")
+            if p.strip()
+        )
+    answers = [expected] + segments + parts
     seen: set[str] = set()
     unique: list[str] = []
     for a in answers:
