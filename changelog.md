@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.4 - 26th February 2026
+
+- Extracted `Session._update_stats()` from `Session.answer()`: separates
+  counter/streak tracking from evaluation and progress logic.
+
+
 ### v0.24.3 - 26th February 2026
 
 - Fixed `type: ignore[assignment]` in `lessons.py`: guard `w.id` against

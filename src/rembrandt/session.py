@@ -126,7 +126,16 @@ class Session:
         updated = review(progress, sm2_quality)
         self.db.upsert_progress(updated)
 
-        if result.correct:
+        self._update_stats(result.correct)
+        self._current_exercise = None
+        return result
+
+    def _update_stats(self, correct: bool) -> None:
+        """Update session counters after an answer.
+
+        :param correct: Whether the answer was correct.
+        """
+        if correct:
             self._correct += 1
             self._streak += 1
             if self._streak > self._best_streak:
@@ -134,9 +143,6 @@ class Session:
         else:
             self._incorrect += 1
             self._streak = 0
-
-        self._current_exercise = None
-        return result
 
     def skip(self) -> Exercise:
         """Skip the current exercise without affecting progress.
