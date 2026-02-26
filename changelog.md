@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.3 - 26th February 2026
+
+- Fixed `type: ignore[assignment]` in `lessons.py`: guard `w.id` against
+  `None` instead of suppressing the type checker.
+
+
 ### v0.24.2 - 26th February 2026
 
 - Replaced `assert` with explicit `ValueError` in:

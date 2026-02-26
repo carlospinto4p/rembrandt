@@ -49,7 +49,8 @@ def load_lessons(
     db_words = db.get_words(language_from, language_to)
     key_to_id: dict[tuple[str, str], int] = {}
     for w in db_words:
-        key_to_id[(w.word_from, w.word_to)] = w.id  # type: ignore[assignment]
+        if w.id is not None:
+            key_to_id[(w.word_from, w.word_to)] = w.id
 
     lessons: list[Lesson] = []
     for entry in raw_lessons:
