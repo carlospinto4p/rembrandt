@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.1 - 26th February 2026
+
+- Extracted `Database._insert_lesson_words()` helper in `db.py`: deduplicates
+  the word-linking loop shared by `add_lessons()` and `update_lesson()`.
+
+
 ### v0.24.0 - 25th February 2026
 
 - Added `Hint` model in `models`: first letter, word length, and masked

@@ -558,6 +558,26 @@ class Database:
 
     # -- Lessons ------------------------------------------------------
 
+    def _insert_lesson_words(
+        self,
+        lesson_id: int,
+        word_ids: list[int],
+    ) -> None:
+        """Insert word links for a lesson.
+
+        Must be called inside an active transaction.
+
+        :param lesson_id: The lesson identifier.
+        :param word_ids: Ordered list of word ids to link.
+        """
+        for pos, wid in enumerate(word_ids):
+            self._conn.execute(
+                "INSERT INTO lesson_words "
+                "(lesson_id, word_id, position) "
+                "VALUES (?, ?, ?)",
+                (lesson_id, wid, pos),
+            )
+
     def add_lesson(self, lesson: Lesson) -> Lesson:
         """Insert a lesson and link its words.
 
@@ -595,13 +615,9 @@ class Database:
                     ),
                 )
                 lesson_id = cur.lastrowid
-                for pos, wid in enumerate(lesson.word_ids):
-                    self._conn.execute(
-                        "INSERT INTO lesson_words "
-                        "(lesson_id, word_id, position) "
-                        "VALUES (?, ?, ?)",
-                        (lesson_id, wid, pos),
-                    )
+                self._insert_lesson_words(
+                    lesson_id, lesson.word_ids,
+                )
                 result.append(
                     lesson.model_copy(
                         update={"id": lesson_id}
@@ -749,13 +765,9 @@ class Database:
                 "WHERE lesson_id = ?",
                 (lesson.id,),
             )
-            for pos, wid in enumerate(lesson.word_ids):
-                self._conn.execute(
-                    "INSERT INTO lesson_words "
-                    "(lesson_id, word_id, position) "
-                    "VALUES (?, ?, ?)",
-                    (lesson.id, wid, pos),
-                )
+            self._insert_lesson_words(
+                lesson.id, lesson.word_ids,
+            )
         return lesson
 
     def delete_lesson(self, lesson_id: int) -> None:
