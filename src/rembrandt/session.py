@@ -112,7 +112,8 @@ class Session:
         else:
             sm2_quality = 5 if result.correct else 1
         word_id = result.word.id
-        assert word_id is not None
+        if word_id is None:
+            raise ValueError("Word id must be set")
         progress = self.db.get_progress(
             self.user_id, word_id
         )

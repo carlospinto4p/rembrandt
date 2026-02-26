@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.2 - 26th February 2026
+
+- Replaced `assert` with explicit `ValueError` in:
+  - `session.py`: guard `word_id` in `Session.answer()`.
+  - `spaced_repetition.py`: guard `word.id` in `select_words()`.
+
+
 ### v0.24.1 - 26th February 2026
 
 - Extracted `Database._insert_lesson_words()` helper in `db.py`: deduplicates

@@ -100,7 +100,8 @@ def select_words(
     new: list[Word] = []
 
     for word in all_words:
-        assert word.id is not None
+        if word.id is None:
+            raise ValueError("Word id must be set")
         progress = progress_map.get(word.id)
         if progress is None:
             new.append(word)
