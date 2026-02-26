@@ -228,16 +228,17 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 
 | Script | Description |
 |--------|-------------|
-| `01_quickstart.py` | Minimal self-contained demo (flashcard + multiple choice) |
-| `02_interactive_quiz.py` | CLI quiz loop with score tracking |
-| `03_multiple_languages.py` | Multiple language pairs in one database |
+| `01_quickstart.py` | Minimal demo using `quick_session()` with an inline word list |
+| `02_interactive_quiz.py` | CLI quiz loop with `SessionMode` and `session.summary()` |
+| `03_exercise_types.py` | All exercise types: gender match, conjugation, cloze, etc. |
 | `04_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
-| `05_definition_quiz.py` | Monolingual definition-based vocabulary learning |
+| `05_definition_quiz.py` | Interactive monolingual definition-based quiz |
 | `06_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
 | `07_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
 | `08_user_auth.py` | User registration, authentication, and session tokens |
 | `09_session_features.py` | Hints, skip, and session statistics |
 | `10_crud_operations.py` | Word and lesson create/update/delete |
+| `11_lessons_and_progress.py` | Lesson loading, progress tracking, and lesson-scoped sessions |
 
 Run any example with:
 

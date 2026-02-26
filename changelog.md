@@ -1,6 +1,22 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.8 - 26th February 2026
+
+- Rewrote `01_quickstart.py`: uses `quick_session()` with inline word list
+  instead of manual `Database` + `Word` setup.
+- Updated `02_interactive_quiz.py`: uses `SessionMode.LEARN_NEW` and
+  `session.summary()` instead of manual score tracking.
+- Replaced `03_multiple_languages.py` with `03_exercise_types.py`: showcases
+  gender match, conjugation, cloze, and translation cloze exercise types
+  using words with `gender` and `conjugation_group` metadata.
+- Updated `05_definition_quiz.py`: now interactive (user input) instead of
+  auto-answered.
+- Added `11_lessons_and_progress.py`: demonstrates `load_lessons()`,
+  `lesson_progress()`, `Session` with `word_ids`, and `SessionMode`.
+- Updated `README.md` examples table.
+
+
 ### v0.24.7 - 26th February 2026
 
 - Added example scripts:

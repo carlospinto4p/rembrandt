@@ -1,13 +1,16 @@
 """Quick-start example for Rembrandt.
 
-Adds a small EN-ES vocabulary set to a local SQLite database
-and runs a few exercises showing both flashcard and
-multiple-choice output.
+Creates a session from an inline word list and runs a few exercises,
+printing the type, prompt, and auto-answer for each one.
+
+Usage::
+
+    uv run python examples/01_quickstart.py
 """
 
 from pathlib import Path
 
-from rembrandt import Database, Session, Word
+from rembrandt import quick_session
 from rembrandt.models import ExerciseType
 
 _DB_PATH = (
@@ -16,42 +19,20 @@ _DB_PATH = (
     / "quickstart.db"
 )
 
+_WORDS = [
+    {"word": "cat", "definition": "gato"},
+    {"word": "dog", "definition": "perro"},
+    {"word": "house", "definition": "casa"},
+    {"word": "book", "definition": "libro"},
+    {"word": "water", "definition": "agua"},
+    {"word": "sun", "definition": "sol"},
+]
+
 
 def main() -> None:
-    fresh = not _DB_PATH.exists()
-    db = Database(_DB_PATH)
-
-    if fresh:
-        db.add_words([
-            Word(
-                language_from="en", language_to="es",
-                word_from="cat", word_to="gato",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="dog", word_to="perro",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="house", word_to="casa",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="book", word_to="libro",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="water", word_to="agua",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="sun", word_to="sol",
-            ),
-        ])
-
-    session = Session(
-        db=db,
-        user_id="demo",
+    session = quick_session(
+        _WORDS,
+        db_path=_DB_PATH,
         language_from="en",
         language_to="es",
     )
@@ -62,22 +43,25 @@ def main() -> None:
             break
 
         print(f"--- Exercise {i + 1} ---")
-        print(f"Translate: {exercise.word.word_from}")
         print(f"Type: {exercise.exercise_type.value}")
+        print(f"Translate: {exercise.word.word_from}")
 
-        if exercise.exercise_type == ExerciseType.MULTIPLE_CHOICE:
+        if exercise.exercise_type == (
+            ExerciseType.MULTIPLE_CHOICE
+        ):
             for idx, opt in enumerate(exercise.options, 1):
                 print(f"  {idx}. {opt}")
 
-        # Auto-answer with the correct translation
-        answer = exercise.word.word_to
-        result = session.answer(answer)
+        result = session.answer(exercise.word.word_to)
         status = "Correct!" if result.correct else "Wrong"
-        print(f"Answer: {answer} -> {status}")
-        print()
+        print(f"Answer: {result.expected} -> {status}\n")
 
-    db.close()
-    print("Done!")
+    stats = session.summary()
+    print(
+        f"Score: {stats.correct}/{stats.total} "
+        f"({stats.accuracy_pct}%)"
+    )
+    session.db.close()
 
 
 if __name__ == "__main__":

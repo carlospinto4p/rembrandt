@@ -2,8 +2,12 @@
 
 Demonstrates monolingual (EN-EN) definition learning, where
 you learn words through their definitions rather than
-translations. Uses all three definition-mode exercise types:
+translations. Handles all three definition-mode exercise types:
 multiple choice, reverse flashcard, and self-graded.
+
+Usage::
+
+    uv run python examples/05_definition_quiz.py
 """
 
 from pathlib import Path
@@ -20,96 +24,146 @@ _DB_PATH = (
 
 def main() -> None:
     fresh = not _DB_PATH.exists()
-    db = Database(_DB_PATH)
 
-    if fresh:
-        db.add_words([
-            Word(
-                language_from="en", language_to="en",
-                word_from="ephemeral",
-                word_to="lasting for a very short time",
-            ),
-            Word(
-                language_from="en", language_to="en",
-                word_from="ubiquitous",
-                word_to="present or found everywhere",
-            ),
-            Word(
-                language_from="en", language_to="en",
-                word_from="candid",
-                word_to="truthful and straightforward",
-            ),
-            Word(
-                language_from="en", language_to="en",
-                word_from="pragmatic",
-                word_to="dealing with things practically",
-            ),
-            Word(
-                language_from="en", language_to="en",
-                word_from="verbose",
-                word_to="using more words than needed",
-            ),
-            Word(
-                language_from="en", language_to="en",
-                word_from="diligent",
-                word_to=(
-                    "showing care and effort in one's"
-                    " work"
+    with Database(_DB_PATH) as db:
+        if fresh:
+            db.add_words([
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="ephemeral",
+                    word_to=(
+                        "lasting for a very short time"
+                    ),
                 ),
-            ),
-        ])
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="ubiquitous",
+                    word_to=(
+                        "present or found everywhere"
+                    ),
+                ),
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="candid",
+                    word_to=(
+                        "truthful and straightforward"
+                    ),
+                ),
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="pragmatic",
+                    word_to=(
+                        "dealing with things practically"
+                    ),
+                ),
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="verbose",
+                    word_to=(
+                        "using more words than needed"
+                    ),
+                ),
+                Word(
+                    language_from="en", language_to="en",
+                    word_from="diligent",
+                    word_to=(
+                        "showing care and effort in"
+                        " one's work"
+                    ),
+                ),
+            ])
 
-    session = Session(
-        db=db,
-        user_id="demo",
-        language_from="en",
-        language_to="en",
-    )
+        session = Session(
+            db=db,
+            user_id="demo",
+            language_from="en",
+            language_to="en",
+        )
 
-    print("=== Definition Quiz ===")
-    print("Learn English words through their definitions.\n")
+        print("=== Definition Quiz ===")
+        print(
+            "Learn English words through their "
+            "definitions."
+        )
+        print("Type your answer (or 'q' to quit).\n")
 
-    for i in range(4):
-        exercise = session.next_exercise()
-        if exercise is None:
-            break
+        try:
+            total = 0
+            while True:
+                exercise = session.next_exercise()
+                if exercise is None:
+                    print("No more words available.")
+                    break
 
-        print(f"--- Exercise {i + 1} ---")
-        etype = exercise.exercise_type
+                total += 1
+                etype = exercise.exercise_type
+                print(f"--- Question {total} ---")
 
-        if etype == ExerciseType.MULTIPLE_CHOICE:
+                if etype == ExerciseType.MULTIPLE_CHOICE:
+                    print(
+                        "What does "
+                        f"'{exercise.word.word_from}' "
+                        "mean?"
+                    )
+                    for idx, opt in enumerate(
+                        exercise.options, 1
+                    ):
+                        print(f"  {idx}. {opt}")
+                    answer = input("> ").strip()
+                    if answer.lower() == "q":
+                        break
+                    result = session.answer(answer)
+
+                elif etype == (
+                    ExerciseType.REVERSE_FLASHCARD
+                ):
+                    print(
+                        "Definition: "
+                        f"{exercise.word.word_to}"
+                    )
+                    print("Which word matches?")
+                    answer = input("> ").strip()
+                    if answer.lower() == "q":
+                        break
+                    result = session.answer(answer)
+
+                else:  # SELF_GRADED
+                    print(
+                        f"Word: {exercise.word.word_from}"
+                    )
+                    print("(Think of the definition...)")
+                    input(
+                        "Press Enter to reveal the "
+                        "answer."
+                    )
+                    print(
+                        f"  -> {exercise.word.word_to}"
+                    )
+                    print("Rate your recall (0-5):")
+                    answer = input("> ").strip()
+                    if answer.lower() == "q":
+                        break
+                    result = session.answer(
+                        quality=int(answer),
+                    )
+
+                if result.correct:
+                    print("Correct!\n")
+                else:
+                    print(
+                        "Wrong — expected: "
+                        f"'{result.expected}'\n"
+                    )
+
+        except (KeyboardInterrupt, EOFError):
+            print()
+
+        stats = session.summary()
+        if stats.total:
             print(
-                f"What does '{exercise.word.word_from}' "
-                "mean?"
+                f"Score: {stats.correct}/{stats.total} "
+                f"({stats.accuracy_pct}%)"
             )
-            for idx, opt in enumerate(exercise.options, 1):
-                print(f"  {idx}. {opt}")
-            result = session.answer(exercise.word.word_to)
-
-        elif etype == ExerciseType.REVERSE_FLASHCARD:
-            print(
-                f"Definition: {exercise.word.word_to}"
-            )
-            print("Which word matches this definition?")
-            result = session.answer(exercise.word.word_from)
-
-        else:  # SELF_GRADED
-            print(
-                f"Word: {exercise.word.word_from}"
-            )
-            print("(Think of the definition...)")
-            print(
-                f"  -> {exercise.word.word_to}"
-            )
-            print("Self-assessment: 4/5")
-            result = session.answer(quality=4)
-
-        status = "Correct!" if result.correct else "Wrong"
-        print(f"-> {status}")
-        print()
-
-    db.close()
-    print("Done!")
 
 
 if __name__ == "__main__":
