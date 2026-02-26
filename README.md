@@ -235,6 +235,9 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `05_definition_quiz.py` | Monolingual definition-based vocabulary learning |
 | `06_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
 | `07_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
+| `08_user_auth.py` | User registration, authentication, and session tokens |
+| `09_session_features.py` | Hints, skip, and session statistics |
+| `10_crud_operations.py` | Word and lesson create/update/delete |
 
 Run any example with:
 

@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.7 - 26th February 2026
+
+- Added example scripts:
+  - `08_user_auth.py`: user registration, authentication, session tokens.
+  - `09_session_features.py`: hints, skip, session statistics.
+  - `10_crud_operations.py`: word and lesson create/update/delete.
+- Fixed `_row_to_user()` date parsing in `db.py`: use `fromisoformat()`
+  to handle SQLite's space-separated datetime default.
+- Updated `README.md` examples table.
+
+
 ### v0.24.6 - 26th February 2026
 
 - Replaced lambda wrappers with `functools.partial` in the

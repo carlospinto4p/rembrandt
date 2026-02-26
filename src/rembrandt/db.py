@@ -104,9 +104,7 @@ def _row_to_user(r: sqlite3.Row) -> User:
         username=r["username"],
         display_name=r["display_name"],
         password_hash=r["password_hash"],
-        created_at=datetime.strptime(
-            r["created_at"], _ISO_FMT
-        ),
+        created_at=datetime.fromisoformat(r["created_at"]),
     )
 
 

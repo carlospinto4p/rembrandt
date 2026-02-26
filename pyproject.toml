@@ -1,6 +1,6 @@
 [project]
 name = "rembrandt"
-version = "0.24.6"
+version = "0.24.7"
 description = "A library to do some mental exercises with the help of LLMs."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"
