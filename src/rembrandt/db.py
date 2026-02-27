@@ -709,7 +709,7 @@ class Database:
                 "FROM answer_history "
                 "WHERE user_id = ? "
                 "AND answered_at >= ? "
-                "ORDER BY answered_at DESC "
+                "ORDER BY answered_at DESC, id DESC "
                 "LIMIT ?",
                 (
                     user_id,
@@ -724,7 +724,7 @@ class Database:
                 "answered_at "
                 "FROM answer_history "
                 "WHERE user_id = ? "
-                "ORDER BY answered_at DESC "
+                "ORDER BY answered_at DESC, id DESC "
                 "LIMIT ?",
                 (user_id, limit),
             ).fetchall()

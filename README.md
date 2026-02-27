@@ -330,6 +330,9 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `09_session_features.py` | Hints, skip, and session statistics |
 | `10_crud_operations.py` | Word and lesson create/update/delete |
 | `11_lessons_and_progress.py` | Lesson loading, progress tracking, and lesson-scoped sessions |
+| `12_progress_export_import.py` | Export and import spaced-repetition progress between databases |
+| `13_answer_history.py` | Answer history, daily stats, weak word detection |
+| `14_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
 
 Run any example with:
 

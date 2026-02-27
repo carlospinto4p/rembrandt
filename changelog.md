@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v0.33.1 - 27th February 2026
+
+- Updated `examples/03_exercise_types.py`: added `ADJECTIVE_AGREEMENT` and
+  `SENTENCE_ORDER` branches.
+- Added example scripts:
+  - `examples/12_progress_export_import.py`: progress export/import roundtrip.
+  - `examples/13_answer_history.py`: answer history, daily stats, weak words.
+  - `examples/14_custom_templates.py`: custom exercise config from JSON.
+- Updated `README.md`: added rows for examples 12-14.
+- Fixed `db.get_answer_history()`: added `id DESC` tiebreaker to ordering
+  so records within the same second are returned newest-first.
+
+
 ### v0.33.0 - 27th February 2026
 
 - Added `load_exercise_config()` in `exercises`: unified config loader

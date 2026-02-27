@@ -2,8 +2,9 @@
 
 Demonstrates the full range of exercise types available in
 translation mode: flashcard, multiple choice, gender match,
-conjugation, cloze, and translation cloze.  Uses words with
-`gender` and `conjugation_group` metadata to unlock all types.
+conjugation, cloze, translation cloze, adjective agreement,
+and sentence ordering.  Uses words with `gender` and
+`conjugation_group` metadata to unlock all types.
 
 Usage::
 
@@ -118,6 +119,14 @@ def main() -> None:
 
             elif etype == ExerciseType.TRANSLATION_CLOZE:
                 print(f"  Translate: {exercise.prompt}")
+                answer = exercise.expected_answer
+
+            elif etype == ExerciseType.ADJECTIVE_AGREEMENT:
+                print(f"  Agree adjective: {exercise.prompt}")
+                answer = exercise.expected_answer
+
+            elif etype == ExerciseType.SENTENCE_ORDER:
+                print(f"  Reorder: {exercise.prompt}")
                 answer = exercise.expected_answer
 
             else:
