@@ -4,9 +4,15 @@ Provides fill-in-the-blank sentences for Spanish vocabulary
 practice, with template banks for verbs, masculine nouns,
 feminine nouns, and adjectives.  Also provides English
 templates for translation cloze (EN->ES) exercises.
+
+Templates can be extended at runtime via
+`load_cloze_templates()`, which reads a JSON file and
+appends its entries to the built-in banks.
 """
 
+import json
 import random
+from pathlib import Path
 
 _VERB_TEMPLATES: list[str] = [
     "Quiero {word} contigo",
@@ -19,6 +25,11 @@ _VERB_TEMPLATES: list[str] = [
     "Espero {word} pronto",
     "Intento {word} cada día",
     "Acabo de {word}",
+    "No puedo {word} ahora",
+    "Siempre quiero {word}",
+    "Hay que {word} más",
+    "Es difícil {word}",
+    "Me encanta {word}",
 ]
 
 _NOUN_M_TEMPLATES: list[str] = [
@@ -32,6 +43,11 @@ _NOUN_M_TEMPLATES: list[str] = [
     "Quiero un {word} nuevo",
     "Tengo el {word} aquí",
     "Este {word} es mío",
+    "No encuentro el {word}",
+    "El {word} cuesta mucho",
+    "Compré un {word} ayer",
+    "El {word} es pequeño",
+    "Dame el {word}",
 ]
 
 _NOUN_F_TEMPLATES: list[str] = [
@@ -45,6 +61,11 @@ _NOUN_F_TEMPLATES: list[str] = [
     "Quiero una {word} nueva",
     "Tengo la {word} aquí",
     "Esta {word} es mía",
+    "No encuentro la {word}",
+    "La {word} cuesta mucho",
+    "Compré una {word} ayer",
+    "La {word} es pequeña",
+    "Dame la {word}",
 ]
 
 _ADJECTIVE_TEMPLATES: list[str] = [
@@ -58,6 +79,11 @@ _ADJECTIVE_TEMPLATES: list[str] = [
     "Qué {word} es",
     "Es realmente {word}",
     "No parece {word}",
+    "Siempre es {word}",
+    "Nunca es {word}",
+    "Todo parece {word}",
+    "Se ve muy {word}",
+    "Es increíblemente {word}",
 ]
 
 
@@ -137,6 +163,11 @@ _EN_VERB_TEMPLATES: list[str] = [
     "I try to {word} every day",
     "I just finished {word}ing",
     "I am going to {word}",
+    "I cannot {word} right now",
+    "I always want to {word}",
+    "It is hard to {word}",
+    "I love to {word}",
+    "We should {word} together",
 ]
 
 _EN_NOUN_TEMPLATES: list[str] = [
@@ -150,6 +181,11 @@ _EN_NOUN_TEMPLATES: list[str] = [
     "I want a new {word}",
     "I have the {word} here",
     "This {word} is mine",
+    "I cannot find the {word}",
+    "The {word} costs a lot",
+    "I bought a {word} yesterday",
+    "The {word} is small",
+    "Give me the {word}",
 ]
 
 _EN_ADJECTIVE_TEMPLATES: list[str] = [
@@ -163,7 +199,59 @@ _EN_ADJECTIVE_TEMPLATES: list[str] = [
     "How {word} it is",
     "It is really {word}",
     "It does not seem {word}",
+    "It is always {word}",
+    "It is never {word}",
+    "Everything seems {word}",
+    "It looks very {word}",
+    "It is incredibly {word}",
 ]
+
+# Map JSON keys to their corresponding template lists.
+_TEMPLATE_KEYS: dict[str, list[str]] = {
+    "verb": _VERB_TEMPLATES,
+    "noun_m": _NOUN_M_TEMPLATES,
+    "noun_f": _NOUN_F_TEMPLATES,
+    "adjective": _ADJECTIVE_TEMPLATES,
+    "en_verb": _EN_VERB_TEMPLATES,
+    "en_noun": _EN_NOUN_TEMPLATES,
+    "en_adjective": _EN_ADJECTIVE_TEMPLATES,
+}
+
+
+def load_cloze_templates(path: str | Path) -> int:
+    """Load cloze templates from a JSON file.
+
+    The JSON file should contain an object with optional keys:
+    `"verb"`, `"noun_m"`, `"noun_f"`, `"adjective"`,
+    `"en_verb"`, `"en_noun"`, `"en_adjective"`.  Each key
+    maps to a list of template strings containing `{word}`.
+
+    Templates are appended to the built-in banks, so they
+    extend (not replace) the defaults.
+
+    :param path: Path to the JSON file.
+    :return: Total number of templates added.
+    :raises FileNotFoundError: If the file does not exist.
+    :raises ValueError: If a key is unrecognised or a
+        template does not contain `{word}`.
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    count = 0
+    for key, templates in data.items():
+        if key not in _TEMPLATE_KEYS:
+            raise ValueError(
+                f"Unknown template key: {key!r}. "
+                f"Expected one of {list(_TEMPLATE_KEYS)}"
+            )
+        for t in templates:
+            if "{word}" not in t:
+                raise ValueError(
+                    f"Template missing {{word}} "
+                    f"placeholder: {t!r}"
+                )
+            _TEMPLATE_KEYS[key].append(t)
+            count += 1
+    return count
 
 
 def generate_translation_cloze_sentence(

@@ -32,7 +32,7 @@
 - [x] Add adjective agreement exercise type (gender/number matching)
 
 **Exercise Variety**
-- [ ] Add more cloze templates (and/or load from JSON for extensibility)
+- [x] Add more cloze templates (and/or load from JSON for extensibility)
 - [ ] Add sentence ordering exercise type (scrambled words)
 - [ ] Add listening/spelling exercise type
 

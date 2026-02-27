@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.31.0 - 27th February 2026
+
+- Expanded built-in cloze template banks from 10 to 15 templates per
+  category (verb, noun_m, noun_f, adjective, en_verb, en_noun,
+  en_adjective).
+- Added `load_cloze_templates()` in `sentences`: reads a JSON file and
+  appends custom templates to the built-in banks for extensibility.
+- Exported `load_cloze_templates` from the package.
+
+
 ### v0.30.0 - 27th February 2026
 
 - Added `ADJECTIVE_AGREEMENT` to `ExerciseType`: gender agreement drill

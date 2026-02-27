@@ -1,6 +1,16 @@
 """Tests for rembrandt.sentences."""
 
-from rembrandt.sentences import generate_cloze, generate_translation_cloze_sentence
+import json
+
+import pytest
+
+from rembrandt.sentences import (
+    generate_cloze,
+    generate_translation_cloze_sentence,
+    load_cloze_templates,
+    _VERB_TEMPLATES,
+    _NOUN_M_TEMPLATES,
+)
 
 
 # --- Verb Cloze Tests ---
@@ -102,3 +112,52 @@ def test_generate_translation_cloze_sentence_adjective():
     assert "___" in sentence
     assert "big" not in sentence
     assert hint == "big"
+
+
+# --- Template Count Tests ---
+
+
+def test_builtin_template_counts():
+    assert len(_VERB_TEMPLATES) >= 15
+    assert len(_NOUN_M_TEMPLATES) >= 15
+
+
+# --- load_cloze_templates Tests ---
+
+
+def test_load_cloze_templates(tmp_path):
+    data = {
+        "verb": ["Necesitamos {word} juntos"],
+        "noun_m": ["Vi el {word} ayer"],
+    }
+    path = tmp_path / "templates.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    before = len(_VERB_TEMPLATES)
+    count = load_cloze_templates(path)
+    assert count == 2
+    assert len(_VERB_TEMPLATES) == before + 1
+    assert "Necesitamos {word} juntos" in _VERB_TEMPLATES
+    # Clean up to avoid affecting other tests
+    _VERB_TEMPLATES.remove("Necesitamos {word} juntos")
+    _NOUN_M_TEMPLATES.remove("Vi el {word} ayer")
+
+
+def test_load_cloze_templates_unknown_key(tmp_path):
+    data = {"unknown_key": ["bad {word}"]}
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="Unknown template key"):
+        load_cloze_templates(path)
+
+
+def test_load_cloze_templates_missing_placeholder(tmp_path):
+    data = {"verb": ["No placeholder here"]}
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(ValueError, match="missing.*placeholder"):
+        load_cloze_templates(path)
+
+
+def test_load_cloze_templates_file_not_found():
+    with pytest.raises(FileNotFoundError):
+        load_cloze_templates("/nonexistent/path.json")
