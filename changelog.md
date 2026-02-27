@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.29.0 - 27th February 2026
+
+- Added irregular verbs to `conjugation` engine:
+  - `conocer`: c→zc change in presente/subjuntivo
+  - `dormir`: o→ue/u stem change
+  - `pedir`: e→i stem change
+  - `sentir`: e→ie/i stem change
+  - `jugar`: u→ue stem change
+
+
 ### v0.28.0 - 27th February 2026
 
 - Added tenses to `conjugation` engine:

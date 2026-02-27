@@ -240,6 +240,116 @@ def test_conjugate_decir_futuro():
     )
 
 
+def test_conjugate_conocer():
+    assert (
+        conjugate("conocer", "er", "presente", 0)
+        == "conozco"
+    )
+    assert (
+        conjugate("conocer", "er", "presente", 1)
+        == "conoces"
+    )
+    assert (
+        conjugate("conocer", "er", "subjuntivo_presente", 0)
+        == "conozca"
+    )
+    # Regular in pretérito (fallthrough)
+    assert (
+        conjugate("conocer", "er", "pretérito", 0)
+        == "conocí"
+    )
+
+
+def test_conjugate_dormir():
+    assert (
+        conjugate("dormir", "ir", "presente", 0)
+        == "duermo"
+    )
+    assert (
+        conjugate("dormir", "ir", "presente", 3)
+        == "dormimos"
+    )
+    assert (
+        conjugate("dormir", "ir", "pretérito", 2)
+        == "durmió"
+    )
+    assert (
+        conjugate("dormir", "ir", "subjuntivo_presente", 0)
+        == "duerma"
+    )
+    assert (
+        conjugate("dormir", "ir", "subjuntivo_presente", 3)
+        == "durmamos"
+    )
+    # Regular in futuro (fallthrough)
+    assert (
+        conjugate("dormir", "ir", "futuro", 0) == "dormiré"
+    )
+
+
+def test_conjugate_pedir():
+    assert (
+        conjugate("pedir", "ir", "presente", 0) == "pido"
+    )
+    assert (
+        conjugate("pedir", "ir", "pretérito", 2) == "pidió"
+    )
+    assert (
+        conjugate("pedir", "ir", "subjuntivo_presente", 0)
+        == "pida"
+    )
+
+
+def test_conjugate_sentir():
+    assert (
+        conjugate("sentir", "ir", "presente", 0) == "siento"
+    )
+    assert (
+        conjugate("sentir", "ir", "presente", 5)
+        == "sienten"
+    )
+    assert (
+        conjugate("sentir", "ir", "pretérito", 2)
+        == "sintió"
+    )
+    assert (
+        conjugate("sentir", "ir", "subjuntivo_presente", 0)
+        == "sienta"
+    )
+    assert (
+        conjugate("sentir", "ir", "subjuntivo_presente", 3)
+        == "sintamos"
+    )
+
+
+def test_conjugate_jugar():
+    assert (
+        conjugate("jugar", "ar", "presente", 0) == "juego"
+    )
+    assert (
+        conjugate("jugar", "ar", "presente", 3) == "jugamos"
+    )
+    assert (
+        conjugate("jugar", "ar", "pretérito", 0) == "jugué"
+    )
+    assert (
+        conjugate("jugar", "ar", "subjuntivo_presente", 0)
+        == "juegue"
+    )
+    # Regular in futuro (fallthrough)
+    assert (
+        conjugate("jugar", "ar", "futuro", 0) == "jugaré"
+    )
+
+
+def test_can_conjugate_new_irregulars():
+    assert can_conjugate("conocer", "er") is True
+    assert can_conjugate("dormir", "ir") is True
+    assert can_conjugate("pedir", "ir") is True
+    assert can_conjugate("sentir", "ir") is True
+    assert can_conjugate("jugar", "ar") is True
+
+
 # --- Validation Tests ---
 
 

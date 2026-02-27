@@ -434,6 +434,72 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "salgamos", "salgáis", "salgan",
         ],
     },
+    "conocer": {
+        "presente": [
+            "conozco", "conoces", "conoce",
+            "conocemos", "conocéis", "conocen",
+        ],
+        "subjuntivo_presente": [
+            "conozca", "conozcas", "conozca",
+            "conozcamos", "conozcáis", "conozcan",
+        ],
+    },
+    "dormir": {
+        "presente": [
+            "duermo", "duermes", "duerme",
+            "dormimos", "dormís", "duermen",
+        ],
+        "pretérito": [
+            "dormí", "dormiste", "durmió",
+            "dormimos", "dormisteis", "durmieron",
+        ],
+        "subjuntivo_presente": [
+            "duerma", "duermas", "duerma",
+            "durmamos", "durmáis", "duerman",
+        ],
+    },
+    "pedir": {
+        "presente": [
+            "pido", "pides", "pide",
+            "pedimos", "pedís", "piden",
+        ],
+        "pretérito": [
+            "pedí", "pediste", "pidió",
+            "pedimos", "pedisteis", "pidieron",
+        ],
+        "subjuntivo_presente": [
+            "pida", "pidas", "pida",
+            "pidamos", "pidáis", "pidan",
+        ],
+    },
+    "sentir": {
+        "presente": [
+            "siento", "sientes", "siente",
+            "sentimos", "sentís", "sienten",
+        ],
+        "pretérito": [
+            "sentí", "sentiste", "sintió",
+            "sentimos", "sentisteis", "sintieron",
+        ],
+        "subjuntivo_presente": [
+            "sienta", "sientas", "sienta",
+            "sintamos", "sintáis", "sientan",
+        ],
+    },
+    "jugar": {
+        "presente": [
+            "juego", "juegas", "juega",
+            "jugamos", "jugáis", "juegan",
+        ],
+        "pretérito": [
+            "jugué", "jugaste", "jugó",
+            "jugamos", "jugasteis", "jugaron",
+        ],
+        "subjuntivo_presente": [
+            "juegue", "juegues", "juegue",
+            "juguemos", "juguéis", "jueguen",
+        ],
+    },
     "ver": {
         "presente": [
             "veo", "ves", "ve",
