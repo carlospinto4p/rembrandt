@@ -82,7 +82,10 @@ def main() -> None:
                 )
 
             elif etype == ExerciseType.TRANSLATION_CLOZE:
-                print(f"Translate: {exercise.prompt}")
+                print(
+                    "Translate the word: "
+                    f"{exercise.prompt}"
+                )
 
             else:
                 # FLASHCARD / REVERSE_FLASHCARD

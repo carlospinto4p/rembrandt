@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.13 - 27th February 2026
+
+- Fixed `06_spanish_translation_quiz.py`: changed translation cloze prompt
+  from "Translate:" to "Translate the word:" to clarify that only the
+  Spanish word is expected, not the full sentence.
+
+
 ### v0.24.12 - 27th February 2026
 
 - Fixed `generate_cloze_exercise()`: prompt now includes the English
