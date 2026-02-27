@@ -13,6 +13,7 @@ from rembrandt.models import (
     SessionStats,
     User,
     UserSession,
+    WeakWord,
     Word,
 )
 from rembrandt.session import Session, quick_session
@@ -30,6 +31,7 @@ __all__ = [
     "SessionStats",
     "User",
     "UserSession",
+    "WeakWord",
     "Word",
     "lesson_progress",
     "load_lessons",

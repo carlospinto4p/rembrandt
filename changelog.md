@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.27.0 - 27th February 2026
+
+- Added `WeakWord` model in `models`: tracks words with high error rates.
+- Added `Database.weak_words()`: find words the user consistently gets wrong,
+  with configurable `threshold`, `min_attempts`, and `limit`.
+- Updated `select_words()`: added `prioritize_weak` parameter to sort due
+  words so weak words come first.
+- Exported `WeakWord` from the package.
+
+
 ### v0.26.0 - 27th February 2026
 
 - Added `answer_history` table in `db`: stores per-answer logs with

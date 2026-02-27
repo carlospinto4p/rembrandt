@@ -15,6 +15,7 @@ from rembrandt.models import (
     User,
     UserProgress,
     UserSession,
+    WeakWord,
     Word,
 )
 
@@ -766,6 +767,82 @@ class Database:
                 correct=r["correct"],
                 accuracy_pct=round(
                     r["correct"] / r["answers"] * 100, 1,
+                ),
+            )
+            for r in rows
+        ]
+
+    def weak_words(
+        self,
+        user_id: str,
+        language_from: str,
+        language_to: str,
+        *,
+        threshold: float = 0.5,
+        min_attempts: int = 3,
+        limit: int = 20,
+    ) -> list[WeakWord]:
+        """Find words the user consistently gets wrong.
+
+        A word is "weak" when its error rate meets or exceeds
+        `threshold` and it has at least `min_attempts` answers.
+
+        :param user_id: The user identifier.
+        :param language_from: Source language code.
+        :param language_to: Target language code.
+        :param threshold: Minimum error rate (0.0-1.0).
+        :param min_attempts: Minimum answer count.
+        :param limit: Maximum results to return.
+        :return: List of `WeakWord`, highest error rate first.
+        """
+        rows = self._conn.execute(
+            "SELECT w.id, w.language_from, "
+            "w.language_to, w.word_from, w.word_to, "
+            "w.gender, w.conjugation_group, "
+            "w.tags, w.cefr, "
+            "COUNT(*) AS attempts, "
+            "SUM(CASE WHEN ah.correct = 0 "
+            "    THEN 1 ELSE 0 END) AS errors, "
+            "MAX(ah.answered_at) AS last_attempt "
+            "FROM answer_history ah "
+            "JOIN words w ON w.id = ah.word_id "
+            "WHERE ah.user_id = ? "
+            "AND w.language_from = ? "
+            "AND w.language_to = ? "
+            "GROUP BY ah.word_id "
+            "HAVING attempts >= ? "
+            "AND CAST(errors AS REAL) "
+            "    / attempts >= ? "
+            "ORDER BY CAST(errors AS REAL) "
+            "    / attempts DESC "
+            "LIMIT ?",
+            (
+                user_id, language_from, language_to,
+                min_attempts, threshold, limit,
+            ),
+        ).fetchall()
+        return [
+            WeakWord(
+                word=Word(
+                    id=r["id"],
+                    language_from=r["language_from"],
+                    language_to=r["language_to"],
+                    word_from=r["word_from"],
+                    word_to=r["word_to"],
+                    gender=r["gender"],
+                    conjugation_group=(
+                        r["conjugation_group"]
+                    ),
+                    tags=json.loads(r["tags"]),
+                    cefr=r["cefr"],
+                ),
+                attempts=r["attempts"],
+                errors=r["errors"],
+                error_rate=round(
+                    r["errors"] / r["attempts"], 2,
+                ),
+                last_attempt=datetime.strptime(
+                    r["last_attempt"], _ISO_FMT,
                 ),
             )
             for r in rows

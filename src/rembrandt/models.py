@@ -247,6 +247,23 @@ class UserProgress(BaseModel):
     )
 
 
+class WeakWord(BaseModel):
+    """A word the user consistently gets wrong.
+
+    :param word: The vocabulary word.
+    :param attempts: Total number of attempts.
+    :param errors: Number of incorrect attempts.
+    :param error_rate: `errors / attempts`.
+    :param last_attempt: Timestamp of the most recent attempt.
+    """
+
+    word: Word
+    attempts: int
+    errors: int
+    error_rate: float
+    last_attempt: datetime
+
+
 class AnswerHistory(BaseModel):
     """A single recorded answer in the history log.
 

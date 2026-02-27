@@ -213,6 +213,27 @@ print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
 A word is "studied" once it has any review history, and "mastered"
 after 3+ consecutive correct recalls (SM-2 repetitions >= 3).
 
+## Weak Word Detection
+
+Identify words the user consistently gets wrong and prioritize them in
+review sessions:
+
+```python
+# Find weak words (>= 50% error rate, >= 3 attempts)
+weak = db.weak_words("user1", "en", "es")
+for ww in weak:
+    print(f"{ww.word.word_from}: {ww.errors}/{ww.attempts}"
+          f" ({ww.error_rate:.0%} error rate)")
+
+# Prioritize weak words in a session
+from rembrandt.spaced_repetition import select_words
+
+words = select_words(
+    db, "user1", "en", "es",
+    prioritize_weak=True,
+)
+```
+
 ## Historical Stats
 
 Every call to `session.answer()` automatically logs the result. Query

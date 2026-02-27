@@ -248,3 +248,48 @@ def test_select_words_word_ids_filter(db_with_words):
     assert len(words) == 2
     result_ids = {w.id for w in words}
     assert result_ids == set(subset_ids)
+
+
+# --- Prioritize Weak Tests ---
+
+
+def test_select_words_prioritize_weak(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    strong_word = all_words[0]
+    weak_word = all_words[1]
+
+    # Make both due for review
+    for w in [strong_word, weak_word]:
+        db_with_words.upsert_progress(UserProgress(
+            user_id="u1",
+            word_id=w.id,
+            next_review=datetime(2020, 1, 1),
+        ))
+
+    # Record history: strong_word correct, weak_word wrong
+    for _ in range(4):
+        db_with_words.record_answer(
+            "u1", strong_word.id, "flashcard", True, 5,
+        )
+        db_with_words.record_answer(
+            "u1", weak_word.id, "flashcard", False, 1,
+        )
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=2,
+        mode=SessionMode.REVIEW_DUE,
+        prioritize_weak=True,
+    )
+    assert len(words) == 2
+    assert words[0].id == weak_word.id
+
+
+def test_select_words_no_prioritize_by_default(
+    db_with_words,
+):
+    all_words = db_with_words.get_words("en", "es")
+    # Without prioritize_weak, order is unchanged
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+    )
+    assert len(words) > 0

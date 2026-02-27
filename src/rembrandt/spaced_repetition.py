@@ -64,6 +64,7 @@ def select_words(
     *,
     mode: SessionMode = SessionMode.MIXED,
     word_ids: list[int] | None = None,
+    prioritize_weak: bool = False,
 ) -> list[Word]:
     """Pick words for review using spaced-repetition scheduling.
 
@@ -78,6 +79,8 @@ def select_words(
         words. `REVIEW_DUE` returns only due words.
     :param word_ids: If provided, restrict selection to these
         word ids (e.g. from a lesson).
+    :param prioritize_weak: When `True`, sorts due words so
+        that weak words (high error rate) come first.
     :return: List of `Word` objects to review.
     """
     all_words = db.get_words(language_from, language_to)
@@ -107,6 +110,15 @@ def select_words(
             new.append(word)
         elif progress.next_review <= now:
             due.append(word)
+
+    if prioritize_weak and due:
+        weak = db.weak_words(
+            user_id, language_from, language_to,
+        )
+        weak_ids = {ww.word.id for ww in weak}
+        due.sort(
+            key=lambda w: w.id not in weak_ids,
+        )
 
     if mode == SessionMode.LEARN_NEW:
         return new[:count]

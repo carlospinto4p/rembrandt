@@ -1018,3 +1018,125 @@ def test_daily_stats_multiple_days(db):
     assert len(stats) == 2
     assert stats[0].date == "2026-02-27"
     assert stats[1].date == "2026-02-26"
+
+
+# --- Weak Word Detection Tests ---
+
+
+def _add_history(db, user_id, word_id, correct, n):
+    """Helper to insert N answer_history rows."""
+    for _ in range(n):
+        db._conn.execute(
+            "INSERT INTO answer_history "
+            "(user_id, word_id, exercise_type, "
+            " correct, quality, answered_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, word_id, "flashcard",
+             int(correct), 5 if correct else 1,
+             "2026-02-27T10:00:00"),
+        )
+    db._conn.commit()
+
+
+def test_weak_words_empty(db):
+    result = db.weak_words("u1", "en", "es")
+    assert result == []
+
+
+def test_weak_words_detects_weak(db):
+    w = db.add_word("en", "es", "cat", "gato")
+    # 1 correct + 3 incorrect = 75% error rate
+    _add_history(db, "u1", w.id, True, 1)
+    _add_history(db, "u1", w.id, False, 3)
+    result = db.weak_words("u1", "en", "es")
+    assert len(result) == 1
+    assert result[0].word.id == w.id
+    assert result[0].attempts == 4
+    assert result[0].errors == 3
+    assert result[0].error_rate == 0.75
+
+
+def test_weak_words_excludes_strong(db):
+    w = db.add_word("en", "es", "cat", "gato")
+    # 4 correct + 0 incorrect = 0% error rate
+    _add_history(db, "u1", w.id, True, 4)
+    result = db.weak_words("u1", "en", "es")
+    assert result == []
+
+
+def test_weak_words_min_attempts(db):
+    w = db.add_word("en", "es", "cat", "gato")
+    # Only 2 attempts (below default min_attempts=3)
+    _add_history(db, "u1", w.id, False, 2)
+    result = db.weak_words("u1", "en", "es")
+    assert result == []
+
+    result = db.weak_words(
+        "u1", "en", "es", min_attempts=2,
+    )
+    assert len(result) == 1
+
+
+def test_weak_words_threshold(db):
+    w = db.add_word("en", "es", "cat", "gato")
+    # 2 correct + 1 incorrect = 33% error rate
+    _add_history(db, "u1", w.id, True, 2)
+    _add_history(db, "u1", w.id, False, 1)
+
+    # Default threshold 0.5 => not weak
+    result = db.weak_words("u1", "en", "es")
+    assert result == []
+
+    # Lower threshold => weak
+    result = db.weak_words(
+        "u1", "en", "es", threshold=0.3,
+    )
+    assert len(result) == 1
+
+
+def test_weak_words_ordered_by_error_rate(db):
+    w1 = db.add_word("en", "es", "cat", "gato")
+    w2 = db.add_word("en", "es", "dog", "perro")
+    # w1: 50% error rate
+    _add_history(db, "u1", w1.id, True, 2)
+    _add_history(db, "u1", w1.id, False, 2)
+    # w2: 75% error rate
+    _add_history(db, "u1", w2.id, True, 1)
+    _add_history(db, "u1", w2.id, False, 3)
+
+    result = db.weak_words("u1", "en", "es")
+    assert len(result) == 2
+    assert result[0].word.id == w2.id
+    assert result[1].word.id == w1.id
+
+
+def test_weak_words_filters_by_language(db):
+    w1 = db.add_word("en", "es", "cat", "gato")
+    w2 = db.add_word("en", "fr", "cat", "chat")
+    _add_history(db, "u1", w1.id, False, 4)
+    _add_history(db, "u1", w2.id, False, 4)
+
+    result = db.weak_words("u1", "en", "es")
+    assert len(result) == 1
+    assert result[0].word.id == w1.id
+
+
+def test_weak_words_filters_by_user(db):
+    w = db.add_word("en", "es", "cat", "gato")
+    _add_history(db, "u1", w.id, False, 4)
+    _add_history(db, "u2", w.id, False, 4)
+
+    result = db.weak_words("u1", "en", "es")
+    assert len(result) == 1
+
+    result = db.weak_words("u2", "en", "es")
+    assert len(result) == 1
+
+
+def test_weak_words_limit(db):
+    for i in range(5):
+        w = db.add_word("en", "es", f"word{i}", f"w{i}")
+        _add_history(db, "u1", w.id, False, 4)
+
+    result = db.weak_words("u1", "en", "es", limit=3)
+    assert len(result) == 3

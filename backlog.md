@@ -37,9 +37,9 @@
 - [ ] Add listening/spelling exercise type
 
 **Data & Progress**
-- [ ] Add progress export/import (JSON export of progress table)
-- [ ] Add historical stats tracking (accuracy trends, words learned per day)
-- [ ] Add weak word detection (surface consistently wrong words more often)
+- [x] Add progress export/import (JSON export of progress table)
+- [x] Add historical stats tracking (accuracy trends, words learned per day)
+- [x] Add weak word detection (surface consistently wrong words more often)
 
 **Architecture**
 - [ ] Add LLM integration (dynamic sentences, explanations, contextual examples)

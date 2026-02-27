@@ -18,6 +18,7 @@ from rembrandt.models import (
     User,
     UserProgress,
     UserSession,
+    WeakWord,
     Word,
     learning_mode,
 )
@@ -481,3 +482,27 @@ def test_daily_stats_creation():
     assert ds.answers == 10
     assert ds.correct == 7
     assert ds.accuracy_pct == 70.0
+
+
+# --- WeakWord Tests ---
+
+
+def test_weak_word_creation():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ww = WeakWord(
+        word=word,
+        attempts=10,
+        errors=7,
+        error_rate=0.7,
+        last_attempt=datetime(2026, 2, 27, 10, 0, 0),
+    )
+    assert ww.word.id == 1
+    assert ww.attempts == 10
+    assert ww.errors == 7
+    assert ww.error_rate == 0.7
