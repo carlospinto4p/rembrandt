@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v0.33.0 - 27th February 2026
+
+- Added `load_exercise_config()` in `exercises`: unified config loader
+  that reads a single JSON file to extend both cloze templates and
+  adjective pairs.
+- Added `extend_adjectives()` in `exercises`: programmatically extend
+  the adjective bank with custom `[masculine, feminine]` pairs.
+- Added `extend_cloze_templates()` in `sentences`: dict-based core
+  logic extracted from `load_cloze_templates()`.
+- Exported `load_exercise_config` from the package.
+
+
 ### v0.32.0 - 27th February 2026
 
 - Added `SENTENCE_ORDER` to `ExerciseType`: scrambled-word exercise

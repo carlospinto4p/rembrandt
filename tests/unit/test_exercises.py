@@ -1,9 +1,13 @@
 """Tests for rembrandt.exercises."""
 
+import json
+
 import pytest
 
 from rembrandt.exercises import (
+    _ADJECTIVES,
     evaluate_answer,
+    extend_adjectives,
     generate_adjective_agreement,
     generate_cloze_exercise,
     generate_conjugation,
@@ -15,6 +19,7 @@ from rembrandt.exercises import (
     generate_translation_cloze,
     generate_reverse_flashcard,
     generate_self_graded,
+    load_exercise_config,
 )
 from rembrandt.models import Exercise, ExerciseType, Word
 
@@ -958,3 +963,90 @@ def test_generate_exercise_includes_sentence_order():
         ex = generate_exercise(words[0], words)
         types.add(ex.exercise_type)
     assert ExerciseType.SENTENCE_ORDER in types
+
+
+# --- extend_adjectives Tests ---
+
+
+def test_extend_adjectives():
+    before = len(_ADJECTIVES)
+    count = extend_adjectives([
+        ["grande", "grande"],
+        ["azul", "azul"],
+    ])
+    assert count == 2
+    assert len(_ADJECTIVES) == before + 2
+    assert ("grande", "grande") in _ADJECTIVES
+    # Clean up
+    _ADJECTIVES.remove(("grande", "grande"))
+    _ADJECTIVES.remove(("azul", "azul"))
+
+
+def test_extend_adjectives_invalid_pair():
+    with pytest.raises(
+        ValueError, match="must have 2 elements"
+    ):
+        extend_adjectives([["only_one"]])
+
+
+# --- load_exercise_config Tests ---
+
+
+def test_load_exercise_config_templates_and_adjectives(
+    tmp_path,
+):
+    data = {
+        "templates": {
+            "verb": ["Deberías {word} más"],
+        },
+        "adjectives": [
+            ["oscuro", "oscura"],
+        ],
+    }
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    before_adj = len(_ADJECTIVES)
+    result = load_exercise_config(path)
+    assert result["templates"] == 1
+    assert result["adjectives"] == 1
+    assert len(_ADJECTIVES) == before_adj + 1
+    # Clean up
+    _ADJECTIVES.remove(("oscuro", "oscura"))
+    from rembrandt.sentences import _VERB_TEMPLATES
+    _VERB_TEMPLATES.remove("Deberías {word} más")
+
+
+def test_load_exercise_config_templates_only(tmp_path):
+    data = {
+        "templates": {
+            "adjective": ["Es algo {word}"],
+        },
+    }
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    result = load_exercise_config(path)
+    assert result["templates"] == 1
+    assert result["adjectives"] == 0
+    # Clean up
+    from rembrandt.sentences import _ADJECTIVE_TEMPLATES
+    _ADJECTIVE_TEMPLATES.remove("Es algo {word}")
+
+
+def test_load_exercise_config_adjectives_only(tmp_path):
+    data = {
+        "adjectives": [["claro", "clara"]],
+    }
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    before = len(_ADJECTIVES)
+    result = load_exercise_config(path)
+    assert result["templates"] == 0
+    assert result["adjectives"] == 1
+    assert len(_ADJECTIVES) == before + 1
+    # Clean up
+    _ADJECTIVES.remove(("claro", "clara"))
+
+
+def test_load_exercise_config_file_not_found():
+    with pytest.raises(FileNotFoundError):
+        load_exercise_config("/nonexistent/config.json")

@@ -16,6 +16,7 @@ from rembrandt.models import (
     WeakWord,
     Word,
 )
+from rembrandt.exercises import load_exercise_config
 from rembrandt.sentences import load_cloze_templates
 from rembrandt.session import Session, quick_session
 
@@ -36,6 +37,7 @@ __all__ = [
     "Word",
     "lesson_progress",
     "load_cloze_templates",
+    "load_exercise_config",
     "load_lessons",
     "quick_session",
 ]

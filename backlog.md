@@ -43,7 +43,7 @@
 
 **Architecture**
 - [ ] Add LLM integration (dynamic sentences, explanations, contextual examples)
-- [ ] Add pluggable template system (load templates from config files)
+- [x] Add pluggable template system (load templates from config files)
 
 ### 2026.02.27 (v0.27.0 refactor review)
 

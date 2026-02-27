@@ -1,12 +1,18 @@
 """Exercise generation and answer evaluation."""
 
+import json
 import re
 import random
 import unicodedata
 from functools import partial
+from pathlib import Path
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
-from rembrandt.sentences import generate_cloze, generate_translation_cloze_sentence
+from rembrandt.sentences import (
+    extend_cloze_templates,
+    generate_cloze,
+    generate_translation_cloze_sentence,
+)
 from rembrandt.models import (
     AnswerResult,
     Exercise,
@@ -235,6 +241,64 @@ _ADJECTIVES: list[tuple[str, str]] = [
     ("limpio", "limpia"),
     ("rico", "rica"),
 ]
+
+
+def extend_adjectives(
+    pairs: list[list[str] | tuple[str, str]],
+) -> int:
+    """Extend the built-in adjective bank.
+
+    :param pairs: List of `[masculine, feminine]` pairs.
+    :return: Number of adjectives added.
+    :raises ValueError: If a pair does not have exactly 2
+        elements.
+    """
+    count = 0
+    for pair in pairs:
+        if len(pair) != 2:
+            raise ValueError(
+                f"Adjective pair must have 2 elements, "
+                f"got {len(pair)}: {pair!r}"
+            )
+        _ADJECTIVES.append((pair[0], pair[1]))
+        count += 1
+    return count
+
+
+def load_exercise_config(path: str | Path) -> dict[str, int]:
+    """Load exercise configuration from a JSON file.
+
+    A single config file can extend both cloze templates and
+    the adjective bank.  The JSON object may contain:
+
+    - `"templates"`: a dict of template-bank keys to lists
+      of template strings (same format as
+      `load_cloze_templates()`).
+    - `"adjectives"`: a list of `[masculine, feminine]`
+      string pairs.
+
+    Both keys are optional.
+
+    :param path: Path to the JSON config file.
+    :return: A dict with counts: `{"templates": N,
+        "adjectives": M}`.
+    :raises FileNotFoundError: If the file does not exist.
+    :raises ValueError: If any entry is invalid.
+    """
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    result: dict[str, int] = {
+        "templates": 0,
+        "adjectives": 0,
+    }
+    if "templates" in data:
+        result["templates"] = extend_cloze_templates(
+            data["templates"],
+        )
+    if "adjectives" in data:
+        result["adjectives"] = extend_adjectives(
+            data["adjectives"],
+        )
+    return result
 
 
 def generate_adjective_agreement(word: Word) -> Exercise:

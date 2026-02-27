@@ -218,6 +218,37 @@ _TEMPLATE_KEYS: dict[str, list[str]] = {
 }
 
 
+def extend_cloze_templates(
+    data: dict[str, list[str]],
+) -> int:
+    """Extend built-in cloze template banks from a dict.
+
+    :param data: Mapping of template-bank keys to lists of
+        template strings.  Valid keys: `"verb"`, `"noun_m"`,
+        `"noun_f"`, `"adjective"`, `"en_verb"`, `"en_noun"`,
+        `"en_adjective"`.
+    :return: Total number of templates added.
+    :raises ValueError: If a key is unrecognised or a
+        template does not contain `{word}`.
+    """
+    count = 0
+    for key, templates in data.items():
+        if key not in _TEMPLATE_KEYS:
+            raise ValueError(
+                f"Unknown template key: {key!r}. "
+                f"Expected one of {list(_TEMPLATE_KEYS)}"
+            )
+        for t in templates:
+            if "{word}" not in t:
+                raise ValueError(
+                    f"Template missing {{word}} "
+                    f"placeholder: {t!r}"
+                )
+            _TEMPLATE_KEYS[key].append(t)
+            count += 1
+    return count
+
+
 def load_cloze_templates(path: str | Path) -> int:
     """Load cloze templates from a JSON file.
 
@@ -236,22 +267,7 @@ def load_cloze_templates(path: str | Path) -> int:
         template does not contain `{word}`.
     """
     data = json.loads(Path(path).read_text(encoding="utf-8"))
-    count = 0
-    for key, templates in data.items():
-        if key not in _TEMPLATE_KEYS:
-            raise ValueError(
-                f"Unknown template key: {key!r}. "
-                f"Expected one of {list(_TEMPLATE_KEYS)}"
-            )
-        for t in templates:
-            if "{word}" not in t:
-                raise ValueError(
-                    f"Template missing {{word}} "
-                    f"placeholder: {t!r}"
-                )
-            _TEMPLATE_KEYS[key].append(t)
-            count += 1
-    return count
+    return extend_cloze_templates(data)
 
 
 def generate_translation_cloze_sentence(

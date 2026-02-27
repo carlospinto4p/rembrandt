@@ -273,6 +273,37 @@ count = db.import_progress(records)
 print(f"Imported {count} records")
 ```
 
+## Custom Exercise Config
+
+Extend the built-in cloze templates and adjective bank from a single
+JSON config file:
+
+```python
+from rembrandt import load_exercise_config
+
+result = load_exercise_config("my_config.json")
+print(f"Added {result['templates']} templates,"
+      f" {result['adjectives']} adjectives")
+```
+
+The JSON file supports two optional keys:
+
+```json
+{
+  "templates": {
+    "verb": ["Deberías {word} más"],
+    "noun_m": ["El {word} brilla"]
+  },
+  "adjectives": [
+    ["oscuro", "oscura"],
+    ["claro", "clara"]
+  ]
+}
+```
+
+Template keys: `verb`, `noun_m`, `noun_f`, `adjective`, `en_verb`,
+`en_noun`, `en_adjective`. Each template must contain `{word}`.
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:

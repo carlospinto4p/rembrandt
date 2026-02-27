@@ -5,6 +5,7 @@ import json
 import pytest
 
 from rembrandt.sentences import (
+    extend_cloze_templates,
     generate_cloze,
     generate_translation_cloze_sentence,
     load_cloze_templates,
@@ -161,3 +162,21 @@ def test_load_cloze_templates_missing_placeholder(tmp_path):
 def test_load_cloze_templates_file_not_found():
     with pytest.raises(FileNotFoundError):
         load_cloze_templates("/nonexistent/path.json")
+
+
+# --- extend_cloze_templates Tests ---
+
+
+def test_extend_cloze_templates_dict():
+    before = len(_VERB_TEMPLATES)
+    count = extend_cloze_templates(
+        {"verb": ["Debemos {word} juntos"]},
+    )
+    assert count == 1
+    assert len(_VERB_TEMPLATES) == before + 1
+    _VERB_TEMPLATES.remove("Debemos {word} juntos")
+
+
+def test_extend_cloze_templates_unknown_key():
+    with pytest.raises(ValueError, match="Unknown template key"):
+        extend_cloze_templates({"bad_key": ["{word}"]})
