@@ -213,6 +213,24 @@ print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
 A word is "studied" once it has any review history, and "mastered"
 after 3+ consecutive correct recalls (SM-2 repetitions >= 3).
 
+## Historical Stats
+
+Every call to `session.answer()` automatically logs the result. Query
+the history for trends and daily summaries:
+
+```python
+# Recent answer history
+history = db.get_answer_history("user1", limit=50)
+for h in history:
+    status = "correct" if h.correct else "wrong"
+    print(f"Word {h.word_id}: {status} (q={h.quality})")
+
+# Daily statistics (last 30 days)
+for day in db.daily_stats("user1", days=30):
+    print(f"{day.date}: {day.correct}/{day.answers}"
+          f" ({day.accuracy_pct}%)")
+```
+
 ## Progress Export/Import
 
 Export a user's spaced-repetition progress as JSON-serializable dicts,

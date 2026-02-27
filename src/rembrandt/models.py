@@ -247,6 +247,44 @@ class UserProgress(BaseModel):
     )
 
 
+class AnswerHistory(BaseModel):
+    """A single recorded answer in the history log.
+
+    :param id: Unique identifier (assigned by the database).
+    :param user_id: Identifier for the user.
+    :param word_id: Identifier for the word.
+    :param exercise_type: The exercise type used.
+    :param correct: Whether the answer was correct.
+    :param quality: SM-2 quality score (0-5).
+    :param answered_at: Timestamp of the answer.
+    """
+
+    id: int | None = None
+    user_id: str
+    word_id: int
+    exercise_type: str
+    correct: bool
+    quality: int
+    answered_at: datetime = Field(
+        default_factory=datetime.now
+    )
+
+
+class DailyStats(BaseModel):
+    """Aggregated statistics for a single day.
+
+    :param date: The date (YYYY-MM-DD string).
+    :param answers: Total answers given that day.
+    :param correct: Number of correct answers.
+    :param accuracy_pct: `correct / answers * 100`.
+    """
+
+    date: str
+    answers: int
+    correct: int
+    accuracy_pct: float
+
+
 def learning_mode(word: Word) -> LearningMode:
     """Derive the learning mode from a word's language pair.
 

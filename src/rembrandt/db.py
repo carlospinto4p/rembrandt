@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from rembrandt.models import (
+    AnswerHistory,
+    DailyStats,
     Lesson,
     User,
     UserProgress,
@@ -77,6 +79,17 @@ CREATE TABLE IF NOT EXISTS lesson_words (
     PRIMARY KEY (lesson_id, word_id),
     FOREIGN KEY (lesson_id) REFERENCES lessons(id),
     FOREIGN KEY (word_id)   REFERENCES words(id)
+);
+
+CREATE TABLE IF NOT EXISTS answer_history (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       TEXT    NOT NULL,
+    word_id       INTEGER NOT NULL,
+    exercise_type TEXT    NOT NULL,
+    correct       INTEGER NOT NULL,
+    quality       INTEGER NOT NULL,
+    answered_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (word_id) REFERENCES words(id)
 );
 """
 
@@ -633,6 +646,130 @@ class Database:
                     ),
                 )
         return len(records)
+
+    # -- Answer History -----------------------------------------------
+
+    def record_answer(
+        self,
+        user_id: str,
+        word_id: int,
+        exercise_type: str,
+        correct: bool,
+        quality: int,
+    ) -> None:
+        """Record a single answer in the history log.
+
+        :param user_id: The user identifier.
+        :param word_id: The word identifier.
+        :param exercise_type: The exercise type string.
+        :param correct: Whether the answer was correct.
+        :param quality: SM-2 quality score (0-5).
+        """
+        self._conn.execute(
+            "INSERT INTO answer_history "
+            "(user_id, word_id, exercise_type, "
+            " correct, quality) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (
+                user_id, word_id, exercise_type,
+                int(correct), quality,
+            ),
+        )
+        self._conn.commit()
+
+    def get_answer_history(
+        self,
+        user_id: str,
+        *,
+        limit: int = 100,
+        since: datetime | None = None,
+    ) -> list[AnswerHistory]:
+        """Fetch recent answer history for a user.
+
+        :param user_id: The user identifier.
+        :param limit: Maximum number of records to return.
+        :param since: Only return answers after this datetime.
+        :return: List of `AnswerHistory` records, newest first.
+        """
+        if since is not None:
+            rows = self._conn.execute(
+                "SELECT id, user_id, word_id, "
+                "exercise_type, correct, quality, "
+                "answered_at "
+                "FROM answer_history "
+                "WHERE user_id = ? "
+                "AND answered_at >= ? "
+                "ORDER BY answered_at DESC "
+                "LIMIT ?",
+                (
+                    user_id,
+                    since.strftime(_ISO_FMT),
+                    limit,
+                ),
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT id, user_id, word_id, "
+                "exercise_type, correct, quality, "
+                "answered_at "
+                "FROM answer_history "
+                "WHERE user_id = ? "
+                "ORDER BY answered_at DESC "
+                "LIMIT ?",
+                (user_id, limit),
+            ).fetchall()
+        return [
+            AnswerHistory(
+                id=r["id"],
+                user_id=r["user_id"],
+                word_id=r["word_id"],
+                exercise_type=r["exercise_type"],
+                correct=bool(r["correct"]),
+                quality=r["quality"],
+                answered_at=datetime.strptime(
+                    r["answered_at"], _ISO_FMT,
+                ),
+            )
+            for r in rows
+        ]
+
+    def daily_stats(
+        self,
+        user_id: str,
+        *,
+        days: int = 30,
+    ) -> list[DailyStats]:
+        """Aggregate answer history into daily statistics.
+
+        :param user_id: The user identifier.
+        :param days: Number of past days to include.
+        :return: List of `DailyStats`, most recent first.
+        """
+        cutoff = (
+            datetime.now() - timedelta(days=days)
+        ).strftime(_ISO_FMT)
+        rows = self._conn.execute(
+            "SELECT date(answered_at) AS day, "
+            "COUNT(*) AS answers, "
+            "SUM(correct) AS correct "
+            "FROM answer_history "
+            "WHERE user_id = ? "
+            "AND answered_at >= ? "
+            "GROUP BY day "
+            "ORDER BY day DESC",
+            (user_id, cutoff),
+        ).fetchall()
+        return [
+            DailyStats(
+                date=r["day"],
+                answers=r["answers"],
+                correct=r["correct"],
+                accuracy_pct=round(
+                    r["correct"] / r["answers"] * 100, 1,
+                ),
+            )
+            for r in rows
+        ]
 
     # -- Lessons ------------------------------------------------------
 

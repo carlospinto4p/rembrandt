@@ -5,7 +5,9 @@ from datetime import datetime
 import pytest
 
 from rembrandt.models import (
+    AnswerHistory,
     AnswerResult,
+    DailyStats,
     Exercise,
     ExerciseType,
     Hint,
@@ -445,3 +447,37 @@ def test_session_stats_custom():
     )
     assert stats.total == 10
     assert stats.accuracy_pct == 70.0
+
+
+# --- AnswerHistory Tests ---
+
+
+def test_answer_history_creation():
+    ah = AnswerHistory(
+        user_id="u1",
+        word_id=1,
+        exercise_type="flashcard",
+        correct=True,
+        quality=5,
+    )
+    assert ah.id is None
+    assert ah.user_id == "u1"
+    assert ah.correct is True
+    assert ah.quality == 5
+    assert isinstance(ah.answered_at, datetime)
+
+
+# --- DailyStats Tests ---
+
+
+def test_daily_stats_creation():
+    ds = DailyStats(
+        date="2026-02-27",
+        answers=10,
+        correct=7,
+        accuracy_pct=70.0,
+    )
+    assert ds.date == "2026-02-27"
+    assert ds.answers == 10
+    assert ds.correct == 7
+    assert ds.accuracy_pct == 70.0

@@ -126,6 +126,14 @@ class Session:
         updated = review(progress, sm2_quality)
         self.db.upsert_progress(updated)
 
+        self.db.record_answer(
+            self.user_id,
+            word_id,
+            self._current_exercise.exercise_type.value,
+            result.correct,
+            sm2_quality,
+        )
+
         self._update_stats(result.correct)
         self._current_exercise = None
         return result

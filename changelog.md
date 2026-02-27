@@ -1,6 +1,23 @@
 
 ## Changelog - Rembrandt
 
+### v0.26.0 - 27th February 2026
+
+- Added `answer_history` table in `db`: stores per-answer logs with
+  exercise type, correctness, and quality score.
+- Added models in `models`:
+  - `AnswerHistory`
+  - `DailyStats`
+- Added `Database` answer history methods:
+  - `record_answer()`: log a single answer.
+  - `get_answer_history()`: fetch recent answers with optional
+    `limit` and `since` filters.
+  - `daily_stats()`: aggregate answers into per-day statistics.
+- Updated `Session.answer()`: automatically records each answer
+  in the history log.
+- Exported `AnswerHistory` and `DailyStats` from the package.
+
+
 ### v0.25.0 - 27th February 2026
 
 - Added `Database.export_progress()`: export all progress rows for a user

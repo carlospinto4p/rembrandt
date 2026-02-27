@@ -895,3 +895,126 @@ def test_import_progress_missing_key_raises(db):
     ]
     with pytest.raises(KeyError, match="Missing keys"):
         db.import_progress(records)
+
+
+# --- Answer History Tests ---
+
+
+def test_record_answer(db):
+    db.record_answer("u1", 1, "flashcard", True, 5)
+    history = db.get_answer_history("u1")
+    assert len(history) == 1
+    assert history[0].word_id == 1
+    assert history[0].correct is True
+    assert history[0].quality == 5
+
+
+def test_record_answer_incorrect(db):
+    db.record_answer("u1", 1, "flashcard", False, 1)
+    history = db.get_answer_history("u1")
+    assert len(history) == 1
+    assert history[0].correct is False
+    assert history[0].quality == 1
+
+
+def test_get_answer_history_empty(db):
+    history = db.get_answer_history("u1")
+    assert history == []
+
+
+def test_get_answer_history_ordered_newest_first(db):
+    db.record_answer("u1", 1, "flashcard", True, 5)
+    db.record_answer("u1", 2, "multiple_choice", False, 1)
+    history = db.get_answer_history("u1")
+    assert len(history) == 2
+    assert history[0].word_id == 2
+    assert history[1].word_id == 1
+
+
+def test_get_answer_history_limit(db):
+    for i in range(5):
+        db.record_answer("u1", i, "flashcard", True, 5)
+    history = db.get_answer_history("u1", limit=3)
+    assert len(history) == 3
+
+
+def test_get_answer_history_since(db):
+    db._conn.execute(
+        "INSERT INTO answer_history "
+        "(user_id, word_id, exercise_type, "
+        " correct, quality, answered_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("u1", 1, "flashcard", 1, 5,
+         "2026-01-01T00:00:00"),
+    )
+    db._conn.execute(
+        "INSERT INTO answer_history "
+        "(user_id, word_id, exercise_type, "
+        " correct, quality, answered_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("u1", 2, "flashcard", 1, 5,
+         "2026-06-01T00:00:00"),
+    )
+    db._conn.commit()
+    history = db.get_answer_history(
+        "u1", since=datetime(2026, 3, 1),
+    )
+    assert len(history) == 1
+    assert history[0].word_id == 2
+
+
+def test_get_answer_history_filters_by_user(db):
+    db.record_answer("u1", 1, "flashcard", True, 5)
+    db.record_answer("u2", 2, "flashcard", True, 5)
+    history = db.get_answer_history("u1")
+    assert len(history) == 1
+    assert history[0].user_id == "u1"
+
+
+def test_daily_stats_empty(db):
+    stats = db.daily_stats("u1")
+    assert stats == []
+
+
+def test_daily_stats_aggregation(db):
+    db._conn.execute(
+        "INSERT INTO answer_history "
+        "(user_id, word_id, exercise_type, "
+        " correct, quality, answered_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("u1", 1, "flashcard", 1, 5,
+         "2026-02-27T10:00:00"),
+    )
+    db._conn.execute(
+        "INSERT INTO answer_history "
+        "(user_id, word_id, exercise_type, "
+        " correct, quality, answered_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("u1", 2, "flashcard", 0, 1,
+         "2026-02-27T11:00:00"),
+    )
+    db._conn.commit()
+    stats = db.daily_stats("u1", days=365)
+    assert len(stats) == 1
+    assert stats[0].date == "2026-02-27"
+    assert stats[0].answers == 2
+    assert stats[0].correct == 1
+    assert stats[0].accuracy_pct == 50.0
+
+
+def test_daily_stats_multiple_days(db):
+    for day, word_id in [("2026-02-26", 1),
+                         ("2026-02-27", 2)]:
+        db._conn.execute(
+            "INSERT INTO answer_history "
+            "(user_id, word_id, exercise_type, "
+            " correct, quality, answered_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            ("u1", word_id, "flashcard", 1, 5,
+             f"{day}T10:00:00"),
+        )
+    db._conn.commit()
+    stats = db.daily_stats("u1", days=365)
+    assert len(stats) == 2
+    assert stats[0].date == "2026-02-27"
+    assert stats[1].date == "2026-02-26"

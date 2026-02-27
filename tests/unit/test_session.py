@@ -516,6 +516,54 @@ def test_quick_session_list_requires_db_path():
         )
 
 
+# --- Answer History Recording Tests ---
+
+
+def test_answer_records_history(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer(ex.word.word_to)
+    history = session.db.get_answer_history("u1")
+    assert len(history) == 1
+    assert history[0].word_id == ex.word.id
+    assert history[0].correct is True
+
+
+def test_answer_incorrect_records_history(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer("wrong_answer_xyz")
+    history = session.db.get_answer_history("u1")
+    assert len(history) == 1
+    assert history[0].correct is False
+
+
+def test_answer_records_exercise_type(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer(ex.word.word_to)
+    history = session.db.get_answer_history("u1")
+    assert history[0].exercise_type == ex.exercise_type.value
+
+
+def test_answer_records_quality(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    session.answer(ex.word.word_to)
+    history = session.db.get_answer_history("u1")
+    assert history[0].quality == 5  # correct -> quality 5
+
+
+def test_multiple_answers_recorded(session):
+    for _ in range(3):
+        ex = session.next_exercise()
+        if ex is None:
+            break
+        session.answer(ex.word.word_to)
+    history = session.db.get_answer_history("u1")
+    assert len(history) == 3
+
+
 def test_quick_session_custom_keys(tmp_path):
     custom_words = [
         {"term": "cat", "meaning": "gato"},
