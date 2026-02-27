@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.30.0 - 27th February 2026
+
+- Added `ADJECTIVE_AGREEMENT` to `ExerciseType`: gender agreement drill
+  where the user types the correctly inflected adjective for a noun.
+- Added `generate_adjective_agreement()` in `exercises`: picks from 15
+  common adjectives and tests masculine/feminine agreement.
+- Updated `generate_exercise()`: adds `ADJECTIVE_AGREEMENT` to the pool
+  when the word has gender.
+
+
 ### v0.29.0 - 27th February 2026
 
 - Added irregular verbs to `conjugation` engine:

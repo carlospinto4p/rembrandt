@@ -4,6 +4,7 @@ import pytest
 
 from rembrandt.exercises import (
     evaluate_answer,
+    generate_adjective_agreement,
     generate_cloze_exercise,
     generate_conjugation,
     generate_exercise,
@@ -538,6 +539,7 @@ def test_generate_exercise_returns_valid_type_with_gender():
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.GENDER_MATCH,
+        ExerciseType.ADJECTIVE_AGREEMENT,
         ExerciseType.CLOZE,
         ExerciseType.TRANSLATION_CLOZE,
     )
@@ -794,3 +796,91 @@ def test_generate_exercise_includes_translation_cloze():
         ex = generate_exercise(words[0], words)
         types.add(ex.exercise_type)
     assert ExerciseType.TRANSLATION_CLOZE in types
+
+
+# --- Adjective Agreement Tests ---
+
+
+def test_generate_adjective_agreement_masculine(
+    masculine_word,
+):
+    ex = generate_adjective_agreement(masculine_word)
+    assert (
+        ex.exercise_type
+        == ExerciseType.ADJECTIVE_AGREEMENT
+    )
+    assert "el libro ___" in ex.prompt
+    assert ex.expected_answer != ""
+    # Masculine adjective should end in -o
+    assert ex.expected_answer.endswith("o")
+
+
+def test_generate_adjective_agreement_feminine(
+    feminine_word,
+):
+    ex = generate_adjective_agreement(feminine_word)
+    assert (
+        ex.exercise_type
+        == ExerciseType.ADJECTIVE_AGREEMENT
+    )
+    assert "la casa ___" in ex.prompt
+    # Feminine adjective should end in -a
+    assert ex.expected_answer.endswith("a")
+
+
+def test_generate_adjective_agreement_no_gender_raises():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="speak",
+        word_to="hablar",
+    )
+    with pytest.raises(
+        ValueError, match="adjective_agreement requires"
+    ):
+        generate_adjective_agreement(word)
+
+
+def test_evaluate_adjective_agreement_correct(
+    masculine_word,
+):
+    ex = generate_adjective_agreement(masculine_word)
+    result = evaluate_answer(ex, ex.expected_answer)
+    assert result.correct is True
+
+
+def test_evaluate_adjective_agreement_incorrect(
+    feminine_word,
+):
+    ex = generate_adjective_agreement(feminine_word)
+    # Give the masculine form instead of feminine
+    result = evaluate_answer(ex, "blanco")
+    assert result.correct is False
+
+
+def test_generate_exercise_includes_adjective_agreement():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+            gender=w[2],
+        )
+        for i, w in enumerate(
+            [
+                ("book", "libro", "m"),
+                ("house", "casa", "f"),
+                ("water", "agua", "f"),
+                ("cat", "gato", "m"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.ADJECTIVE_AGREEMENT in types

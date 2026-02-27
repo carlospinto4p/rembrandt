@@ -217,6 +217,54 @@ def generate_cloze_exercise(word: Word) -> Exercise:
     )
 
 
+# Common adjectives as (masculine, feminine) pairs.
+_ADJECTIVES: list[tuple[str, str]] = [
+    ("blanco", "blanca"),
+    ("negro", "negra"),
+    ("rojo", "roja"),
+    ("pequeño", "pequeña"),
+    ("bonito", "bonita"),
+    ("nuevo", "nueva"),
+    ("viejo", "vieja"),
+    ("alto", "alta"),
+    ("bajo", "baja"),
+    ("bueno", "buena"),
+    ("malo", "mala"),
+    ("largo", "larga"),
+    ("corto", "corta"),
+    ("limpio", "limpia"),
+    ("rico", "rica"),
+]
+
+
+def generate_adjective_agreement(word: Word) -> Exercise:
+    """Create an adjective gender agreement exercise.
+
+    Shows a noun with its article and an adjective in its
+    masculine base form; the user types the gender-agreed
+    adjective.
+
+    :param word: A noun with a known `gender`.
+    :return: An adjective-agreement `Exercise`.
+    :raises ValueError: If `word.gender` is `None`.
+    """
+    if word.gender is None:
+        raise ValueError(
+            "adjective_agreement requires a word "
+            "with gender"
+        )
+    spanish = _spanish_word(word)
+    article = "el" if word.gender == "m" else "la"
+    adj_m, adj_f = random.choice(_ADJECTIVES)
+    expected = adj_m if word.gender == "m" else adj_f
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.ADJECTIVE_AGREEMENT,
+        prompt=f"{article} {spanish} ___ ({adj_m})",
+        expected_answer=expected,
+    )
+
+
 def generate_translation_cloze(word: Word) -> Exercise:
     """Create a translation cloze exercise.
 
@@ -276,6 +324,7 @@ def generate_exercise(
         ]
         if word.gender is not None:
             pool.append(ExerciseType.GENDER_MATCH)
+            pool.append(ExerciseType.ADJECTIVE_AGREEMENT)
         if (
             word.conjugation_group is not None
             and can_conjugate(
@@ -304,6 +353,9 @@ def generate_exercise(
             ),
             ExerciseType.GENDER_MATCH: partial(
                 generate_gender_match, word,
+            ),
+            ExerciseType.ADJECTIVE_AGREEMENT: partial(
+                generate_adjective_agreement, word,
             ),
             ExerciseType.CONJUGATION: partial(
                 generate_conjugation, word,
