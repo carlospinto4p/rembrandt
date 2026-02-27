@@ -466,22 +466,9 @@ def evaluate_answer(
             word=exercise.word,
         )
 
-    # Exercises with explicit expected_answer
     if exercise.expected_answer:
         expected = exercise.expected_answer
-        given = _resolve_option_number(
-            answer_text.strip(), exercise.options,
-        )
-
-        correct = _answers_match(given, expected)
-        return AnswerResult(
-            correct=correct,
-            expected=expected,
-            given=given,
-            word=exercise.word,
-        )
-
-    if etype == ExerciseType.REVERSE_FLASHCARD:
+    elif etype == ExerciseType.REVERSE_FLASHCARD:
         expected = exercise.word.word_from
     else:
         expected = exercise.word.word_to
@@ -490,10 +477,8 @@ def evaluate_answer(
         answer_text.strip(), exercise.options,
     )
 
-    correct = _answers_match(given, expected)
-
     return AnswerResult(
-        correct=correct,
+        correct=_answers_match(given, expected),
         expected=expected,
         given=given,
         word=exercise.word,

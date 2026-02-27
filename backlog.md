@@ -44,3 +44,11 @@
 **Architecture**
 - [ ] Add LLM integration (dynamic sentences, explanations, contextual examples)
 - [ ] Add pluggable template system (load templates from config files)
+
+### 2026.02.27 (v0.27.0 refactor review)
+
+- [x] Deduplicate tail of `evaluate_answer()` in `exercises.py` — the `expected_answer` branch and the default branch share identical resolve/match/return logic; merge into a single path that first determines `expected`
+- [x] Use `authenticate_user()` to call `get_user()` internally in `db.py` — duplicate `SELECT * FROM users WHERE username = ?` query in both methods
+- [x] Move shared test fixtures to `conftest.py` — `sample_words` (in `test_exercises.py`) and `db_with_words` (in `test_spaced_repetition.py`) create the same EN-ES word list; `definition_words` is also reusable
+- [x] Extract `_in_clause()` helper in `db.py` — the `",".join("?" for _ in ids)` + parameter list pattern repeats in `get_all_progress()` and `get_lessons()`
+- [x] Collapse `_row_to_user_session()` datetime parsing — uses `strptime` with `_ISO_FMT` while `_row_to_user()` uses `fromisoformat()`; standardise on `fromisoformat()` for all converters

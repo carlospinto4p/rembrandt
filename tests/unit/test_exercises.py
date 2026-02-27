@@ -17,55 +17,6 @@ from rembrandt.exercises import (
 from rembrandt.models import Exercise, ExerciseType, Word
 
 
-# --- Fixtures ---
-
-
-@pytest.fixture
-def sample_words():
-    return [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-        )
-        for i, w in enumerate(
-            [
-                ("cat", "gato"),
-                ("dog", "perro"),
-                ("house", "casa"),
-                ("book", "libro"),
-                ("water", "agua"),
-            ],
-            start=1,
-        )
-    ]
-
-
-@pytest.fixture
-def definition_words():
-    return [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="en",
-            word_from=w[0],
-            word_to=w[1],
-        )
-        for i, w in enumerate(
-            [
-                ("ephemeral", "lasting for a very short time"),
-                ("ubiquitous", "present everywhere"),
-                ("candid", "truthful and straightforward"),
-                ("pragmatic", "dealing with things practically"),
-                ("verbose", "using more words than needed"),
-            ],
-            start=1,
-        )
-    ]
-
-
 # --- Flashcard Tests ---
 
 

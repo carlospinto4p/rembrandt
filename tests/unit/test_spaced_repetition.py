@@ -112,35 +112,6 @@ def test_review_next_review_in_future():
 # --- Word Selection Tests ---
 
 
-@pytest.fixture
-def db_with_words(tmp_path):
-    db = Database(tmp_path / "test.db")
-    db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="book", word_to="libro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="water", word_to="agua",
-        ),
-    ])
-    yield db
-    db.close()
-
-
 def test_select_words_returns_new_words(db_with_words):
     words = select_words(
         db_with_words, "u1", "en", "es", count=3

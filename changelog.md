@@ -1,6 +1,24 @@
 
 ## Changelog - Rembrandt
 
+### v0.27.1 - 27th February 2026
+
+- Refactored `evaluate_answer()` in `exercises.py`: merged duplicated
+  resolve/match/return tail into a single path that determines `expected`
+  first.
+- Refactored `authenticate_user()` in `db.py`: delegates to `get_user()`
+  instead of duplicating the username lookup query.
+- Moved shared test fixtures to `conftest.py`:
+  - `sample_words`
+  - `definition_words`
+  - `db_with_words`
+- Extracted `_in_clause()` helper in `db.py`: replaces repeated
+  `",".join("?" for _ in ids)` pattern in `get_all_progress()` and
+  `get_lessons()`.
+- Standardised datetime parsing in `db.py`: replaced all `strptime()`
+  calls with `fromisoformat()` for reading timestamps.
+
+
 ### v0.27.0 - 27th February 2026
 
 - Added `WeakWord` model in `models`: tracks words with high error rates.

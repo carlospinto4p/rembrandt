@@ -97,6 +97,16 @@ CREATE TABLE IF NOT EXISTS answer_history (
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
 
+def _in_clause(ids: list) -> str:
+    """Build a SQL IN-clause placeholder string.
+
+    :param ids: List of values (length determines count).
+    :return: Comma-separated `?` placeholders,
+        e.g. `"?,?,?"`.
+    """
+    return ",".join("?" for _ in ids)
+
+
 def _hash_password(password: str) -> str:
     """Hash a password with a random salt using SHA-256."""
     salt = os.urandom(16).hex()
@@ -128,11 +138,11 @@ def _row_to_user_session(r: sqlite3.Row) -> UserSession:
         id=r["id"],
         user_id=r["user_id"],
         token=r["token"],
-        created_at=datetime.strptime(
-            r["created_at"], _ISO_FMT
+        created_at=datetime.fromisoformat(
+            r["created_at"],
         ),
-        expires_at=datetime.strptime(
-            r["expires_at"], _ISO_FMT
+        expires_at=datetime.fromisoformat(
+            r["expires_at"],
         ),
     )
 
@@ -160,8 +170,8 @@ def _row_to_progress(r: sqlite3.Row) -> UserProgress:
         easiness_factor=r["easiness_factor"],
         interval=r["interval"],
         repetitions=r["repetitions"],
-        next_review=datetime.strptime(
-            r["next_review"], _ISO_FMT
+        next_review=datetime.fromisoformat(
+            r["next_review"],
         ),
     )
 
@@ -244,15 +254,14 @@ class Database:
         :return: `User` if credentials are valid, `None`
             otherwise.
         """
-        row = self._conn.execute(
-            "SELECT * FROM users WHERE username = ?",
-            (username,),
-        ).fetchone()
-        if row is None:
+        user = self.get_user(username)
+        if user is None:
             return None
-        if not _verify_password(password, row["password_hash"]):
+        if not _verify_password(
+            password, user.password_hash,
+        ):
             return None
-        return _row_to_user(row)
+        return user
 
     # -- User Sessions ------------------------------------------------
 
@@ -531,10 +540,10 @@ class Database:
         """
         if not word_ids:
             return {}
-        placeholders = ",".join("?" for _ in word_ids)
         rows = self._conn.execute(
             "SELECT * FROM progress "
-            f"WHERE user_id = ? AND word_id IN ({placeholders})",
+            "WHERE user_id = ? "
+            f"AND word_id IN ({_in_clause(word_ids)})",
             [user_id, *word_ids],
         ).fetchall()
         return {
@@ -727,8 +736,8 @@ class Database:
                 exercise_type=r["exercise_type"],
                 correct=bool(r["correct"]),
                 quality=r["quality"],
-                answered_at=datetime.strptime(
-                    r["answered_at"], _ISO_FMT,
+                answered_at=datetime.fromisoformat(
+                    r["answered_at"],
                 ),
             )
             for r in rows
@@ -841,8 +850,8 @@ class Database:
                 error_rate=round(
                     r["errors"] / r["attempts"], 2,
                 ),
-                last_attempt=datetime.strptime(
-                    r["last_attempt"], _ISO_FMT,
+                last_attempt=datetime.fromisoformat(
+                    r["last_attempt"],
                 ),
             )
             for r in rows
@@ -959,10 +968,10 @@ class Database:
         if not rows:
             return []
         lesson_ids = [r["id"] for r in rows]
-        placeholders = ",".join("?" for _ in lesson_ids)
         lw_rows = self._conn.execute(
             "SELECT lesson_id, word_id FROM lesson_words "
-            f"WHERE lesson_id IN ({placeholders}) "
+            "WHERE lesson_id "
+            f"IN ({_in_clause(lesson_ids)}) "
             "ORDER BY position",
             lesson_ids,
         ).fetchall()
