@@ -11,6 +11,7 @@ from rembrandt.exercises import (
     generate_flashcard,
     generate_gender_match,
     generate_multiple_choice,
+    generate_sentence_order,
     generate_translation_cloze,
     generate_reverse_flashcard,
     generate_self_graded,
@@ -884,3 +885,76 @@ def test_generate_exercise_includes_adjective_agreement():
         ex = generate_exercise(words[0], words)
         types.add(ex.exercise_type)
     assert ExerciseType.ADJECTIVE_AGREEMENT in types
+
+
+# --- Sentence Order Tests ---
+
+
+def test_generate_sentence_order(masculine_word):
+    ex = generate_sentence_order(masculine_word)
+    assert ex.exercise_type == ExerciseType.SENTENCE_ORDER
+    assert " / " in ex.prompt
+    assert ex.expected_answer != ""
+    assert "libro" in ex.expected_answer
+
+
+def test_generate_sentence_order_verb():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="to speak",
+        word_to="hablar",
+        conjugation_group="ar",
+    )
+    ex = generate_sentence_order(word)
+    assert ex.exercise_type == ExerciseType.SENTENCE_ORDER
+    assert "hablar" in ex.expected_answer
+
+
+def test_generate_sentence_order_scrambled(masculine_word):
+    ex = generate_sentence_order(masculine_word)
+    prompt_words = sorted(ex.prompt.split(" / "))
+    answer_words = sorted(ex.expected_answer.split())
+    assert prompt_words == answer_words
+
+
+def test_evaluate_sentence_order_correct(masculine_word):
+    ex = generate_sentence_order(masculine_word)
+    result = evaluate_answer(ex, ex.expected_answer)
+    assert result.correct is True
+
+
+def test_evaluate_sentence_order_incorrect(
+    masculine_word,
+):
+    ex = generate_sentence_order(masculine_word)
+    result = evaluate_answer(ex, "wrong order words")
+    assert result.correct is False
+
+
+def test_generate_exercise_includes_sentence_order():
+    words = [
+        Word(
+            id=i,
+            language_from="en",
+            language_to="es",
+            word_from=w[0],
+            word_to=w[1],
+            gender=w[2],
+        )
+        for i, w in enumerate(
+            [
+                ("book", "libro", "m"),
+                ("house", "casa", "f"),
+                ("water", "agua", "f"),
+                ("cat", "gato", "m"),
+            ],
+            start=1,
+        )
+    ]
+    types = set()
+    for _ in range(200):
+        ex = generate_exercise(words[0], words)
+        types.add(ex.exercise_type)
+    assert ExerciseType.SENTENCE_ORDER in types

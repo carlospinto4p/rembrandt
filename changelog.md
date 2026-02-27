@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.32.0 - 27th February 2026
+
+- Added `SENTENCE_ORDER` to `ExerciseType`: scrambled-word exercise
+  where the user reconstructs the correct sentence order.
+- Added `generate_sentence_order()` in `exercises`: builds a complete
+  sentence from the cloze template system, then shuffles the words.
+- Updated `generate_exercise()`: adds `SENTENCE_ORDER` to the pool
+  when the word has gender or conjugation_group.
+
+
 ### v0.31.0 - 27th February 2026
 
 - Expanded built-in cloze template banks from 10 to 15 templates per

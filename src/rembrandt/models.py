@@ -155,6 +155,7 @@ class ExerciseType(str, Enum):
     CLOZE = "cloze"
     TRANSLATION_CLOZE = "translation_cloze"
     ADJECTIVE_AGREEMENT = "adjective_agreement"
+    SENTENCE_ORDER = "sentence_order"
 
 
 class Exercise(BaseModel):

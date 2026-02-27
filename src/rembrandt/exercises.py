@@ -290,6 +290,41 @@ def generate_translation_cloze(word: Word) -> Exercise:
     )
 
 
+def generate_sentence_order(word: Word) -> Exercise:
+    """Create a sentence ordering exercise.
+
+    Generates a complete Spanish sentence using the cloze
+    template system, then scrambles the words.  The user
+    must reconstruct the original word order.
+
+    :param word: The word to build the sentence around.
+    :return: A sentence-order `Exercise` whose `prompt`
+        contains the scrambled words separated by ` / `.
+    """
+    spanish = _spanish_word(word)
+    sentence, _ = generate_cloze(
+        spanish,
+        gender=word.gender,
+        conjugation_group=word.conjugation_group,
+    )
+    complete = sentence.replace("___", spanish)
+    words_list = complete.split()
+    shuffled = words_list[:]
+    # Ensure the shuffled order differs from the original.
+    attempts = 0
+    while shuffled == words_list and len(words_list) > 1:
+        random.shuffle(shuffled)
+        attempts += 1
+        if attempts > 20:
+            break
+    return Exercise(
+        word=word,
+        exercise_type=ExerciseType.SENTENCE_ORDER,
+        prompt=" / ".join(shuffled),
+        expected_answer=complete,
+    )
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -343,6 +378,7 @@ def generate_exercise(
         ):
             pool.append(ExerciseType.CLOZE)
             pool.append(ExerciseType.TRANSLATION_CLOZE)
+            pool.append(ExerciseType.SENTENCE_ORDER)
 
         dispatch = {
             ExerciseType.FLASHCARD: partial(
@@ -365,6 +401,9 @@ def generate_exercise(
             ),
             ExerciseType.TRANSLATION_CLOZE: partial(
                 generate_translation_cloze, word,
+            ),
+            ExerciseType.SENTENCE_ORDER: partial(
+                generate_sentence_order, word,
             ),
         }
 

@@ -33,7 +33,7 @@
 
 **Exercise Variety**
 - [x] Add more cloze templates (and/or load from JSON for extensibility)
-- [ ] Add sentence ordering exercise type (scrambled words)
+- [x] Add sentence ordering exercise type (scrambled words)
 - [ ] Add listening/spelling exercise type
 
 **Data & Progress**
