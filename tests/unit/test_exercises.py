@@ -682,6 +682,7 @@ def test_generate_cloze_exercise():
     ex = generate_cloze_exercise(word)
     assert ex.exercise_type == ExerciseType.CLOZE
     assert "___" in ex.prompt
+    assert "(cat)" in ex.prompt
     assert ex.expected_answer == "gato"
 
 
@@ -697,6 +698,7 @@ def test_generate_cloze_exercise_verb():
     ex = generate_cloze_exercise(word)
     assert ex.exercise_type == ExerciseType.CLOZE
     assert "___" in ex.prompt
+    assert "(to speak)" in ex.prompt
     assert ex.expected_answer == "hablar"
 
 

@@ -402,7 +402,7 @@ wheels = [
 
 [[package]]
 name = "rembrandt"
-version = "0.24.11"
+version = "0.24.12"
 source = { virtual = "." }
 dependencies = [
     { name = "pydantic" },

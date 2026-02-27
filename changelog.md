@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.24.12 - 27th February 2026
+
+- Fixed `generate_cloze_exercise()`: prompt now includes the English
+  translation as a hint (e.g. `"Voy a ___ mañana (to give)"`), so the
+  user knows which word to fill in.
+
+
 ### v0.24.11 - 26th February 2026
 
 - Fixed `generate_translation_cloze()`: uses `_non_spanish_word()` and

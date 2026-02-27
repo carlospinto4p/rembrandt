@@ -196,11 +196,14 @@ def generate_cloze_exercise(word: Word) -> Exercise:
 
     Uses template-based sentence generation to produce a
     sentence with a blank where the Spanish word should go.
+    The English translation is shown as a hint so the user
+    knows which word to fill in.
 
     :param word: The word to test.
     :return: A cloze `Exercise`.
     """
     spanish = _spanish_word(word)
+    english = _non_spanish_word(word)
     sentence, answer = generate_cloze(
         spanish,
         gender=word.gender,
@@ -209,7 +212,7 @@ def generate_cloze_exercise(word: Word) -> Exercise:
     return Exercise(
         word=word,
         exercise_type=ExerciseType.CLOZE,
-        prompt=sentence,
+        prompt=f"{sentence} ({english})",
         expected_answer=answer,
     )
 
