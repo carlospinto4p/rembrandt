@@ -213,6 +213,27 @@ print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
 A word is "studied" once it has any review history, and "mastered"
 after 3+ consecutive correct recalls (SM-2 repetitions >= 3).
 
+## Progress Export/Import
+
+Export a user's spaced-repetition progress as JSON-serializable dicts,
+and import them into another database:
+
+```python
+# Export
+records = db.export_progress("user1")
+
+# Save to file
+import json
+with open("progress.json", "w") as f:
+    json.dump(records, f)
+
+# Import into another database
+with open("progress.json") as f:
+    records = json.load(f)
+count = db.import_progress(records)
+print(f"Imported {count} records")
+```
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:

@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v0.25.0 - 27th February 2026
+
+- Added `Database.export_progress()`: export all progress rows for a user
+  as JSON-serializable dicts.
+- Added `Database.import_progress()`: upsert progress records from a list
+  of dicts in a single transaction.
+
+
 ### v0.24.13 - 27th February 2026
 
 - Fixed `06_spanish_translation_quiz.py`: changed translation cloze prompt

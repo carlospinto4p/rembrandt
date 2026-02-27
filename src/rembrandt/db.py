@@ -554,6 +554,86 @@ class Database:
         )
         self._conn.commit()
 
+    def export_progress(
+        self, user_id: str,
+    ) -> list[dict]:
+        """Export all progress rows for a user as dicts.
+
+        Each dict contains `user_id`, `word_id`,
+        `easiness_factor`, `interval`, `repetitions`, and
+        `next_review` (ISO 8601 string). The result is
+        JSON-serializable.
+
+        :param user_id: The user identifier.
+        :return: List of progress dicts.
+        """
+        rows = self._conn.execute(
+            "SELECT user_id, word_id, easiness_factor, "
+            "interval, repetitions, next_review "
+            "FROM progress WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+        return [
+            {
+                "user_id": r["user_id"],
+                "word_id": r["word_id"],
+                "easiness_factor": r["easiness_factor"],
+                "interval": r["interval"],
+                "repetitions": r["repetitions"],
+                "next_review": r["next_review"],
+            }
+            for r in rows
+        ]
+
+    def import_progress(
+        self, records: list[dict],
+    ) -> int:
+        """Import progress records, upserting each one.
+
+        Each dict must contain `user_id`, `word_id`,
+        `easiness_factor`, `interval`, `repetitions`, and
+        `next_review` (ISO 8601 string).
+
+        :param records: List of progress dicts.
+        :return: Number of records imported.
+        :raises KeyError: If a required key is missing.
+        """
+        required = {
+            "user_id", "word_id", "easiness_factor",
+            "interval", "repetitions", "next_review",
+        }
+        with self._conn:
+            for rec in records:
+                missing = required - rec.keys()
+                if missing:
+                    raise KeyError(
+                        f"Missing keys: {sorted(missing)}"
+                    )
+                self._conn.execute(
+                    "INSERT INTO progress "
+                    "(user_id, word_id, easiness_factor,"
+                    " interval, repetitions, next_review)"
+                    " VALUES (?, ?, ?, ?, ?, ?) "
+                    "ON CONFLICT(user_id, word_id) "
+                    "DO UPDATE SET "
+                    " easiness_factor "
+                    "  = excluded.easiness_factor, "
+                    " interval = excluded.interval, "
+                    " repetitions "
+                    "  = excluded.repetitions, "
+                    " next_review "
+                    "  = excluded.next_review",
+                    (
+                        rec["user_id"],
+                        rec["word_id"],
+                        rec["easiness_factor"],
+                        rec["interval"],
+                        rec["repetitions"],
+                        rec["next_review"],
+                    ),
+                )
+        return len(records)
+
     # -- Lessons ------------------------------------------------------
 
     def _insert_lesson_words(

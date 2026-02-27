@@ -23,3 +23,24 @@
 - [x] Add section comments to `exercises.py` — 15 functions with no grouping (generators vs evaluation vs helpers)
 - [x] Remove lambda wrappers in `generate_exercise()` dispatch dict — use `functools.partial` for callables that need extra args
 - [x] Add examples for newer features: user registration/auth, session tokens, hints, skip, session stats, word/lesson update/delete
+
+### 2026.02.27 — Improvement proposals
+
+**Conjugation & Grammar**
+- [ ] Add more tenses: futuro simple, condicional, subjuntivo presente
+- [ ] Add more irregular verbs: `conocer`, `dormir`, `pedir`, `sentir`, `jugar`, etc.
+- [ ] Add adjective agreement exercise type (gender/number matching)
+
+**Exercise Variety**
+- [ ] Add more cloze templates (and/or load from JSON for extensibility)
+- [ ] Add sentence ordering exercise type (scrambled words)
+- [ ] Add listening/spelling exercise type
+
+**Data & Progress**
+- [ ] Add progress export/import (JSON export of progress table)
+- [ ] Add historical stats tracking (accuracy trends, words learned per day)
+- [ ] Add weak word detection (surface consistently wrong words more often)
+
+**Architecture**
+- [ ] Add LLM integration (dynamic sentences, explanations, contextual examples)
+- [ ] Add pluggable template system (load templates from config files)

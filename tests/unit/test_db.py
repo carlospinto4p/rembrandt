@@ -777,3 +777,121 @@ def test_delete_lesson_removes_word_links(db):
 def test_delete_lesson_not_found_raises(db):
     with pytest.raises(ValueError, match="not found"):
         db.delete_lesson(999)
+
+
+# --- Progress Export/Import Tests ---
+
+
+def test_export_progress_empty(db):
+    result = db.export_progress("u1")
+    assert result == []
+
+
+def test_export_progress_returns_all(db):
+    dt = datetime(2026, 3, 1, 12, 0, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1, next_review=dt,
+    ))
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=2,
+        easiness_factor=2.1, interval=6, repetitions=3,
+        next_review=dt,
+    ))
+    result = db.export_progress("u1")
+    assert len(result) == 2
+    assert all(isinstance(r, dict) for r in result)
+
+
+def test_export_progress_filters_by_user(db):
+    dt = datetime(2026, 3, 1, 12, 0, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1, next_review=dt,
+    ))
+    db.upsert_progress(UserProgress(
+        user_id="u2", word_id=2, next_review=dt,
+    ))
+    result = db.export_progress("u1")
+    assert len(result) == 1
+    assert result[0]["user_id"] == "u1"
+
+
+def test_export_progress_next_review_is_string(db):
+    dt = datetime(2026, 6, 15, 10, 30, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1, next_review=dt,
+    ))
+    result = db.export_progress("u1")
+    assert result[0]["next_review"] == "2026-06-15T10:30:00"
+
+
+def test_import_progress_inserts(db):
+    records = [
+        {
+            "user_id": "u1", "word_id": 1,
+            "easiness_factor": 2.5, "interval": 1,
+            "repetitions": 1,
+            "next_review": "2026-03-01T12:00:00",
+        },
+    ]
+    count = db.import_progress(records)
+    assert count == 1
+    loaded = db.get_progress("u1", 1)
+    assert loaded is not None
+    assert loaded.repetitions == 1
+
+
+def test_import_progress_upserts(db):
+    dt = datetime(2026, 3, 1, 12, 0, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1,
+        repetitions=1, next_review=dt,
+    ))
+    records = [
+        {
+            "user_id": "u1", "word_id": 1,
+            "easiness_factor": 2.1, "interval": 6,
+            "repetitions": 3,
+            "next_review": "2026-04-01T12:00:00",
+        },
+    ]
+    db.import_progress(records)
+    loaded = db.get_progress("u1", 1)
+    assert loaded is not None
+    assert loaded.repetitions == 3
+    assert loaded.easiness_factor == 2.1
+
+
+def test_import_export_roundtrip(db):
+    dt = datetime(2026, 3, 1, 12, 0, 0)
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1,
+        easiness_factor=2.3, interval=6,
+        repetitions=4, next_review=dt,
+    ))
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=2,
+        easiness_factor=1.8, interval=1,
+        repetitions=0, next_review=dt,
+    ))
+    exported = db.export_progress("u1")
+
+    # Import into a fresh database
+    db2 = Database(":memory:")
+    count = db2.import_progress(exported)
+    assert count == 2
+
+    re_exported = db2.export_progress("u1")
+    assert re_exported == exported
+    db2.close()
+
+
+def test_import_progress_missing_key_raises(db):
+    records = [
+        {
+            "user_id": "u1", "word_id": 1,
+            "easiness_factor": 2.5,
+            # missing interval, repetitions, next_review
+        },
+    ]
+    with pytest.raises(KeyError, match="Missing keys"):
+        db.import_progress(records)
