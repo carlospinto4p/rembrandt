@@ -1,7 +1,8 @@
 """Rule-based Spanish verb conjugation engine.
 
 Supports regular -ar, -er, -ir verbs and common irregular verbs
-across three tenses: presente, pretérito, and imperfecto.
+across six tenses: presente, pretérito, imperfecto, futuro,
+condicional, and subjuntivo presente.
 """
 
 PERSONS: list[str] = [
@@ -17,11 +18,20 @@ TENSES: list[str] = [
     "presente",
     "pretérito",
     "imperfecto",
+    "futuro",
+    "condicional",
+    "subjuntivo_presente",
 ]
+
+# Tenses where the stem is the full infinitive
+# (rather than infinitive minus the last 2 chars).
+_FULL_STEM_TENSES = {"futuro", "condicional"}
 
 _REGULAR: dict[str, dict[str, list[str]]] = {
     "ar": {
-        "presente": ["o", "as", "a", "amos", "áis", "an"],
+        "presente": [
+            "o", "as", "a", "amos", "áis", "an",
+        ],
         "pretérito": [
             "é", "aste", "ó", "amos", "asteis", "aron",
         ],
@@ -29,33 +39,73 @@ _REGULAR: dict[str, dict[str, list[str]]] = {
             "aba", "abas", "aba",
             "ábamos", "abais", "aban",
         ],
+        "futuro": [
+            "é", "ás", "á", "emos", "éis", "án",
+        ],
+        "condicional": [
+            "ía", "ías", "ía",
+            "íamos", "íais", "ían",
+        ],
+        "subjuntivo_presente": [
+            "e", "es", "e", "emos", "éis", "en",
+        ],
     },
     "er": {
-        "presente": ["o", "es", "e", "emos", "éis", "en"],
+        "presente": [
+            "o", "es", "e", "emos", "éis", "en",
+        ],
         "pretérito": [
-            "í", "iste", "ió", "imos", "isteis", "ieron",
+            "í", "iste", "ió", "imos", "isteis",
+            "ieron",
         ],
         "imperfecto": [
             "ía", "ías", "ía",
             "íamos", "íais", "ían",
+        ],
+        "futuro": [
+            "é", "ás", "á", "emos", "éis", "án",
+        ],
+        "condicional": [
+            "ía", "ías", "ía",
+            "íamos", "íais", "ían",
+        ],
+        "subjuntivo_presente": [
+            "a", "as", "a", "amos", "áis", "an",
         ],
     },
     "ir": {
-        "presente": ["o", "es", "e", "imos", "ís", "en"],
+        "presente": [
+            "o", "es", "e", "imos", "ís", "en",
+        ],
         "pretérito": [
-            "í", "iste", "ió", "imos", "isteis", "ieron",
+            "í", "iste", "ió", "imos", "isteis",
+            "ieron",
         ],
         "imperfecto": [
             "ía", "ías", "ía",
             "íamos", "íais", "ían",
+        ],
+        "futuro": [
+            "é", "ás", "á", "emos", "éis", "án",
+        ],
+        "condicional": [
+            "ía", "ías", "ía",
+            "íamos", "íais", "ían",
+        ],
+        "subjuntivo_presente": [
+            "a", "as", "a", "amos", "áis", "an",
         ],
     },
 }
 
+# Irregular verbs only need entries for tenses where they
+# differ from regular conjugation.  Tenses not listed here
+# fall through to the regular engine.
 _IRREGULAR: dict[str, dict[str, list[str]]] = {
     "ser": {
         "presente": [
-            "soy", "eres", "es", "somos", "sois", "son",
+            "soy", "eres", "es",
+            "somos", "sois", "son",
         ],
         "pretérito": [
             "fui", "fuiste", "fue",
@@ -64,6 +114,10 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "era", "eras", "era",
             "éramos", "erais", "eran",
+        ],
+        "subjuntivo_presente": [
+            "sea", "seas", "sea",
+            "seamos", "seáis", "sean",
         ],
     },
     "estar": {
@@ -79,10 +133,15 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "estaba", "estabas", "estaba",
             "estábamos", "estabais", "estaban",
         ],
+        "subjuntivo_presente": [
+            "esté", "estés", "esté",
+            "estemos", "estéis", "estén",
+        ],
     },
     "haber": {
         "presente": [
-            "he", "has", "ha", "hemos", "habéis", "han",
+            "he", "has", "ha",
+            "hemos", "habéis", "han",
         ],
         "pretérito": [
             "hube", "hubiste", "hubo",
@@ -91,6 +150,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "había", "habías", "había",
             "habíamos", "habíais", "habían",
+        ],
+        "futuro": [
+            "habré", "habrás", "habrá",
+            "habremos", "habréis", "habrán",
+        ],
+        "condicional": [
+            "habría", "habrías", "habría",
+            "habríamos", "habríais", "habrían",
+        ],
+        "subjuntivo_presente": [
+            "haya", "hayas", "haya",
+            "hayamos", "hayáis", "hayan",
         ],
     },
     "tener": {
@@ -106,10 +177,23 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "tenía", "tenías", "tenía",
             "teníamos", "teníais", "tenían",
         ],
+        "futuro": [
+            "tendré", "tendrás", "tendrá",
+            "tendremos", "tendréis", "tendrán",
+        ],
+        "condicional": [
+            "tendría", "tendrías", "tendría",
+            "tendríamos", "tendríais", "tendrían",
+        ],
+        "subjuntivo_presente": [
+            "tenga", "tengas", "tenga",
+            "tengamos", "tengáis", "tengan",
+        ],
     },
     "ir": {
         "presente": [
-            "voy", "vas", "va", "vamos", "vais", "van",
+            "voy", "vas", "va",
+            "vamos", "vais", "van",
         ],
         "pretérito": [
             "fui", "fuiste", "fue",
@@ -118,6 +202,10 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "iba", "ibas", "iba",
             "íbamos", "ibais", "iban",
+        ],
+        "subjuntivo_presente": [
+            "vaya", "vayas", "vaya",
+            "vayamos", "vayáis", "vayan",
         ],
     },
     "hacer": {
@@ -133,6 +221,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "hacía", "hacías", "hacía",
             "hacíamos", "hacíais", "hacían",
         ],
+        "futuro": [
+            "haré", "harás", "hará",
+            "haremos", "haréis", "harán",
+        ],
+        "condicional": [
+            "haría", "harías", "haría",
+            "haríamos", "haríais", "harían",
+        ],
+        "subjuntivo_presente": [
+            "haga", "hagas", "haga",
+            "hagamos", "hagáis", "hagan",
+        ],
     },
     "poder": {
         "presente": [
@@ -146,6 +246,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "podía", "podías", "podía",
             "podíamos", "podíais", "podían",
+        ],
+        "futuro": [
+            "podré", "podrás", "podrá",
+            "podremos", "podréis", "podrán",
+        ],
+        "condicional": [
+            "podría", "podrías", "podría",
+            "podríamos", "podríais", "podrían",
+        ],
+        "subjuntivo_presente": [
+            "pueda", "puedas", "pueda",
+            "podamos", "podáis", "puedan",
         ],
     },
     "decir": {
@@ -161,6 +273,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "decía", "decías", "decía",
             "decíamos", "decíais", "decían",
         ],
+        "futuro": [
+            "diré", "dirás", "dirá",
+            "diremos", "diréis", "dirán",
+        ],
+        "condicional": [
+            "diría", "dirías", "diría",
+            "diríamos", "diríais", "dirían",
+        ],
+        "subjuntivo_presente": [
+            "diga", "digas", "diga",
+            "digamos", "digáis", "digan",
+        ],
     },
     "querer": {
         "presente": [
@@ -174,6 +298,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "quería", "querías", "quería",
             "queríamos", "queríais", "querían",
+        ],
+        "futuro": [
+            "querré", "querrás", "querrá",
+            "querremos", "querréis", "querrán",
+        ],
+        "condicional": [
+            "querría", "querrías", "querría",
+            "querríamos", "querríais", "querrían",
+        ],
+        "subjuntivo_presente": [
+            "quiera", "quieras", "quiera",
+            "queramos", "queráis", "quieran",
         ],
     },
     "saber": {
@@ -189,10 +325,23 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "sabía", "sabías", "sabía",
             "sabíamos", "sabíais", "sabían",
         ],
+        "futuro": [
+            "sabré", "sabrás", "sabrá",
+            "sabremos", "sabréis", "sabrán",
+        ],
+        "condicional": [
+            "sabría", "sabrías", "sabría",
+            "sabríamos", "sabríais", "sabrían",
+        ],
+        "subjuntivo_presente": [
+            "sepa", "sepas", "sepa",
+            "sepamos", "sepáis", "sepan",
+        ],
     },
     "dar": {
         "presente": [
-            "doy", "das", "da", "damos", "dais", "dan",
+            "doy", "das", "da",
+            "damos", "dais", "dan",
         ],
         "pretérito": [
             "di", "diste", "dio",
@@ -201,6 +350,10 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "daba", "dabas", "daba",
             "dábamos", "dabais", "daban",
+        ],
+        "subjuntivo_presente": [
+            "dé", "des", "dé",
+            "demos", "deis", "den",
         ],
     },
     "venir": {
@@ -216,6 +369,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "venía", "venías", "venía",
             "veníamos", "veníais", "venían",
         ],
+        "futuro": [
+            "vendré", "vendrás", "vendrá",
+            "vendremos", "vendréis", "vendrán",
+        ],
+        "condicional": [
+            "vendría", "vendrías", "vendría",
+            "vendríamos", "vendríais", "vendrían",
+        ],
+        "subjuntivo_presente": [
+            "venga", "vengas", "venga",
+            "vengamos", "vengáis", "vengan",
+        ],
     },
     "poner": {
         "presente": [
@@ -229,6 +394,18 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "ponía", "ponías", "ponía",
             "poníamos", "poníais", "ponían",
+        ],
+        "futuro": [
+            "pondré", "pondrás", "pondrá",
+            "pondremos", "pondréis", "pondrán",
+        ],
+        "condicional": [
+            "pondría", "pondrías", "pondría",
+            "pondríamos", "pondríais", "pondrían",
+        ],
+        "subjuntivo_presente": [
+            "ponga", "pongas", "ponga",
+            "pongamos", "pongáis", "pongan",
         ],
     },
     "salir": {
@@ -244,10 +421,23 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
             "salía", "salías", "salía",
             "salíamos", "salíais", "salían",
         ],
+        "futuro": [
+            "saldré", "saldrás", "saldrá",
+            "saldremos", "saldréis", "saldrán",
+        ],
+        "condicional": [
+            "saldría", "saldrías", "saldría",
+            "saldríamos", "saldríais", "saldrían",
+        ],
+        "subjuntivo_presente": [
+            "salga", "salgas", "salga",
+            "salgamos", "salgáis", "salgan",
+        ],
     },
     "ver": {
         "presente": [
-            "veo", "ves", "ve", "vemos", "veis", "ven",
+            "veo", "ves", "ve",
+            "vemos", "veis", "ven",
         ],
         "pretérito": [
             "vi", "viste", "vio",
@@ -256,6 +446,10 @@ _IRREGULAR: dict[str, dict[str, list[str]]] = {
         "imperfecto": [
             "veía", "veías", "veía",
             "veíamos", "veíais", "veían",
+        ],
+        "subjuntivo_presente": [
+            "vea", "veas", "vea",
+            "veamos", "veáis", "vean",
         ],
     },
 }
@@ -290,7 +484,8 @@ def conjugate(
     :param conjugation_group: Verb group (`"ar"`, `"er"`,
         or `"ir"`).
     :param tense: One of `"presente"`, `"pretérito"`,
-        `"imperfecto"`.
+        `"imperfecto"`, `"futuro"`, `"condicional"`,
+        `"subjuntivo_presente"`.
     :param person: Person index 0-5 (yo=0 through
         ellos/ellas=5).
     :return: The conjugated form, or `None` if the verb
@@ -308,14 +503,21 @@ def conjugate(
             f"person must be 0-5, got {person}"
         )
 
-    # Check irregular table first
+    # Check irregular table first (only for tenses where
+    # the verb is actually irregular; missing tenses fall
+    # through to regular conjugation).
     if infinitive in _IRREGULAR:
-        return _IRREGULAR[infinitive][tense][person]
+        forms = _IRREGULAR[infinitive].get(tense)
+        if forms is not None:
+            return forms[person]
 
     # Regular conjugation
     if conjugation_group not in _REGULAR:
         return None
 
-    stem = infinitive[:-2]
+    if tense in _FULL_STEM_TENSES:
+        stem = infinitive
+    else:
+        stem = infinitive[:-2]
     ending = _REGULAR[conjugation_group][tense][person]
     return stem + ending

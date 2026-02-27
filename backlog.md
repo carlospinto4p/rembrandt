@@ -27,7 +27,7 @@
 ### 2026.02.27 — Improvement proposals
 
 **Conjugation & Grammar**
-- [ ] Add more tenses: futuro simple, condicional, subjuntivo presente
+- [x] Add more tenses: futuro simple, condicional, subjuntivo presente
 - [ ] Add more irregular verbs: `conocer`, `dormir`, `pedir`, `sentir`, `jugar`, etc.
 - [ ] Add adjective agreement exercise type (gender/number matching)
 

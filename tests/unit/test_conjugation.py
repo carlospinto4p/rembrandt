@@ -69,6 +69,95 @@ def test_conjugate_ir_imperfecto():
     )
 
 
+def test_conjugate_ar_futuro():
+    assert (
+        conjugate("hablar", "ar", "futuro", 0) == "hablaré"
+    )
+    assert (
+        conjugate("hablar", "ar", "futuro", 2) == "hablará"
+    )
+    assert (
+        conjugate("hablar", "ar", "futuro", 3)
+        == "hablaremos"
+    )
+
+
+def test_conjugate_er_futuro():
+    assert (
+        conjugate("comer", "er", "futuro", 0) == "comeré"
+    )
+    assert (
+        conjugate("comer", "er", "futuro", 2) == "comerá"
+    )
+
+
+def test_conjugate_ir_futuro():
+    assert (
+        conjugate("vivir", "ir", "futuro", 0) == "viviré"
+    )
+    assert (
+        conjugate("vivir", "ir", "futuro", 5) == "vivirán"
+    )
+
+
+def test_conjugate_ar_condicional():
+    assert (
+        conjugate("hablar", "ar", "condicional", 0)
+        == "hablaría"
+    )
+    assert (
+        conjugate("hablar", "ar", "condicional", 3)
+        == "hablaríamos"
+    )
+
+
+def test_conjugate_er_condicional():
+    assert (
+        conjugate("comer", "er", "condicional", 0)
+        == "comería"
+    )
+
+
+def test_conjugate_ir_condicional():
+    assert (
+        conjugate("vivir", "ir", "condicional", 0)
+        == "viviría"
+    )
+
+
+def test_conjugate_ar_subjuntivo_presente():
+    assert (
+        conjugate("hablar", "ar", "subjuntivo_presente", 0)
+        == "hable"
+    )
+    assert (
+        conjugate("hablar", "ar", "subjuntivo_presente", 1)
+        == "hables"
+    )
+    assert (
+        conjugate("hablar", "ar", "subjuntivo_presente", 3)
+        == "hablemos"
+    )
+
+
+def test_conjugate_er_subjuntivo_presente():
+    assert (
+        conjugate("comer", "er", "subjuntivo_presente", 0)
+        == "coma"
+    )
+    assert (
+        conjugate("comer", "er", "subjuntivo_presente", 5)
+        == "coman"
+    )
+
+
+def test_conjugate_ir_subjuntivo_presente():
+    assert (
+        conjugate("vivir", "ir", "subjuntivo_presente", 0)
+        == "viva"
+    )
+
+
 # --- Irregular Conjugation Tests ---
 
 
@@ -100,12 +189,63 @@ def test_conjugate_hacer():
     )
 
 
+def test_conjugate_tener_futuro():
+    assert (
+        conjugate("tener", "er", "futuro", 0) == "tendré"
+    )
+    assert (
+        conjugate("tener", "er", "futuro", 2) == "tendrá"
+    )
+
+
+def test_conjugate_hacer_condicional():
+    assert (
+        conjugate("hacer", "er", "condicional", 0)
+        == "haría"
+    )
+    assert (
+        conjugate("hacer", "er", "condicional", 3)
+        == "haríamos"
+    )
+
+
+def test_conjugate_ser_subjuntivo_presente():
+    assert (
+        conjugate("ser", "er", "subjuntivo_presente", 0)
+        == "sea"
+    )
+    assert (
+        conjugate("ser", "er", "subjuntivo_presente", 3)
+        == "seamos"
+    )
+
+
+def test_conjugate_ir_futuro_regular_fallthrough():
+    """Verbs like ir/ser/dar that are regular in futuro
+    fall through to the regular engine."""
+    assert (
+        conjugate("ir", "ir", "futuro", 0) == "iré"
+    )
+    assert (
+        conjugate("ser", "er", "futuro", 0) == "seré"
+    )
+
+
+def test_conjugate_decir_futuro():
+    assert (
+        conjugate("decir", "ir", "futuro", 0) == "diré"
+    )
+    assert (
+        conjugate("decir", "ir", "futuro", 2) == "dirá"
+    )
+
+
 # --- Validation Tests ---
 
 
 def test_conjugate_invalid_tense():
     with pytest.raises(ValueError, match="Unknown tense"):
-        conjugate("hablar", "ar", "futuro", 0)
+        conjugate("hablar", "ar", "imperativo", 0)
 
 
 def test_conjugate_invalid_person():
@@ -146,7 +286,10 @@ def test_persons_count():
 
 
 def test_tenses_count():
-    assert len(TENSES) == 3
+    assert len(TENSES) == 6
     assert "presente" in TENSES
     assert "pretérito" in TENSES
     assert "imperfecto" in TENSES
+    assert "futuro" in TENSES
+    assert "condicional" in TENSES
+    assert "subjuntivo_presente" in TENSES

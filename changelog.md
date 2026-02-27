@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v0.28.0 - 27th February 2026
+
+- Added tenses to `conjugation` engine:
+  - `futuro`
+  - `condicional`
+  - `subjuntivo_presente`
+- Updated all 15 irregular verbs with new tense forms where they differ
+  from regular conjugation (verbs regular in a tense fall through
+  automatically).
+- Added `_FULL_STEM_TENSES` constant: futuro and condicional use the
+  full infinitive as stem.
+
+
 ### v0.27.1 - 27th February 2026
 
 - Refactored `evaluate_answer()` in `exercises.py`: merged duplicated
