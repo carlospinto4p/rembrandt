@@ -1,22 +1,30 @@
 
 ## Changelog - Rembrandt
 
+### v0.34.1 - 3rd March 2026
+
+- Fixed v0.34.0 changelog: removed incorrect folder grouping
+  for core package files.
+- Updated `.claude/rules/versioning.md`: folder grouping only
+  applies to auxiliary directories, not `src/rembrandt/`.
+
+
 ### v0.34.0 - 3rd March 2026
 
-- Updated `src/rembrandt/`:
-  - `models.py`: Added `CardState` enum (`NEW`, `LEARNING`,
-    `REVIEW`, `RELEARNING`), `ReviewConfig` model, and `state`
-    / `step_index` fields to `UserProgress`.
-  - `spaced_repetition.py`: Rewrote `review()` with Anki-style
-    state machine. Updated `select_words()` to prioritize
-    `LEARNING`/`RELEARNING` cards.
-  - `db.py`: Added `state` and `step_index` columns with
-    migration for existing databases. Updated export/import.
-  - `session.py`: Added optional `review_config` parameter to
-    `Session` and `quick_session()`.
-  - `lessons.py`: Mastery now requires `state == REVIEW` in
-    addition to `repetitions >= 3`.
-  - `__init__.py`: Exported `CardState` and `ReviewConfig`.
+- Added `CardState` enum (`NEW`, `LEARNING`, `REVIEW`,
+  `RELEARNING`), `ReviewConfig` model, and `state` /
+  `step_index` fields to `UserProgress`.
+- Rewrote `review()` with Anki-style state machine for
+  learning/relearning step progression.
+- Updated `select_words()`: prioritizes `LEARNING`/`RELEARNING`
+  cards before regular due/new words.
+- Updated `Session` and `quick_session()`: accept optional
+  `review_config` parameter.
+- Updated `lesson_progress()`: mastery now requires
+  `state == REVIEW` in addition to `repetitions >= 3`.
+- Updated `db`: added `state` and `step_index` columns with
+  migration for existing databases. Updated export/import.
+- Exported `CardState` and `ReviewConfig` from package.
 - Updated `README.md`: added Learning Steps section.
 
 

@@ -57,12 +57,19 @@ As part of the commit workflow (step 3 in `committing.md`), update the version a
     - `Baz`
     - `Qux`
   ```
-- **Group by folder**: When multiple files in the same directory are changed,
-  group them under one bullet with sub-bullets per file:
+- **Group by folder**: When multiple files in the same *auxiliary*
+  directory are changed, group them under one bullet with sub-bullets
+  per file. **Do not group `src/rembrandt/` files** — those are the
+  core package and each change should be a top-level bullet.
   ```markdown
+  # GOOD — auxiliary directory grouped:
   - Updated `.claude/rules/`:
     - `testing.md`: Fixed test paths.
     - `committing.md`: Collapsed versioning sub-bullets.
+
+  # GOOD — core package files as top-level bullets:
+  - Added `Foo` enum in `models`.
+  - Updated `review()`: new scheduling logic.
   ```
 
 **IMPORTANT**: Always leave **two blank lines** between version entries in the changelog for readability.
