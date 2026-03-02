@@ -8,6 +8,7 @@ from datetime import datetime
 
 from rembrandt.db import Database
 from rembrandt.models import (
+    CardState,
     ExerciseType,
     SessionMode,
     UserProgress,
@@ -129,7 +130,7 @@ def test_answer_updates_progress(session):
 
     progress = session.db.get_progress("u1", word_id)
     assert progress is not None
-    assert progress.repetitions == 1
+    assert progress.state == CardState.LEARNING
 
 
 def test_answer_without_exercise_raises(session):
@@ -363,7 +364,7 @@ def test_definition_self_graded_updates_progress(
                 "u1", word_id,
             )
             assert progress is not None
-            assert progress.repetitions == 1
+            assert progress.state == CardState.LEARNING
             return
     pytest.skip("Did not get a self-graded exercise")
 

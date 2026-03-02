@@ -10,6 +10,7 @@ from pathlib import Path
 
 from rembrandt.models import (
     AnswerHistory,
+    CardState,
     DailyStats,
     Lesson,
     User,
@@ -57,6 +58,8 @@ CREATE TABLE IF NOT EXISTS progress (
     interval         INTEGER NOT NULL DEFAULT 0,
     repetitions      INTEGER NOT NULL DEFAULT 0,
     next_review      TEXT    NOT NULL,
+    state            TEXT    NOT NULL DEFAULT 'new',
+    step_index       INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, word_id),
     FOREIGN KEY (word_id) REFERENCES words(id)
 );
@@ -173,6 +176,8 @@ def _row_to_progress(r: sqlite3.Row) -> UserProgress:
         next_review=datetime.fromisoformat(
             r["next_review"],
         ),
+        state=CardState(r["state"]),
+        step_index=r["step_index"],
     )
 
 
@@ -190,6 +195,28 @@ class Database:
         )
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(_SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add columns introduced after the initial schema."""
+        cols = {
+            row[1]
+            for row in self._conn.execute(
+                "PRAGMA table_info(progress)"
+            )
+        }
+        if "state" not in cols:
+            self._conn.execute(
+                "ALTER TABLE progress "
+                "ADD COLUMN state TEXT "
+                "NOT NULL DEFAULT 'review'"
+            )
+        if "step_index" not in cols:
+            self._conn.execute(
+                "ALTER TABLE progress "
+                "ADD COLUMN step_index INTEGER "
+                "NOT NULL DEFAULT 0"
+            )
 
     # -- Users --------------------------------------------------------
 
@@ -559,13 +586,16 @@ class Database:
         self._conn.execute(
             "INSERT INTO progress "
             "(user_id, word_id, easiness_factor, "
-            " interval, repetitions, next_review) "
-            "VALUES (?, ?, ?, ?, ?, ?) "
+            " interval, repetitions, next_review, "
+            " state, step_index) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(user_id, word_id) DO UPDATE SET "
             " easiness_factor = excluded.easiness_factor, "
             " interval         = excluded.interval, "
             " repetitions      = excluded.repetitions, "
-            " next_review      = excluded.next_review",
+            " next_review      = excluded.next_review, "
+            " state            = excluded.state, "
+            " step_index       = excluded.step_index",
             (
                 progress.user_id,
                 progress.word_id,
@@ -573,6 +603,8 @@ class Database:
                 progress.interval,
                 progress.repetitions,
                 progress.next_review.strftime(_ISO_FMT),
+                progress.state.value,
+                progress.step_index,
             ),
         )
         self._conn.commit()
@@ -583,16 +615,17 @@ class Database:
         """Export all progress rows for a user as dicts.
 
         Each dict contains `user_id`, `word_id`,
-        `easiness_factor`, `interval`, `repetitions`, and
-        `next_review` (ISO 8601 string). The result is
-        JSON-serializable.
+        `easiness_factor`, `interval`, `repetitions`,
+        `next_review` (ISO 8601 string), `state`, and
+        `step_index`. The result is JSON-serializable.
 
         :param user_id: The user identifier.
         :return: List of progress dicts.
         """
         rows = self._conn.execute(
             "SELECT user_id, word_id, easiness_factor, "
-            "interval, repetitions, next_review "
+            "interval, repetitions, next_review, "
+            "state, step_index "
             "FROM progress WHERE user_id = ?",
             (user_id,),
         ).fetchall()
@@ -604,6 +637,8 @@ class Database:
                 "interval": r["interval"],
                 "repetitions": r["repetitions"],
                 "next_review": r["next_review"],
+                "state": r["state"],
+                "step_index": r["step_index"],
             }
             for r in rows
         ]
@@ -615,7 +650,9 @@ class Database:
 
         Each dict must contain `user_id`, `word_id`,
         `easiness_factor`, `interval`, `repetitions`, and
-        `next_review` (ISO 8601 string).
+        `next_review` (ISO 8601 string). The keys `state`
+        and `step_index` are optional and default to
+        `"review"` and `0` respectively.
 
         :param records: List of progress dicts.
         :return: Number of records imported.
@@ -632,11 +669,14 @@ class Database:
                     raise KeyError(
                         f"Missing keys: {sorted(missing)}"
                     )
+                state = rec.get("state", "review")
+                step_index = rec.get("step_index", 0)
                 self._conn.execute(
                     "INSERT INTO progress "
                     "(user_id, word_id, easiness_factor,"
-                    " interval, repetitions, next_review)"
-                    " VALUES (?, ?, ?, ?, ?, ?) "
+                    " interval, repetitions, next_review,"
+                    " state, step_index)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
                     "ON CONFLICT(user_id, word_id) "
                     "DO UPDATE SET "
                     " easiness_factor "
@@ -645,7 +685,10 @@ class Database:
                     " repetitions "
                     "  = excluded.repetitions, "
                     " next_review "
-                    "  = excluded.next_review",
+                    "  = excluded.next_review, "
+                    " state = excluded.state, "
+                    " step_index "
+                    "  = excluded.step_index",
                     (
                         rec["user_id"],
                         rec["word_id"],
@@ -653,6 +696,8 @@ class Database:
                         rec["interval"],
                         rec["repetitions"],
                         rec["next_review"],
+                        state,
+                        step_index,
                     ),
                 )
         return len(records)

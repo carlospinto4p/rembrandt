@@ -6,7 +6,12 @@ from datetime import datetime
 
 from rembrandt.db import Database
 from rembrandt.lessons import lesson_progress, load_lessons
-from rembrandt.models import Lesson, UserProgress, Word
+from rembrandt.models import (
+    CardState,
+    Lesson,
+    UserProgress,
+    Word,
+)
 
 
 # --- Helpers ---
@@ -244,12 +249,14 @@ def test_lesson_progress_mastered(tmp_path):
         user_id="u1",
         word_id=words[0].id,
         repetitions=3,
+        state=CardState.REVIEW,
         next_review=datetime(2026, 1, 1),
     ))
     db.upsert_progress(UserProgress(
         user_id="u1",
         word_id=words[1].id,
         repetitions=5,
+        state=CardState.REVIEW,
         next_review=datetime(2026, 1, 1),
     ))
     lp = lesson_progress(db, "u1", lesson)

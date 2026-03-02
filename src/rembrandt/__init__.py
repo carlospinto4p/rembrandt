@@ -6,9 +6,11 @@ from rembrandt.db import Database
 from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
     AnswerHistory,
+    CardState,
     DailyStats,
     Hint,
     Lesson,
+    ReviewConfig,
     SessionMode,
     SessionStats,
     User,
@@ -24,10 +26,12 @@ __version__ = version("rembrandt")
 
 __all__ = [
     "AnswerHistory",
+    "CardState",
     "DailyStats",
     "Database",
     "Hint",
     "Lesson",
+    "ReviewConfig",
     "Session",
     "SessionMode",
     "SessionStats",

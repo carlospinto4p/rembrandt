@@ -1,6 +1,29 @@
 
 ## Changelog - Rembrandt
 
+### v0.34.0 - 3rd March 2026
+
+- Added `CardState` enum in `models`: `NEW`, `LEARNING`, `REVIEW`,
+  `RELEARNING`.
+- Added `ReviewConfig` model in `models`: configures learning steps,
+  graduating interval, relearning steps, and lapse interval reduction.
+- Added `state` and `step_index` fields to `UserProgress`.
+- Updated `review()` in `spaced_repetition`: implements Anki-style
+  state machine with learning/relearning step progression.
+- Updated `select_words()`: prioritizes `LEARNING`/`RELEARNING` cards
+  before regular due/new words.
+- Updated `Session` and `quick_session()`: accept optional
+  `review_config` parameter.
+- Updated `lesson_progress()`: mastery now requires
+  `state == REVIEW` in addition to `repetitions >= 3`.
+- Updated `db`:
+  - Added `state` and `step_index` columns to progress table.
+  - Added migration for existing databases (defaults to `"review"`).
+  - Updated `export_progress()` and `import_progress()` to handle
+    new fields.
+- Updated `README.md`: added Learning Steps section.
+
+
 ### v0.33.3 - 2nd March 2026
 
 - Updated `.claude/rules/shell.md`:

@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 from rembrandt.db import Database
-from rembrandt.models import Lesson, LessonProgress
+from rembrandt.models import CardState, Lesson, LessonProgress
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,8 @@ def lesson_progress(
     studied = len(progress_map)
     mastered = sum(
         1 for p in progress_map.values()
-        if p.repetitions >= 3
+        if p.state == CardState.REVIEW
+        and p.repetitions >= 3
     )
 
     return LessonProgress(

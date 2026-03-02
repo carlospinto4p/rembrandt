@@ -164,6 +164,35 @@ s = Session(db, "user1", "en", "es",
             word_ids=lesson.word_ids)
 ```
 
+## Learning Steps
+
+By default, new cards go through short-interval learning steps before
+entering the SM-2 review queue, and forgotten review cards go through
+relearning steps before returning. This follows the Anki-style approach
+for better retention:
+
+```python
+from rembrandt import ReviewConfig, Session
+
+# Default: learning_steps=[1, 10], relearning_steps=[10]
+session = Session(db, "user1", "en", "es")
+
+# Custom configuration
+config = ReviewConfig(
+    learning_steps=[1, 5, 15],     # minutes
+    graduating_interval=2,          # days after graduation
+    relearning_steps=[5, 20],       # minutes
+    lapse_new_interval_factor=0.7,  # 70% of old interval
+    lapse_min_interval=1,           # minimum 1 day
+)
+session = Session(db, "user1", "en", "es",
+                  review_config=config)
+```
+
+Cards progress through four states: `NEW` -> `LEARNING` -> `REVIEW`.
+When a review card is forgotten it enters `RELEARNING` before returning
+to `REVIEW` with a reduced interval.
+
 ## Lessons
 
 Rembrandt supports structured lessons — named sets of words grouped by
@@ -211,7 +240,7 @@ print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
 ```
 
 A word is "studied" once it has any review history, and "mastered"
-after 3+ consecutive correct recalls (SM-2 repetitions >= 3).
+when it is in `REVIEW` state with 3+ consecutive correct recalls.
 
 ## Weak Word Detection
 

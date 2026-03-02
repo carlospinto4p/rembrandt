@@ -1,11 +1,17 @@
 """Tests for rembrandt.db."""
 
+import sqlite3
 from datetime import datetime
 
 import pytest
 
 from rembrandt.db import Database
-from rembrandt.models import Lesson, UserProgress, Word
+from rembrandt.models import (
+    CardState,
+    Lesson,
+    UserProgress,
+    Word,
+)
 
 
 # --- User CRUD Tests ---
@@ -358,6 +364,7 @@ def test_upsert_progress_insert(db):
         easiness_factor=2.5,
         interval=1,
         repetitions=1,
+        state=CardState.REVIEW,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
     db.upsert_progress(progress)
@@ -367,6 +374,8 @@ def test_upsert_progress_insert(db):
     assert loaded.easiness_factor == 2.5
     assert loaded.interval == 1
     assert loaded.repetitions == 1
+    assert loaded.state == CardState.REVIEW
+    assert loaded.step_index == 0
 
 
 def test_upsert_progress_update(db):
@@ -885,6 +894,48 @@ def test_import_export_roundtrip(db):
     db2.close()
 
 
+def test_export_progress_includes_state(db):
+    db.upsert_progress(UserProgress(
+        user_id="u1", word_id=1,
+        state=CardState.LEARNING, step_index=1,
+        next_review=datetime(2026, 3, 1, 12, 0, 0),
+    ))
+    result = db.export_progress("u1")
+    assert result[0]["state"] == "learning"
+    assert result[0]["step_index"] == 1
+
+
+def test_import_progress_with_state(db):
+    records = [
+        {
+            "user_id": "u1", "word_id": 1,
+            "easiness_factor": 2.5, "interval": 1,
+            "repetitions": 1,
+            "next_review": "2026-03-01T12:00:00",
+            "state": "relearning", "step_index": 2,
+        },
+    ]
+    db.import_progress(records)
+    loaded = db.get_progress("u1", 1)
+    assert loaded.state == CardState.RELEARNING
+    assert loaded.step_index == 2
+
+
+def test_import_progress_without_state_defaults(db):
+    records = [
+        {
+            "user_id": "u1", "word_id": 1,
+            "easiness_factor": 2.5, "interval": 1,
+            "repetitions": 1,
+            "next_review": "2026-03-01T12:00:00",
+        },
+    ]
+    db.import_progress(records)
+    loaded = db.get_progress("u1", 1)
+    assert loaded.state == CardState.REVIEW
+    assert loaded.step_index == 0
+
+
 def test_import_progress_missing_key_raises(db):
     records = [
         {
@@ -895,6 +946,42 @@ def test_import_progress_missing_key_raises(db):
     ]
     with pytest.raises(KeyError, match="Missing keys"):
         db.import_progress(records)
+
+
+# --- Migration Tests ---
+
+
+def test_migrate_adds_state_columns(tmp_path):
+    db_path = tmp_path / "legacy.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.executescript(
+        "CREATE TABLE IF NOT EXISTS progress ("
+        "    user_id TEXT NOT NULL,"
+        "    word_id INTEGER NOT NULL,"
+        "    easiness_factor REAL NOT NULL DEFAULT 2.5,"
+        "    interval INTEGER NOT NULL DEFAULT 0,"
+        "    repetitions INTEGER NOT NULL DEFAULT 0,"
+        "    next_review TEXT NOT NULL,"
+        "    PRIMARY KEY (user_id, word_id)"
+        ");"
+    )
+    conn.execute(
+        "INSERT INTO progress "
+        "(user_id, word_id, easiness_factor, interval, "
+        "repetitions, next_review) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        ("u1", 1, 2.5, 6, 3, "2026-03-01T12:00:00"),
+    )
+    conn.commit()
+    conn.close()
+
+    db = Database(db_path)
+    loaded = db.get_progress("u1", 1)
+    assert loaded is not None
+    assert loaded.state == CardState.REVIEW
+    assert loaded.step_index == 0
+    assert loaded.repetitions == 3
+    db.close()
 
 
 # --- Answer History Tests ---

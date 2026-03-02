@@ -3,18 +3,57 @@
 from datetime import datetime, timedelta
 
 from rembrandt.db import Database
-from rembrandt.models import SessionMode, UserProgress, Word
+from rembrandt.models import (
+    CardState,
+    ReviewConfig,
+    SessionMode,
+    UserProgress,
+    Word,
+)
+
+_DEFAULT_CONFIG = ReviewConfig()
+
+
+def _update_ef(ef: float, quality: int) -> float:
+    """Apply the SM-2 easiness-factor adjustment.
+
+    :param ef: Current easiness factor.
+    :param quality: Quality score 0-5.
+    :return: Updated easiness factor (>= 1.3).
+    """
+    ef = ef + (
+        0.1
+        - (5 - quality) * (0.08 + (5 - quality) * 0.02)
+    )
+    return max(ef, 1.3)
 
 
 def review(
     progress: UserProgress,
     quality: int,
+    *,
+    config: ReviewConfig | None = None,
 ) -> UserProgress:
-    """Apply the SM-2 algorithm to update progress.
+    """Apply spaced-repetition with Anki-style learning steps.
+
+    Routes cards through a state machine:
+
+    - `NEW` -> `LEARNING` (or `REVIEW` if no learning steps)
+    - `LEARNING` + pass -> advance step (or graduate to
+      `REVIEW`)
+    - `LEARNING` + fail -> reset to step 0
+    - `REVIEW` + pass -> normal SM-2 interval
+    - `REVIEW` + fail -> `RELEARNING` (or stay in `REVIEW`
+      if no relearning steps)
+    - `RELEARNING` + pass -> advance step (or return to
+      `REVIEW` with reduced interval)
+    - `RELEARNING` + fail -> reset to step 0
 
     :param progress: Current progress for a user-word pair.
     :param quality: Quality of recall, 0 (total blackout) to
         5 (perfect response).
+    :param config: Learning/relearning configuration. Uses
+        default `ReviewConfig` when `None`.
     :return: Updated `UserProgress` with new interval,
         easiness factor, and next review date.
     :raises ValueError: If `quality` is not in 0..5.
@@ -24,26 +63,135 @@ def review(
             f"quality must be 0-5, got {quality}"
         )
 
-    ef = progress.easiness_factor
-    reps = progress.repetitions
+    if config is None:
+        config = _DEFAULT_CONFIG
+
+    old_ef = progress.easiness_factor
+    state = progress.state
+    step_index = progress.step_index
     interval = progress.interval
+    reps = progress.repetitions
+    passed = quality >= 3
 
-    if quality >= 3:
-        if reps == 0:
-            interval = 1
-        elif reps == 1:
-            interval = 6
+    if state == CardState.NEW:
+        if passed:
+            if config.learning_steps:
+                state = CardState.LEARNING
+                step_index = 0
+                next_review = datetime.now() + timedelta(
+                    minutes=config.learning_steps[0],
+                )
+            else:
+                state = CardState.REVIEW
+                step_index = 0
+                interval = config.graduating_interval
+                reps = 1
+                next_review = datetime.now() + timedelta(
+                    days=interval,
+                )
         else:
-            interval = round(interval * ef)
-        reps += 1
-    else:
-        reps = 0
-        interval = 1
+            if config.learning_steps:
+                state = CardState.LEARNING
+                step_index = 0
+                next_review = datetime.now() + timedelta(
+                    minutes=config.learning_steps[0],
+                )
+            else:
+                state = CardState.NEW
+                step_index = 0
+                next_review = datetime.now() + timedelta(
+                    minutes=1,
+                )
 
-    ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-    ef = max(ef, 1.3)
+    elif state == CardState.LEARNING:
+        if passed:
+            next_step = step_index + 1
+            if next_step < len(config.learning_steps):
+                step_index = next_step
+                next_review = datetime.now() + timedelta(
+                    minutes=config.learning_steps[
+                        next_step
+                    ],
+                )
+            else:
+                state = CardState.REVIEW
+                step_index = 0
+                interval = config.graduating_interval
+                reps = 1
+                next_review = datetime.now() + timedelta(
+                    days=interval,
+                )
+        else:
+            step_index = 0
+            next_review = datetime.now() + timedelta(
+                minutes=config.learning_steps[0],
+            )
 
-    next_review = datetime.now() + timedelta(days=interval)
+    elif state == CardState.REVIEW:
+        if passed:
+            if reps == 0:
+                interval = 1
+            elif reps == 1:
+                interval = 6
+            else:
+                interval = round(interval * old_ef)
+            reps += 1
+            next_review = datetime.now() + timedelta(
+                days=interval,
+            )
+        else:
+            reps = 0
+            if config.relearning_steps:
+                state = CardState.RELEARNING
+                step_index = 0
+                next_review = datetime.now() + timedelta(
+                    minutes=config.relearning_steps[0],
+                )
+            else:
+                new_interval = max(
+                    round(
+                        interval
+                        * config.lapse_new_interval_factor
+                    ),
+                    config.lapse_min_interval,
+                )
+                interval = new_interval
+                next_review = datetime.now() + timedelta(
+                    days=interval,
+                )
+
+    elif state == CardState.RELEARNING:
+        if passed:
+            next_step = step_index + 1
+            if next_step < len(config.relearning_steps):
+                step_index = next_step
+                next_review = datetime.now() + timedelta(
+                    minutes=config.relearning_steps[
+                        next_step
+                    ],
+                )
+            else:
+                state = CardState.REVIEW
+                step_index = 0
+                new_interval = max(
+                    round(
+                        interval
+                        * config.lapse_new_interval_factor
+                    ),
+                    config.lapse_min_interval,
+                )
+                interval = new_interval
+                reps = 1
+                next_review = datetime.now() + timedelta(
+                    days=interval,
+                )
+        else:
+            step_index = 0
+            next_review = datetime.now() + timedelta(
+                minutes=config.relearning_steps[0],
+            )
+
+    ef = _update_ef(old_ef, quality)
 
     return UserProgress(
         user_id=progress.user_id,
@@ -52,6 +200,8 @@ def review(
         interval=interval,
         repetitions=reps,
         next_review=next_review,
+        state=state,
+        step_index=step_index,
     )
 
 
@@ -67,6 +217,10 @@ def select_words(
     prioritize_weak: bool = False,
 ) -> list[Word]:
     """Pick words for review using spaced-repetition scheduling.
+
+    Words in `LEARNING` or `RELEARNING` state are returned
+    first (before regular due/new words) when their
+    `next_review` has passed.
 
     :param db: The database instance.
     :param user_id: The user identifier.
@@ -99,6 +253,7 @@ def select_words(
     progress_map = db.get_all_progress(user_id, ids)
 
     now = datetime.now()
+    in_steps: list[Word] = []
     due: list[Word] = []
     new: list[Word] = []
 
@@ -108,6 +263,11 @@ def select_words(
         progress = progress_map.get(word.id)
         if progress is None:
             new.append(word)
+        elif progress.state in (
+            CardState.LEARNING,
+            CardState.RELEARNING,
+        ) and progress.next_review <= now:
+            in_steps.append(word)
         elif progress.next_review <= now:
             due.append(word)
 
@@ -121,11 +281,12 @@ def select_words(
         )
 
     if mode == SessionMode.LEARN_NEW:
-        return new[:count]
+        return (in_steps + new)[:count]
     if mode == SessionMode.REVIEW_DUE:
-        return due[:count]
+        return (in_steps + due)[:count]
 
-    selected = due[:count]
+    selected = in_steps + due
+    selected = selected[:count]
     remaining = count - len(selected)
     if remaining > 0:
         selected.extend(new[:remaining])

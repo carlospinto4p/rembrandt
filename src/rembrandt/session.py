@@ -13,6 +13,7 @@ from rembrandt.models import (
     Exercise,
     ExerciseType,
     Hint,
+    ReviewConfig,
     SessionMode,
     SessionStats,
     UserProgress,
@@ -32,6 +33,9 @@ class Session:
         `REVIEW_DUE`).
     :param word_ids: Restrict exercises to these word ids
         (e.g. from a `Lesson`).
+    :param review_config: Anki-style learning/relearning
+        step configuration. Uses default `ReviewConfig`
+        when `None`.
     """
 
     def __init__(
@@ -43,6 +47,7 @@ class Session:
         *,
         mode: SessionMode = SessionMode.MIXED,
         word_ids: list[int] | None = None,
+        review_config: ReviewConfig | None = None,
     ) -> None:
         self.db = db
         self.user_id = user_id
@@ -50,6 +55,7 @@ class Session:
         self.language_to = language_to
         self.mode = mode
         self._word_ids = word_ids
+        self._review_config = review_config
         self._current_exercise: Exercise | None = None
         self._correct = 0
         self._incorrect = 0
@@ -123,7 +129,10 @@ class Session:
                 word_id=word_id,
             )
 
-        updated = review(progress, sm2_quality)
+        updated = review(
+            progress, sm2_quality,
+            config=self._review_config,
+        )
         self.db.upsert_progress(updated)
 
         self.db.record_answer(
@@ -225,6 +234,7 @@ def quick_session(
     limit: int | None = None,
     word_key: str = "word",
     definition_key: str = "definition",
+    review_config: ReviewConfig | None = None,
 ) -> Session:
     """Create a `Session` from a JSON file or inline word list.
 
@@ -243,6 +253,9 @@ def quick_session(
         all.
     :param word_key: Key in each dict for the word.
     :param definition_key: Key in each dict for the definition.
+    :param review_config: Anki-style learning/relearning
+        step configuration. Uses default `ReviewConfig`
+        when `None`.
     :return: A ready-to-use `Session`.
     :raises ValueError: If `vocab` is a list and `db_path` is
         `None`.
@@ -283,4 +296,7 @@ def quick_session(
         ]
         db.add_words(words)
 
-    return Session(db, user_id, language_from, language_to)
+    return Session(
+        db, user_id, language_from, language_to,
+        review_config=review_config,
+    )

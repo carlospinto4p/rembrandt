@@ -143,6 +143,52 @@ class SessionMode(str, Enum):
     MIXED = "mixed"
 
 
+class CardState(str, Enum):
+    """State of a card in the learning pipeline.
+
+    :cvar NEW: Never reviewed — will enter learning steps on
+        first answer.
+    :cvar LEARNING: Working through initial learning steps.
+    :cvar REVIEW: Graduated — uses SM-2 intervals.
+    :cvar RELEARNING: Lapsed from review — working through
+        relearning steps before returning to review.
+    """
+
+    NEW = "new"
+    LEARNING = "learning"
+    REVIEW = "review"
+    RELEARNING = "relearning"
+
+
+class ReviewConfig(BaseModel):
+    """Configuration for Anki-style learning and relearning steps.
+
+    :param learning_steps: Minutes between learning steps for
+        new cards (e.g. `[1, 10]`). Empty list graduates
+        immediately.
+    :param graduating_interval: Days for the first review
+        interval after graduating from learning steps.
+    :param relearning_steps: Minutes between relearning steps
+        for lapsed cards (e.g. `[10]`). Empty list returns to
+        review immediately.
+    :param lapse_new_interval_factor: Multiplier applied to the
+        pre-lapse interval when returning to review (e.g. `0.7`
+        means 70% of the old interval).
+    :param lapse_min_interval: Minimum interval in days after a
+        lapse, regardless of the factor calculation.
+    """
+
+    learning_steps: list[int] = Field(
+        default_factory=lambda: [1, 10],
+    )
+    graduating_interval: int = 1
+    relearning_steps: list[int] = Field(
+        default_factory=lambda: [10],
+    )
+    lapse_new_interval_factor: float = 0.7
+    lapse_min_interval: int = 1
+
+
 class ExerciseType(str, Enum):
     """Type of vocabulary exercise."""
 
@@ -237,6 +283,9 @@ class UserProgress(BaseModel):
     :param interval: Days until next review.
     :param repetitions: Number of consecutive correct reviews.
     :param next_review: Datetime of the next scheduled review.
+    :param state: Current card state in the learning pipeline.
+    :param step_index: Current position within learning or
+        relearning steps.
     """
 
     user_id: str
@@ -247,6 +296,8 @@ class UserProgress(BaseModel):
     next_review: datetime = Field(
         default_factory=datetime.now
     )
+    state: CardState = CardState.NEW
+    step_index: int = 0
 
 
 class WeakWord(BaseModel):
