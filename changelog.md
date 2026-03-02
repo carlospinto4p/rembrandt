@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.33.2 - 2nd March 2026
+
+- Added `.claude/rules/shell.md`: guidelines for simple shell commands,
+  avoiding `cd` prefixes and compound chains.
+
+
 ### v0.33.1 - 27th February 2026
 
 - Updated `examples/03_exercise_types.py`: added `ADJECTIVE_AGREEMENT` and
