@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.33.3 - 2nd March 2026
+
+- Updated `.claude/rules/shell.md`:
+  - Added `uv run` reminder for Python commands.
+  - Added output redirection note (Unix-style `/dev/null`).
+
+
 ### v0.33.2 - 2nd March 2026
 
 - Added `.claude/rules/shell.md`: guidelines for simple shell commands,
