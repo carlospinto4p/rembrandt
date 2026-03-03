@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.1 - 3rd March 2026
+
+- Refactored `review()` in `spaced_repetition`: extracted
+  per-state handlers (`_handle_new`, `_handle_learning`,
+  `_handle_review`, `_handle_relearning`) reducing cyclomatic
+  complexity from ~15 to ~4 per function.
+
+
 ### v0.37.0 - 3rd March 2026
 
 - Added `ReviewConfig.max_new_cards`: cap on new cards per

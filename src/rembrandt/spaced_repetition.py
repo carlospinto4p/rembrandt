@@ -2,6 +2,7 @@
 
 import random
 from datetime import datetime, timedelta
+from typing import NamedTuple
 
 from rembrandt.db import Database
 from rembrandt.models import (
@@ -53,6 +54,239 @@ def _fuzz_interval(
     )
 
 
+class _ReviewResult(NamedTuple):
+    """Intermediate result from a state handler."""
+
+    state: CardState
+    step_index: int
+    interval: int
+    reps: int
+    lapse_count: int
+    next_review: datetime
+
+
+def _handle_new(
+    progress: UserProgress,
+    passed: bool,
+    config: ReviewConfig,
+) -> _ReviewResult:
+    """Handle NEW -> LEARNING or REVIEW transition."""
+    if config.learning_steps:
+        return _ReviewResult(
+            state=CardState.LEARNING,
+            step_index=0,
+            interval=progress.interval,
+            reps=progress.repetitions,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.learning_steps[0],
+            ),
+        )
+    if passed:
+        interval = _fuzz_interval(
+            config.graduating_interval,
+            config.max_fuzz_factor,
+        )
+        return _ReviewResult(
+            state=CardState.REVIEW,
+            step_index=0,
+            interval=interval,
+            reps=1,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                days=interval,
+            ),
+        )
+    return _ReviewResult(
+        state=CardState.NEW,
+        step_index=0,
+        interval=progress.interval,
+        reps=progress.repetitions,
+        lapse_count=progress.lapse_count,
+        next_review=datetime.now() + timedelta(
+            minutes=1,
+        ),
+    )
+
+
+def _handle_learning(
+    progress: UserProgress,
+    passed: bool,
+    config: ReviewConfig,
+) -> _ReviewResult:
+    """Handle LEARNING step advancement or graduation."""
+    if not passed:
+        return _ReviewResult(
+            state=CardState.LEARNING,
+            step_index=0,
+            interval=progress.interval,
+            reps=progress.repetitions,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.learning_steps[0],
+            ),
+        )
+    next_step = progress.step_index + 1
+    if next_step < len(config.learning_steps):
+        return _ReviewResult(
+            state=CardState.LEARNING,
+            step_index=next_step,
+            interval=progress.interval,
+            reps=progress.repetitions,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.learning_steps[
+                    next_step
+                ],
+            ),
+        )
+    interval = _fuzz_interval(
+        config.graduating_interval,
+        config.max_fuzz_factor,
+    )
+    return _ReviewResult(
+        state=CardState.REVIEW,
+        step_index=0,
+        interval=interval,
+        reps=1,
+        lapse_count=progress.lapse_count,
+        next_review=datetime.now() + timedelta(
+            days=interval,
+        ),
+    )
+
+
+def _handle_review(
+    progress: UserProgress,
+    passed: bool,
+    config: ReviewConfig,
+) -> _ReviewResult:
+    """Handle REVIEW pass (SM-2) or fail (lapse)."""
+    if passed:
+        reps = progress.repetitions
+        if reps == 0:
+            interval = 1
+        elif reps == 1:
+            interval = _fuzz_interval(
+                6, config.max_fuzz_factor,
+            )
+        else:
+            interval = _fuzz_interval(
+                round(
+                    progress.interval
+                    * progress.easiness_factor
+                ),
+                config.max_fuzz_factor,
+            )
+        return _ReviewResult(
+            state=CardState.REVIEW,
+            step_index=progress.step_index,
+            interval=interval,
+            reps=reps + 1,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                days=interval,
+            ),
+        )
+    lapse_count = progress.lapse_count + 1
+    if (
+        config.leech_threshold > 0
+        and lapse_count >= config.leech_threshold
+    ):
+        return _ReviewResult(
+            state=CardState.SUSPENDED,
+            step_index=progress.step_index,
+            interval=progress.interval,
+            reps=0,
+            lapse_count=lapse_count,
+            next_review=progress.next_review,
+        )
+    if config.relearning_steps:
+        return _ReviewResult(
+            state=CardState.RELEARNING,
+            step_index=0,
+            interval=progress.interval,
+            reps=0,
+            lapse_count=lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.relearning_steps[0],
+            ),
+        )
+    interval = _fuzz_interval(
+        max(
+            round(
+                progress.interval
+                * config.lapse_new_interval_factor
+            ),
+            config.lapse_min_interval,
+        ),
+        config.max_fuzz_factor,
+    )
+    return _ReviewResult(
+        state=CardState.REVIEW,
+        step_index=progress.step_index,
+        interval=interval,
+        reps=0,
+        lapse_count=lapse_count,
+        next_review=datetime.now() + timedelta(
+            days=interval,
+        ),
+    )
+
+
+def _handle_relearning(
+    progress: UserProgress,
+    passed: bool,
+    config: ReviewConfig,
+) -> _ReviewResult:
+    """Handle RELEARNING step advancement or return."""
+    if not passed:
+        return _ReviewResult(
+            state=CardState.RELEARNING,
+            step_index=0,
+            interval=progress.interval,
+            reps=progress.repetitions,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.relearning_steps[0],
+            ),
+        )
+    next_step = progress.step_index + 1
+    if next_step < len(config.relearning_steps):
+        return _ReviewResult(
+            state=CardState.RELEARNING,
+            step_index=next_step,
+            interval=progress.interval,
+            reps=progress.repetitions,
+            lapse_count=progress.lapse_count,
+            next_review=datetime.now() + timedelta(
+                minutes=config.relearning_steps[
+                    next_step
+                ],
+            ),
+        )
+    interval = _fuzz_interval(
+        max(
+            round(
+                progress.interval
+                * config.lapse_new_interval_factor
+            ),
+            config.lapse_min_interval,
+        ),
+        config.max_fuzz_factor,
+    )
+    return _ReviewResult(
+        state=CardState.REVIEW,
+        step_index=0,
+        interval=interval,
+        reps=1,
+        lapse_count=progress.lapse_count,
+        next_review=datetime.now() + timedelta(
+            days=interval,
+        ),
+    )
+
+
 def review(
     progress: UserProgress,
     quality: int,
@@ -94,168 +328,30 @@ def review(
     if config is None:
         config = _DEFAULT_CONFIG
 
-    old_ef = progress.easiness_factor
-    state = progress.state
-    step_index = progress.step_index
-    interval = progress.interval
-    reps = progress.repetitions
-    lapse_count = progress.lapse_count
     passed = quality >= 3
+    state = progress.state
 
     if state == CardState.NEW:
-        if passed:
-            if config.learning_steps:
-                state = CardState.LEARNING
-                step_index = 0
-                next_review = datetime.now() + timedelta(
-                    minutes=config.learning_steps[0],
-                )
-            else:
-                state = CardState.REVIEW
-                step_index = 0
-                interval = _fuzz_interval(
-                    config.graduating_interval,
-                    config.max_fuzz_factor,
-                )
-                reps = 1
-                next_review = datetime.now() + timedelta(
-                    days=interval,
-                )
-        else:
-            if config.learning_steps:
-                state = CardState.LEARNING
-                step_index = 0
-                next_review = datetime.now() + timedelta(
-                    minutes=config.learning_steps[0],
-                )
-            else:
-                state = CardState.NEW
-                step_index = 0
-                next_review = datetime.now() + timedelta(
-                    minutes=1,
-                )
-
+        r = _handle_new(progress, passed, config)
     elif state == CardState.LEARNING:
-        if passed:
-            next_step = step_index + 1
-            if next_step < len(config.learning_steps):
-                step_index = next_step
-                next_review = datetime.now() + timedelta(
-                    minutes=config.learning_steps[
-                        next_step
-                    ],
-                )
-            else:
-                state = CardState.REVIEW
-                step_index = 0
-                interval = _fuzz_interval(
-                    config.graduating_interval,
-                    config.max_fuzz_factor,
-                )
-                reps = 1
-                next_review = datetime.now() + timedelta(
-                    days=interval,
-                )
-        else:
-            step_index = 0
-            next_review = datetime.now() + timedelta(
-                minutes=config.learning_steps[0],
-            )
-
+        r = _handle_learning(progress, passed, config)
     elif state == CardState.REVIEW:
-        if passed:
-            if reps == 0:
-                interval = 1
-            elif reps == 1:
-                interval = _fuzz_interval(
-                    6, config.max_fuzz_factor,
-                )
-            else:
-                interval = _fuzz_interval(
-                    round(interval * old_ef),
-                    config.max_fuzz_factor,
-                )
-            reps += 1
-            next_review = datetime.now() + timedelta(
-                days=interval,
-            )
-        else:
-            reps = 0
-            lapse_count += 1
-            if (
-                config.leech_threshold > 0
-                and lapse_count >= config.leech_threshold
-            ):
-                state = CardState.SUSPENDED
-                next_review = progress.next_review
-            elif config.relearning_steps:
-                state = CardState.RELEARNING
-                step_index = 0
-                next_review = datetime.now() + timedelta(
-                    minutes=config.relearning_steps[0],
-                )
-            else:
-                new_interval = _fuzz_interval(
-                    max(
-                        round(
-                            interval
-                            * config.lapse_new_interval_factor
-                        ),
-                        config.lapse_min_interval,
-                    ),
-                    config.max_fuzz_factor,
-                )
-                interval = new_interval
-                next_review = datetime.now() + timedelta(
-                    days=interval,
-                )
+        r = _handle_review(progress, passed, config)
+    else:
+        r = _handle_relearning(progress, passed, config)
 
-    elif state == CardState.RELEARNING:
-        if passed:
-            next_step = step_index + 1
-            if next_step < len(config.relearning_steps):
-                step_index = next_step
-                next_review = datetime.now() + timedelta(
-                    minutes=config.relearning_steps[
-                        next_step
-                    ],
-                )
-            else:
-                state = CardState.REVIEW
-                step_index = 0
-                new_interval = _fuzz_interval(
-                    max(
-                        round(
-                            interval
-                            * config.lapse_new_interval_factor
-                        ),
-                        config.lapse_min_interval,
-                    ),
-                    config.max_fuzz_factor,
-                )
-                interval = new_interval
-                reps = 1
-                next_review = datetime.now() + timedelta(
-                    days=interval,
-                )
-        else:
-            step_index = 0
-            next_review = datetime.now() + timedelta(
-                minutes=config.relearning_steps[0],
-            )
-
-    ef = _update_ef(old_ef, quality)
+    ef = _update_ef(progress.easiness_factor, quality)
 
     return UserProgress(
         user_id=progress.user_id,
         word_id=progress.word_id,
         easiness_factor=round(ef, 2),
-        interval=interval,
-        repetitions=reps,
-        next_review=next_review,
-        state=state,
-        step_index=step_index,
-        lapse_count=lapse_count,
+        interval=r.interval,
+        repetitions=r.reps,
+        next_review=r.next_review,
+        state=r.state,
+        step_index=r.step_index,
+        lapse_count=r.lapse_count,
     )
 
 
