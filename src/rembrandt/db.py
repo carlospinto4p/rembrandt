@@ -99,6 +99,40 @@ CREATE TABLE IF NOT EXISTS answer_history (
 
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
+_DAILY_STATS_SQL = (
+    "SELECT date(answered_at) AS day, "
+    "COUNT(*) AS answers, "
+    "SUM(correct) AS correct "
+    "FROM answer_history "
+    "WHERE user_id = ? "
+    "AND answered_at >= ? "
+    "GROUP BY day "
+    "ORDER BY day DESC"
+)
+
+_WEAK_WORDS_SQL = (
+    "SELECT w.id, w.language_from, "
+    "w.language_to, w.word_from, w.word_to, "
+    "w.gender, w.conjugation_group, "
+    "w.tags, w.cefr, "
+    "COUNT(*) AS attempts, "
+    "SUM(CASE WHEN ah.correct = 0 "
+    "    THEN 1 ELSE 0 END) AS errors, "
+    "MAX(ah.answered_at) AS last_attempt "
+    "FROM answer_history ah "
+    "JOIN words w ON w.id = ah.word_id "
+    "WHERE ah.user_id = ? "
+    "AND w.language_from = ? "
+    "AND w.language_to = ? "
+    "GROUP BY ah.word_id "
+    "HAVING attempts >= ? "
+    "AND CAST(errors AS REAL) "
+    "    / attempts >= ? "
+    "ORDER BY CAST(errors AS REAL) "
+    "    / attempts DESC "
+    "LIMIT ?"
+)
+
 
 def _in_clause(ids: list) -> str:
     """Build a SQL IN-clause placeholder string.
@@ -819,15 +853,7 @@ class Database:
             datetime.now() - timedelta(days=days)
         ).strftime(_ISO_FMT)
         rows = self._conn.execute(
-            "SELECT date(answered_at) AS day, "
-            "COUNT(*) AS answers, "
-            "SUM(correct) AS correct "
-            "FROM answer_history "
-            "WHERE user_id = ? "
-            "AND answered_at >= ? "
-            "GROUP BY day "
-            "ORDER BY day DESC",
-            (user_id, cutoff),
+            _DAILY_STATS_SQL, (user_id, cutoff),
         ).fetchall()
         return [
             DailyStats(
@@ -865,26 +891,7 @@ class Database:
         :return: List of `WeakWord`, highest error rate first.
         """
         rows = self._conn.execute(
-            "SELECT w.id, w.language_from, "
-            "w.language_to, w.word_from, w.word_to, "
-            "w.gender, w.conjugation_group, "
-            "w.tags, w.cefr, "
-            "COUNT(*) AS attempts, "
-            "SUM(CASE WHEN ah.correct = 0 "
-            "    THEN 1 ELSE 0 END) AS errors, "
-            "MAX(ah.answered_at) AS last_attempt "
-            "FROM answer_history ah "
-            "JOIN words w ON w.id = ah.word_id "
-            "WHERE ah.user_id = ? "
-            "AND w.language_from = ? "
-            "AND w.language_to = ? "
-            "GROUP BY ah.word_id "
-            "HAVING attempts >= ? "
-            "AND CAST(errors AS REAL) "
-            "    / attempts >= ? "
-            "ORDER BY CAST(errors AS REAL) "
-            "    / attempts DESC "
-            "LIMIT ?",
+            _WEAK_WORDS_SQL,
             (
                 user_id, language_from, language_to,
                 min_attempts, threshold, limit,

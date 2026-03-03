@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.6 - 4th March 2026
+
+- Extracted `_DAILY_STATS_SQL` and `_WEAK_WORDS_SQL` to
+  module-level constants in `db`.
+
+
 ### v0.37.5 - 3rd March 2026
 
 - Updated `db._migrate()`: wrapped ALTER TABLE statements in
