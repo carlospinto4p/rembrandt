@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.4 - 3rd March 2026
+
+- Defined SM-2 constants in `spaced_repetition`:
+  - `QUALITY_PASS_THRESHOLD`
+  - `_FIRST_CORRECT_INTERVAL`
+  - `_SECOND_CORRECT_INTERVAL`
+- Updated `exercises`: imports `QUALITY_PASS_THRESHOLD` for
+  self-graded evaluation.
+
+
 ### v0.37.3 - 3rd March 2026
 
 - Extracted `_eligible_translation_types()` from

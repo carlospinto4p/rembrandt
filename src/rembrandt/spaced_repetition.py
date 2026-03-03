@@ -15,6 +15,11 @@ from rembrandt.models import (
 
 _DEFAULT_CONFIG = ReviewConfig()
 
+# SM-2 scheduling constants
+QUALITY_PASS_THRESHOLD = 3
+_FIRST_CORRECT_INTERVAL = 1
+_SECOND_CORRECT_INTERVAL = 6
+
 
 def _update_ef(ef: float, quality: int) -> float:
     """Apply the SM-2 easiness-factor adjustment.
@@ -173,10 +178,11 @@ def _handle_review(
     if passed:
         reps = progress.repetitions
         if reps == 0:
-            interval = 1
+            interval = _FIRST_CORRECT_INTERVAL
         elif reps == 1:
             interval = _fuzz_interval(
-                6, config.max_fuzz_factor,
+                _SECOND_CORRECT_INTERVAL,
+                config.max_fuzz_factor,
             )
         else:
             interval = _fuzz_interval(
@@ -330,7 +336,7 @@ def review(
     if config is None:
         config = _DEFAULT_CONFIG
 
-    passed = quality >= 3
+    passed = quality >= QUALITY_PASS_THRESHOLD
     state = progress.state
 
     if state == CardState.NEW:

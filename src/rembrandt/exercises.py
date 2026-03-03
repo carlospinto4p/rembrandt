@@ -8,6 +8,7 @@ from functools import partial
 from pathlib import Path
 
 from rembrandt.conjugation import can_conjugate, conjugate, PERSONS, TENSES
+from rembrandt.spaced_repetition import QUALITY_PASS_THRESHOLD
 from rembrandt.sentences import (
     extend_cloze_templates,
     generate_cloze,
@@ -630,7 +631,7 @@ def evaluate_answer(
             )
         expected = exercise.word.word_to
         return AnswerResult(
-            correct=quality >= 3,
+            correct=quality >= QUALITY_PASS_THRESHOLD,
             expected=expected,
             given=str(quality),
             word=exercise.word,
