@@ -206,24 +206,25 @@ class Database:
                 "PRAGMA table_info(progress)"
             )
         }
-        if "state" not in cols:
-            self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN state TEXT "
-                "NOT NULL DEFAULT 'review'"
-            )
-        if "step_index" not in cols:
-            self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN step_index INTEGER "
-                "NOT NULL DEFAULT 0"
-            )
-        if "lapse_count" not in cols:
-            self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN lapse_count INTEGER "
-                "NOT NULL DEFAULT 0"
-            )
+        with self._conn:
+            if "state" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN state TEXT "
+                    "NOT NULL DEFAULT 'review'"
+                )
+            if "step_index" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN step_index INTEGER "
+                    "NOT NULL DEFAULT 0"
+                )
+            if "lapse_count" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN lapse_count INTEGER "
+                    "NOT NULL DEFAULT 0"
+                )
 
     # -- Users --------------------------------------------------------
 

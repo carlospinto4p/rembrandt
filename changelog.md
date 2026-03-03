@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.5 - 3rd March 2026
+
+- Updated `db._migrate()`: wrapped ALTER TABLE statements in
+  a transaction for atomic schema migration.
+
+
 ### v0.37.4 - 3rd March 2026
 
 - Defined SM-2 constants in `spaced_repetition`:
