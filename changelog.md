@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.3 - 3rd March 2026
+
+- Extracted `_eligible_translation_types()` from
+  `generate_exercise()` in `exercises`: separates pool-building
+  logic from dispatch.
+- Fixed flaky test
+  `test_generate_exercise_returns_valid_type_with_gender`:
+  added missing `SENTENCE_ORDER` to expected types.
+
+
 ### v0.37.2 - 3rd March 2026
 
 - Extracted `_schedule()` helper in `spaced_repetition`:

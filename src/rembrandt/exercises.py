@@ -389,6 +389,49 @@ def generate_sentence_order(word: Word) -> Exercise:
     )
 
 
+def _eligible_translation_types(
+    word: Word, all_words: list[Word],
+) -> list[ExerciseType]:
+    """Determine eligible exercise types for translation mode.
+
+    Returns only `FLASHCARD` when fewer than 2 words are
+    available (multiple choice needs distractors).
+
+    :param word: The word to test.
+    :param all_words: Pool of words for distractor exercises.
+    :return: List of eligible exercise types.
+    """
+    if len(all_words) < 2:
+        return [ExerciseType.FLASHCARD]
+
+    pool: list[ExerciseType] = [
+        ExerciseType.FLASHCARD,
+        ExerciseType.MULTIPLE_CHOICE,
+    ]
+    if word.gender is not None:
+        pool.append(ExerciseType.GENDER_MATCH)
+        pool.append(ExerciseType.ADJECTIVE_AGREEMENT)
+    if (
+        word.conjugation_group is not None
+        and can_conjugate(
+            _spanish_word(word),
+            word.conjugation_group,
+        )
+    ):
+        pool.append(ExerciseType.CONJUGATION)
+    # Cloze types need a known POS (nouns have gender,
+    # verbs have conjugation_group). Words without
+    # either produce nonsensical template sentences.
+    if (
+        word.gender is not None
+        or word.conjugation_group is not None
+    ):
+        pool.append(ExerciseType.CLOZE)
+        pool.append(ExerciseType.TRANSLATION_CLOZE)
+        pool.append(ExerciseType.SENTENCE_ORDER)
+    return pool
+
+
 def generate_exercise(
     word: Word,
     all_words: list[Word],
@@ -414,36 +457,9 @@ def generate_exercise(
     mode = learning_mode(word)
 
     if mode == LearningMode.TRANSLATION:
-        if len(all_words) < 2:
-            return generate_flashcard(word)
-
-        pool: list[ExerciseType] = [
-            ExerciseType.FLASHCARD,
-            ExerciseType.MULTIPLE_CHOICE,
-        ]
-        if word.gender is not None:
-            pool.append(ExerciseType.GENDER_MATCH)
-            pool.append(ExerciseType.ADJECTIVE_AGREEMENT)
-        if (
-            word.conjugation_group is not None
-            and can_conjugate(
-                _spanish_word(word), word.conjugation_group,
-            )
-        ):
-            pool.append(ExerciseType.CONJUGATION)
-        # Only add cloze types for words with known POS
-        # (nouns have gender, verbs have conjugation_group).
-        # Words without either (adverbs, particles, etc.)
-        # fall back to the generic adjective templates which
-        # often produce nonsensical sentences.
-        if (
-            word.gender is not None
-            or word.conjugation_group is not None
-        ):
-            pool.append(ExerciseType.CLOZE)
-            pool.append(ExerciseType.TRANSLATION_CLOZE)
-            pool.append(ExerciseType.SENTENCE_ORDER)
-
+        pool = _eligible_translation_types(
+            word, all_words,
+        )
         dispatch = {
             ExerciseType.FLASHCARD: partial(
                 generate_flashcard, word,
@@ -470,7 +486,6 @@ def generate_exercise(
                 generate_sentence_order, word,
             ),
         }
-
         chosen = random.choice(pool)
         return dispatch[chosen]()
 

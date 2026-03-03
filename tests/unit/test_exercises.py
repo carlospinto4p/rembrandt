@@ -548,6 +548,7 @@ def test_generate_exercise_returns_valid_type_with_gender():
         ExerciseType.ADJECTIVE_AGREEMENT,
         ExerciseType.CLOZE,
         ExerciseType.TRANSLATION_CLOZE,
+        ExerciseType.SENTENCE_ORDER,
     )
 
 

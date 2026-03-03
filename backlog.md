@@ -19,7 +19,7 @@
 
 - [x] Break `review()` into per-state handler functions (`_handle_new`, `_handle_learning`, `_handle_review`, `_handle_relearning`) — 200+ lines, cyclomatic complexity ~15
 - [x] Extract `_schedule_review(minutes=..., days=...)` helper in `spaced_repetition.py` — 11 repeated `datetime.now() + timedelta(...)` blocks
-- [ ] Extract `_get_eligible_exercise_types()` from `generate_exercise()` in `exercises.py` — simplifies 95-line dispatch function
+- [x] Extract `_get_eligible_exercise_types()` from `generate_exercise()` in `exercises.py` — simplifies 95-line dispatch function
 - [ ] Define SM-2 constants (`QUALITY_PASS_THRESHOLD = 3`, `SECOND_CORRECT_INTERVAL = 6`) in `spaced_repetition.py` — replaces magic numbers
 - [ ] Wrap `db.py::_migrate()` ALTER TABLE statements in a transaction for schema consistency
 - [ ] Extract complex SQL queries (`weak_words`, `daily_stats`) to module-level constants in `db.py`
