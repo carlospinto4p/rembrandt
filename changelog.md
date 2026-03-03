@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.0 - 3rd March 2026
+
+- Added `ReviewConfig.max_new_cards`: cap on new cards per
+  session (`0` = unlimited).
+- Added `ReviewConfig.max_review_cards`: cap on review cards
+  per session (`0` = unlimited).
+- Updated `select_words()`: new `max_new` and `max_review`
+  parameters to cap new/due words. In-steps cards are never
+  capped.
+- Updated `Session`: tracks new/review served counts and
+  passes remaining limits to `select_words()`.
+
+
 ### v0.36.0 - 3rd March 2026
 
 - Added `CardState.SUSPENDED`: frozen state for leech cards,

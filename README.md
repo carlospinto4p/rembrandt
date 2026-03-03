@@ -185,6 +185,8 @@ config = ReviewConfig(
     lapse_new_interval_factor=0.7,  # 70% of old interval
     lapse_min_interval=1,           # minimum 1 day
     leech_threshold=8,              # suspend after 8 lapses (0=off)
+    max_new_cards=20,               # new cards per session (0=off)
+    max_review_cards=100,           # review cards per session (0=off)
 )
 session = Session(db, "user1", "en", "es",
                   review_config=config)

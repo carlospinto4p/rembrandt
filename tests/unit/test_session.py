@@ -10,6 +10,7 @@ from rembrandt.db import Database
 from rembrandt.models import (
     CardState,
     ExerciseType,
+    ReviewConfig,
     SessionMode,
     UserProgress,
     Word,
@@ -563,6 +564,58 @@ def test_multiple_answers_recorded(session):
         session.answer(ex.word.word_to)
     history = session.db.get_answer_history("u1")
     assert len(history) == 3
+
+
+# --- Daily Limit Tests ---
+
+
+def test_session_respects_max_new_cards(session_db):
+    config = ReviewConfig(max_new_cards=2)
+    s = Session(
+        session_db, "u1", "en", "es",
+        review_config=config,
+    )
+    served = []
+    for _ in range(5):
+        ex = s.next_exercise()
+        if ex is None:
+            break
+        served.append(ex)
+        s.answer(ex.word.word_to)
+    # Only 2 new cards should be served (then they enter
+    # LEARNING and are served as in-steps, which are uncapped)
+    assert s._new_served == 2
+
+
+def test_session_respects_max_review_cards(session_db):
+    all_words = session_db.get_words("en", "es")
+    for w in all_words:
+        session_db.upsert_progress(UserProgress(
+            user_id="u1",
+            word_id=w.id,
+            state=CardState.REVIEW,
+            next_review=datetime(2020, 1, 1),
+        ))
+
+    config = ReviewConfig(max_review_cards=1)
+    s = Session(
+        session_db, "u1", "en", "es",
+        mode=SessionMode.REVIEW_DUE,
+        review_config=config,
+    )
+    ex1 = s.next_exercise()
+    assert ex1 is not None
+    assert s._review_served == 1
+    s.answer(ex1.word.word_to)
+
+    # After answering, the card enters LEARNING (in-steps)
+    # which is uncapped. But no more REVIEW cards should
+    # be served beyond the limit of 1.
+    # Get next — should be None since the answered card is
+    # now in LEARNING (not due yet) and review cap is hit.
+    ex2 = s.next_exercise()
+    assert ex2 is None
+    assert s._review_served == 1
 
 
 def test_quick_session_custom_keys(tmp_path):

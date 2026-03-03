@@ -185,6 +185,10 @@ class ReviewConfig(BaseModel):
     :param leech_threshold: Number of lapses before a card is
         suspended as a leech. Set to `0` to disable leech
         detection. Default `8` matches Anki.
+    :param max_new_cards: Maximum new cards per session. `0`
+        means unlimited.
+    :param max_review_cards: Maximum review cards per session.
+        `0` means unlimited.
     """
 
     learning_steps: list[int] = Field(
@@ -198,6 +202,8 @@ class ReviewConfig(BaseModel):
     lapse_min_interval: int = 1
     max_fuzz_factor: float = 0.05
     leech_threshold: int = 8
+    max_new_cards: int = 0
+    max_review_cards: int = 0
 
 
 class ExerciseType(str, Enum):

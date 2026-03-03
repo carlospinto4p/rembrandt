@@ -12,5 +12,5 @@
 - [x] Add lapse/relearning steps (forgotten mature cards re-enter learning steps instead of hard reset)
 - [x] Add fuzz factor to intervals (small randomization to prevent review clustering)
 - [x] Add leech detection (flag/suspend cards that repeatedly fail)
-- [ ] Add daily limits (separate caps for new cards and review cards per session)
+- [x] Add daily limits (separate caps for new cards and review cards per session)
 - [ ] Add sibling burying (avoid showing the same word in different exercise types in one session)

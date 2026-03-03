@@ -674,3 +674,72 @@ def test_review_suspended_card_unchanged():
     assert updated.lapse_count == 8
     assert updated.interval == 10
     assert updated.easiness_factor == 2.0
+
+
+# --- Daily Limit Tests ---
+
+
+def test_select_words_max_new_limits_new_words(
+    db_with_words,
+):
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        max_new=2,
+    )
+    assert len(words) == 2
+
+
+def test_select_words_max_review_limits_due_words(
+    db_with_words,
+):
+    all_words = db_with_words.get_words("en", "es")
+    for w in all_words[:3]:
+        db_with_words.upsert_progress(UserProgress(
+            user_id="u1",
+            word_id=w.id,
+            state=CardState.REVIEW,
+            next_review=datetime(2020, 1, 1),
+        ))
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        max_review=1,
+    )
+    # 1 due + 2 new = 3
+    due_ids = {all_words[i].id for i in range(3)}
+    due_in_result = [
+        w for w in words if w.id in due_ids
+    ]
+    assert len(due_in_result) == 1
+
+
+def test_select_words_in_steps_not_capped(
+    db_with_words,
+):
+    all_words = db_with_words.get_words("en", "es")
+    for w in all_words[:2]:
+        db_with_words.upsert_progress(UserProgress(
+            user_id="u1",
+            word_id=w.id,
+            state=CardState.LEARNING,
+            next_review=datetime(2020, 1, 1),
+        ))
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        max_new=0, max_review=0,
+    )
+    # in_steps are not capped, new=0, review=0
+    assert len(words) == 2
+    ids = {w.id for w in words}
+    assert ids == {all_words[0].id, all_words[1].id}
+
+
+def test_select_words_limits_none_means_unlimited(
+    db_with_words,
+):
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        max_new=None, max_review=None,
+    )
+    assert len(words) == 5

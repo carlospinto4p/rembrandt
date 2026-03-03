@@ -10,6 +10,7 @@ from rembrandt.exercises import (
 )
 from rembrandt.models import (
     AnswerResult,
+    CardState,
     Exercise,
     ExerciseType,
     Hint,
@@ -61,6 +62,8 @@ class Session:
         self._incorrect = 0
         self._streak = 0
         self._best_streak = 0
+        self._new_served = 0
+        self._review_served = 0
 
     def next_exercise(self) -> Exercise | None:
         """Select a word and generate an exercise.
@@ -68,6 +71,19 @@ class Session:
         :return: An `Exercise`, or `None` if no words are
             available.
         """
+        cfg = self._review_config
+        max_new: int | None = None
+        max_review: int | None = None
+
+        if cfg is not None and cfg.max_new_cards > 0:
+            remaining = cfg.max_new_cards - self._new_served
+            max_new = max(remaining, 0)
+        if cfg is not None and cfg.max_review_cards > 0:
+            remaining = (
+                cfg.max_review_cards - self._review_served
+            )
+            max_review = max(remaining, 0)
+
         words = select_words(
             self.db,
             self.user_id,
@@ -76,17 +92,38 @@ class Session:
             count=1,
             mode=self.mode,
             word_ids=self._word_ids,
+            max_new=max_new,
+            max_review=max_review,
         )
         if not words:
             return None
 
         word = words[0]
+        self._track_served(word)
         all_words = self.db.get_words(
             self.language_from, self.language_to
         )
         exercise = generate_exercise(word, all_words)
         self._current_exercise = exercise
         return exercise
+
+    def _track_served(self, word: Word) -> None:
+        """Increment new/review served counters.
+
+        :param word: The word about to be served.
+        """
+        progress = self.db.get_progress(
+            self.user_id, word.id,
+        )
+        if progress is None:
+            self._new_served += 1
+        elif progress.state in (
+            CardState.LEARNING,
+            CardState.RELEARNING,
+        ):
+            pass  # in-steps — don't count
+        else:
+            self._review_served += 1
 
     def answer(
         self,

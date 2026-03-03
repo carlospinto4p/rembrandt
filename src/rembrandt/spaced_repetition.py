@@ -269,6 +269,8 @@ def select_words(
     mode: SessionMode = SessionMode.MIXED,
     word_ids: list[int] | None = None,
     prioritize_weak: bool = False,
+    max_new: int | None = None,
+    max_review: int | None = None,
 ) -> list[Word]:
     """Pick words for review using spaced-repetition scheduling.
 
@@ -289,6 +291,10 @@ def select_words(
         word ids (e.g. from a lesson).
     :param prioritize_weak: When `True`, sorts due words so
         that weak words (high error rate) come first.
+    :param max_new: Cap on new words returned. `None` means
+        no cap (unlimited).
+    :param max_review: Cap on review (due) words returned.
+        `None` means no cap. In-steps cards are never capped.
     :return: List of `Word` objects to review.
     """
     all_words = db.get_words(language_from, language_to)
@@ -335,6 +341,11 @@ def select_words(
         due.sort(
             key=lambda w: w.id not in weak_ids,
         )
+
+    if max_new is not None:
+        new = new[:max_new]
+    if max_review is not None:
+        due = due[:max_review]
 
     if mode == SessionMode.LEARN_NEW:
         return (in_steps + new)[:count]
