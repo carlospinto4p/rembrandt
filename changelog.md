@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.37.2 - 3rd March 2026
+
+- Extracted `_schedule()` helper in `spaced_repetition`:
+  replaces 12 repeated `datetime.now() + timedelta(...)`
+  blocks with a single-source scheduling function.
+
+
 ### v0.37.1 - 3rd March 2026
 
 - Refactored `review()` in `spaced_repetition`: extracted

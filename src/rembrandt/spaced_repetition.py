@@ -54,6 +54,20 @@ def _fuzz_interval(
     )
 
 
+def _schedule(
+    *, minutes: int = 0, days: int = 0,
+) -> datetime:
+    """Calculate a next-review datetime from now.
+
+    :param minutes: Minutes from now.
+    :param days: Days from now.
+    :return: Scheduled datetime.
+    """
+    return datetime.now() + timedelta(
+        minutes=minutes, days=days,
+    )
+
+
 class _ReviewResult(NamedTuple):
     """Intermediate result from a state handler."""
 
@@ -78,7 +92,7 @@ def _handle_new(
             interval=progress.interval,
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.learning_steps[0],
             ),
         )
@@ -93,9 +107,7 @@ def _handle_new(
             interval=interval,
             reps=1,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
-                days=interval,
-            ),
+            next_review=_schedule(days=interval),
         )
     return _ReviewResult(
         state=CardState.NEW,
@@ -103,9 +115,7 @@ def _handle_new(
         interval=progress.interval,
         reps=progress.repetitions,
         lapse_count=progress.lapse_count,
-        next_review=datetime.now() + timedelta(
-            minutes=1,
-        ),
+        next_review=_schedule(minutes=1),
     )
 
 
@@ -122,7 +132,7 @@ def _handle_learning(
             interval=progress.interval,
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.learning_steps[0],
             ),
         )
@@ -134,7 +144,7 @@ def _handle_learning(
             interval=progress.interval,
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.learning_steps[
                     next_step
                 ],
@@ -150,9 +160,7 @@ def _handle_learning(
         interval=interval,
         reps=1,
         lapse_count=progress.lapse_count,
-        next_review=datetime.now() + timedelta(
-            days=interval,
-        ),
+        next_review=_schedule(days=interval),
     )
 
 
@@ -184,9 +192,7 @@ def _handle_review(
             interval=interval,
             reps=reps + 1,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
-                days=interval,
-            ),
+            next_review=_schedule(days=interval),
         )
     lapse_count = progress.lapse_count + 1
     if (
@@ -208,7 +214,7 @@ def _handle_review(
             interval=progress.interval,
             reps=0,
             lapse_count=lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.relearning_steps[0],
             ),
         )
@@ -228,9 +234,7 @@ def _handle_review(
         interval=interval,
         reps=0,
         lapse_count=lapse_count,
-        next_review=datetime.now() + timedelta(
-            days=interval,
-        ),
+        next_review=_schedule(days=interval),
     )
 
 
@@ -247,7 +251,7 @@ def _handle_relearning(
             interval=progress.interval,
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.relearning_steps[0],
             ),
         )
@@ -259,7 +263,7 @@ def _handle_relearning(
             interval=progress.interval,
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
-            next_review=datetime.now() + timedelta(
+            next_review=_schedule(
                 minutes=config.relearning_steps[
                     next_step
                 ],
@@ -281,9 +285,7 @@ def _handle_relearning(
         interval=interval,
         reps=1,
         lapse_count=progress.lapse_count,
-        next_review=datetime.now() + timedelta(
-            days=interval,
-        ),
+        next_review=_schedule(days=interval),
     )
 
 
