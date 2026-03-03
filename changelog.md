@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.35.0 - 3rd March 2026
+
+- Added `ReviewConfig.max_fuzz_factor`: random jitter on day-based
+  intervals to prevent review clustering (default ±5%).
+- Added `_fuzz_interval()` helper in `spaced_repetition`.
+- Updated `review()`: applies fuzz to all day-based interval
+  assignments (graduating, SM-2, and lapse intervals).
+
+
 ### v0.34.1 - 3rd March 2026
 
 - Fixed v0.34.0 changelog: removed incorrect folder grouping

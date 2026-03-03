@@ -176,6 +176,9 @@ class ReviewConfig(BaseModel):
         means 70% of the old interval).
     :param lapse_min_interval: Minimum interval in days after a
         lapse, regardless of the factor calculation.
+    :param max_fuzz_factor: Maximum random jitter applied to
+        day-based intervals (e.g. `0.05` means +/-5%). Set to
+        `0` to disable. Intervals below 3 days are never fuzzed.
     """
 
     learning_steps: list[int] = Field(
@@ -187,6 +190,7 @@ class ReviewConfig(BaseModel):
     )
     lapse_new_interval_factor: float = 0.7
     lapse_min_interval: int = 1
+    max_fuzz_factor: float = 0.05
 
 
 class ExerciseType(str, Enum):

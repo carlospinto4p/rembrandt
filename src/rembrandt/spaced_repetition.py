@@ -1,5 +1,6 @@
 """SM-2 spaced-repetition algorithm and word selection."""
 
+import random
 from datetime import datetime, timedelta
 
 from rembrandt.db import Database
@@ -26,6 +27,30 @@ def _update_ef(ef: float, quality: int) -> float:
         - (5 - quality) * (0.08 + (5 - quality) * 0.02)
     )
     return max(ef, 1.3)
+
+
+def _fuzz_interval(
+    interval: int, max_fuzz_factor: float,
+) -> int:
+    """Add random jitter to a day-based interval.
+
+    Intervals below 3 days are returned unchanged. When
+    `max_fuzz_factor` is 0 or negative, no fuzz is applied.
+
+    :param interval: Base interval in days.
+    :param max_fuzz_factor: Maximum proportion of jitter
+        (e.g. `0.05` means +/-5%).
+    :return: Fuzzed interval (always >= 1).
+    """
+    if interval < 3 or max_fuzz_factor <= 0:
+        return interval
+    fuzz_days = max(1, round(interval * max_fuzz_factor))
+    return max(
+        1,
+        random.randint(
+            interval - fuzz_days, interval + fuzz_days,
+        ),
+    )
 
 
 def review(
@@ -84,7 +109,10 @@ def review(
             else:
                 state = CardState.REVIEW
                 step_index = 0
-                interval = config.graduating_interval
+                interval = _fuzz_interval(
+                    config.graduating_interval,
+                    config.max_fuzz_factor,
+                )
                 reps = 1
                 next_review = datetime.now() + timedelta(
                     days=interval,
@@ -116,7 +144,10 @@ def review(
             else:
                 state = CardState.REVIEW
                 step_index = 0
-                interval = config.graduating_interval
+                interval = _fuzz_interval(
+                    config.graduating_interval,
+                    config.max_fuzz_factor,
+                )
                 reps = 1
                 next_review = datetime.now() + timedelta(
                     days=interval,
@@ -132,9 +163,14 @@ def review(
             if reps == 0:
                 interval = 1
             elif reps == 1:
-                interval = 6
+                interval = _fuzz_interval(
+                    6, config.max_fuzz_factor,
+                )
             else:
-                interval = round(interval * old_ef)
+                interval = _fuzz_interval(
+                    round(interval * old_ef),
+                    config.max_fuzz_factor,
+                )
             reps += 1
             next_review = datetime.now() + timedelta(
                 days=interval,
@@ -148,12 +184,15 @@ def review(
                     minutes=config.relearning_steps[0],
                 )
             else:
-                new_interval = max(
-                    round(
-                        interval
-                        * config.lapse_new_interval_factor
+                new_interval = _fuzz_interval(
+                    max(
+                        round(
+                            interval
+                            * config.lapse_new_interval_factor
+                        ),
+                        config.lapse_min_interval,
                     ),
-                    config.lapse_min_interval,
+                    config.max_fuzz_factor,
                 )
                 interval = new_interval
                 next_review = datetime.now() + timedelta(
@@ -173,12 +212,15 @@ def review(
             else:
                 state = CardState.REVIEW
                 step_index = 0
-                new_interval = max(
-                    round(
-                        interval
-                        * config.lapse_new_interval_factor
+                new_interval = _fuzz_interval(
+                    max(
+                        round(
+                            interval
+                            * config.lapse_new_interval_factor
+                        ),
+                        config.lapse_min_interval,
                     ),
-                    config.lapse_min_interval,
+                    config.max_fuzz_factor,
                 )
                 interval = new_interval
                 reps = 1

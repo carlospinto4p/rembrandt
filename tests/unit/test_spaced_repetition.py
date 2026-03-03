@@ -11,7 +11,11 @@ from rembrandt.models import (
     SessionMode,
     UserProgress,
 )
-from rembrandt.spaced_repetition import review, select_words
+from rembrandt.spaced_repetition import (
+    _fuzz_interval,
+    review,
+    select_words,
+)
 
 
 # --- SM-2 Review Tests (REVIEW state) ---
@@ -39,19 +43,21 @@ def test_review_first_correct():
 
 
 def test_review_second_correct():
+    config = ReviewConfig(max_fuzz_factor=0)
     progress = _review_progress(
         repetitions=1, interval=1,
     )
-    updated = review(progress, quality=5)
+    updated = review(progress, quality=5, config=config)
     assert updated.interval == 6
     assert updated.repetitions == 2
 
 
 def test_review_third_correct():
+    config = ReviewConfig(max_fuzz_factor=0)
     progress = _review_progress(
         repetitions=2, interval=6, easiness_factor=2.5,
     )
-    updated = review(progress, quality=5)
+    updated = review(progress, quality=5, config=config)
     assert updated.interval == 15
     assert updated.repetitions == 3
 
@@ -134,6 +140,7 @@ def test_new_card_fail_enters_learning():
 def test_new_card_no_learning_steps_graduates():
     config = ReviewConfig(
         learning_steps=[], graduating_interval=3,
+        max_fuzz_factor=0,
     )
     progress = UserProgress(
         user_id="u1", word_id=1,
@@ -239,6 +246,7 @@ def test_relearning_returns_to_review():
         relearning_steps=[10],
         lapse_new_interval_factor=0.7,
         lapse_min_interval=1,
+        max_fuzz_factor=0,
     )
     progress = UserProgress(
         user_id="u1", word_id=1,
@@ -257,6 +265,7 @@ def test_relearning_min_interval():
         relearning_steps=[10],
         lapse_new_interval_factor=0.1,
         lapse_min_interval=5,
+        max_fuzz_factor=0,
     )
     progress = UserProgress(
         user_id="u1", word_id=1,
@@ -532,3 +541,60 @@ def test_select_words_no_prioritize_by_default(
         db_with_words, "u1", "en", "es", count=5,
     )
     assert len(words) > 0
+
+
+# --- Fuzz Factor Tests ---
+
+
+def test_fuzz_interval_no_fuzz_small_interval():
+    assert _fuzz_interval(1, 0.05) == 1
+    assert _fuzz_interval(2, 0.05) == 2
+
+
+def test_fuzz_interval_disabled():
+    assert _fuzz_interval(10, 0) == 10
+    assert _fuzz_interval(30, 0) == 30
+    assert _fuzz_interval(10, -0.1) == 10
+
+
+def test_fuzz_interval_applied(monkeypatch):
+    # fuzz_days = max(1, round(20 * 0.05)) = 1
+    # randint(19, 21) -> mock returns 19
+    monkeypatch.setattr(
+        "rembrandt.spaced_repetition.random.randint",
+        lambda lo, hi: lo,
+    )
+    assert _fuzz_interval(20, 0.05) == 19
+
+    monkeypatch.setattr(
+        "rembrandt.spaced_repetition.random.randint",
+        lambda lo, hi: hi,
+    )
+    assert _fuzz_interval(20, 0.05) == 21
+
+
+def test_fuzz_interval_minimum_one(monkeypatch):
+    # With a large negative fuzz, result is clamped to 1
+    monkeypatch.setattr(
+        "rembrandt.spaced_repetition.random.randint",
+        lambda lo, hi: lo,
+    )
+    assert _fuzz_interval(3, 1.0) >= 1
+
+
+def test_review_fuzz_applied_to_sm2_interval(
+    monkeypatch,
+):
+    # Verify fuzz is applied in the REVIEW pass path
+    monkeypatch.setattr(
+        "rembrandt.spaced_repetition.random.randint",
+        lambda lo, hi: hi,
+    )
+    progress = _review_progress(
+        repetitions=2, interval=6, easiness_factor=2.5,
+    )
+    updated = review(progress, quality=5)
+    # Base: round(6 * 2.5) = 15
+    # fuzz_days = max(1, round(15 * 0.05)) = 1
+    # randint(14, 16) -> hi = 16
+    assert updated.interval == 16
