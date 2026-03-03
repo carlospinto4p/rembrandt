@@ -178,6 +178,7 @@ def _row_to_progress(r: sqlite3.Row) -> UserProgress:
         ),
         state=CardState(r["state"]),
         step_index=r["step_index"],
+        lapse_count=r["lapse_count"],
     )
 
 
@@ -215,6 +216,12 @@ class Database:
             self._conn.execute(
                 "ALTER TABLE progress "
                 "ADD COLUMN step_index INTEGER "
+                "NOT NULL DEFAULT 0"
+            )
+        if "lapse_count" not in cols:
+            self._conn.execute(
+                "ALTER TABLE progress "
+                "ADD COLUMN lapse_count INTEGER "
                 "NOT NULL DEFAULT 0"
             )
 
@@ -587,15 +594,16 @@ class Database:
             "INSERT INTO progress "
             "(user_id, word_id, easiness_factor, "
             " interval, repetitions, next_review, "
-            " state, step_index) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+            " state, step_index, lapse_count) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(user_id, word_id) DO UPDATE SET "
             " easiness_factor = excluded.easiness_factor, "
             " interval         = excluded.interval, "
             " repetitions      = excluded.repetitions, "
             " next_review      = excluded.next_review, "
             " state            = excluded.state, "
-            " step_index       = excluded.step_index",
+            " step_index       = excluded.step_index, "
+            " lapse_count      = excluded.lapse_count",
             (
                 progress.user_id,
                 progress.word_id,
@@ -605,6 +613,7 @@ class Database:
                 progress.next_review.strftime(_ISO_FMT),
                 progress.state.value,
                 progress.step_index,
+                progress.lapse_count,
             ),
         )
         self._conn.commit()
@@ -625,7 +634,7 @@ class Database:
         rows = self._conn.execute(
             "SELECT user_id, word_id, easiness_factor, "
             "interval, repetitions, next_review, "
-            "state, step_index "
+            "state, step_index, lapse_count "
             "FROM progress WHERE user_id = ?",
             (user_id,),
         ).fetchall()
@@ -639,6 +648,7 @@ class Database:
                 "next_review": r["next_review"],
                 "state": r["state"],
                 "step_index": r["step_index"],
+                "lapse_count": r["lapse_count"],
             }
             for r in rows
         ]
@@ -671,13 +681,14 @@ class Database:
                     )
                 state = rec.get("state", "review")
                 step_index = rec.get("step_index", 0)
+                lapse_count = rec.get("lapse_count", 0)
                 self._conn.execute(
                     "INSERT INTO progress "
                     "(user_id, word_id, easiness_factor,"
                     " interval, repetitions, next_review,"
-                    " state, step_index)"
-                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
-                    "ON CONFLICT(user_id, word_id) "
+                    " state, step_index, lapse_count)"
+                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    " ON CONFLICT(user_id, word_id) "
                     "DO UPDATE SET "
                     " easiness_factor "
                     "  = excluded.easiness_factor, "
@@ -688,7 +699,9 @@ class Database:
                     "  = excluded.next_review, "
                     " state = excluded.state, "
                     " step_index "
-                    "  = excluded.step_index",
+                    "  = excluded.step_index, "
+                    " lapse_count "
+                    "  = excluded.lapse_count",
                     (
                         rec["user_id"],
                         rec["word_id"],
@@ -698,6 +711,7 @@ class Database:
                         rec["next_review"],
                         state,
                         step_index,
+                        lapse_count,
                     ),
                 )
         return len(records)

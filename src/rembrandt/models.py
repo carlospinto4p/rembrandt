@@ -152,12 +152,15 @@ class CardState(str, Enum):
     :cvar REVIEW: Graduated — uses SM-2 intervals.
     :cvar RELEARNING: Lapsed from review — working through
         relearning steps before returning to review.
+    :cvar SUSPENDED: Frozen — card is a leech and will not
+        appear in reviews until manually unsuspended.
     """
 
     NEW = "new"
     LEARNING = "learning"
     REVIEW = "review"
     RELEARNING = "relearning"
+    SUSPENDED = "suspended"
 
 
 class ReviewConfig(BaseModel):
@@ -179,6 +182,9 @@ class ReviewConfig(BaseModel):
     :param max_fuzz_factor: Maximum random jitter applied to
         day-based intervals (e.g. `0.05` means +/-5%). Set to
         `0` to disable. Intervals below 3 days are never fuzzed.
+    :param leech_threshold: Number of lapses before a card is
+        suspended as a leech. Set to `0` to disable leech
+        detection. Default `8` matches Anki.
     """
 
     learning_steps: list[int] = Field(
@@ -191,6 +197,7 @@ class ReviewConfig(BaseModel):
     lapse_new_interval_factor: float = 0.7
     lapse_min_interval: int = 1
     max_fuzz_factor: float = 0.05
+    leech_threshold: int = 8
 
 
 class ExerciseType(str, Enum):
@@ -290,6 +297,8 @@ class UserProgress(BaseModel):
     :param state: Current card state in the learning pipeline.
     :param step_index: Current position within learning or
         relearning steps.
+    :param lapse_count: Cumulative number of lapses (REVIEW
+        failures). Does not reset on success.
     """
 
     user_id: str
@@ -302,6 +311,7 @@ class UserProgress(BaseModel):
     )
     state: CardState = CardState.NEW
     step_index: int = 0
+    lapse_count: int = 0
 
 
 class WeakWord(BaseModel):

@@ -88,6 +88,9 @@ def review(
             f"quality must be 0-5, got {quality}"
         )
 
+    if progress.state == CardState.SUSPENDED:
+        return progress.model_copy()
+
     if config is None:
         config = _DEFAULT_CONFIG
 
@@ -96,6 +99,7 @@ def review(
     step_index = progress.step_index
     interval = progress.interval
     reps = progress.repetitions
+    lapse_count = progress.lapse_count
     passed = quality >= 3
 
     if state == CardState.NEW:
@@ -177,7 +181,14 @@ def review(
             )
         else:
             reps = 0
-            if config.relearning_steps:
+            lapse_count += 1
+            if (
+                config.leech_threshold > 0
+                and lapse_count >= config.leech_threshold
+            ):
+                state = CardState.SUSPENDED
+                next_review = progress.next_review
+            elif config.relearning_steps:
                 state = CardState.RELEARNING
                 step_index = 0
                 next_review = datetime.now() + timedelta(
@@ -244,6 +255,7 @@ def review(
         next_review=next_review,
         state=state,
         step_index=step_index,
+        lapse_count=lapse_count,
     )
 
 
@@ -305,6 +317,8 @@ def select_words(
         progress = progress_map.get(word.id)
         if progress is None:
             new.append(word)
+        elif progress.state == CardState.SUSPENDED:
+            continue
         elif progress.state in (
             CardState.LEARNING,
             CardState.RELEARNING,

@@ -184,14 +184,17 @@ config = ReviewConfig(
     relearning_steps=[5, 20],       # minutes
     lapse_new_interval_factor=0.7,  # 70% of old interval
     lapse_min_interval=1,           # minimum 1 day
+    leech_threshold=8,              # suspend after 8 lapses (0=off)
 )
 session = Session(db, "user1", "en", "es",
                   review_config=config)
 ```
 
-Cards progress through four states: `NEW` -> `LEARNING` -> `REVIEW`.
+Cards progress through states: `NEW` -> `LEARNING` -> `REVIEW`.
 When a review card is forgotten it enters `RELEARNING` before returning
-to `REVIEW` with a reduced interval.
+to `REVIEW` with a reduced interval. Cards that lapse too many times
+(default 8) are flagged as leeches and moved to `SUSPENDED`, where they
+are excluded from review until manually unsuspended.
 
 ## Lessons
 

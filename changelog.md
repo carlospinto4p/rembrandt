@@ -1,6 +1,22 @@
 
 ## Changelog - Rembrandt
 
+### v0.36.0 - 3rd March 2026
+
+- Added `CardState.SUSPENDED`: frozen state for leech cards,
+  excluded from reviews.
+- Added `UserProgress.lapse_count`: cumulative count of REVIEW
+  failures (does not reset on success).
+- Added `ReviewConfig.leech_threshold`: number of lapses before
+  suspension (default `8`, set to `0` to disable).
+- Updated `review()`: increments `lapse_count` on REVIEW fail
+  and suspends card when threshold is reached. Returns suspended
+  cards unchanged.
+- Updated `select_words()`: skips suspended cards.
+- Updated `db.py`: migration, persistence, and export/import
+  for `lapse_count`.
+
+
 ### v0.35.0 - 3rd March 2026
 
 - Added `ReviewConfig.max_fuzz_factor`: random jitter on day-based

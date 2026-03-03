@@ -598,3 +598,79 @@ def test_review_fuzz_applied_to_sm2_interval(
     # fuzz_days = max(1, round(15 * 0.05)) = 1
     # randint(14, 16) -> hi = 16
     assert updated.interval == 16
+
+
+# --- Leech Detection Tests ---
+
+
+def test_review_fail_increments_lapse_count():
+    progress = _review_progress(
+        repetitions=3, interval=10, lapse_count=0,
+    )
+    updated = review(progress, quality=1)
+    assert updated.lapse_count == 1
+
+
+def test_lapse_count_not_reset_on_pass():
+    progress = _review_progress(
+        repetitions=3, interval=10, lapse_count=5,
+    )
+    updated = review(progress, quality=5)
+    assert updated.lapse_count == 5
+
+
+def test_leech_threshold_suspends_card():
+    config = ReviewConfig(leech_threshold=3)
+    progress = _review_progress(
+        repetitions=3, interval=10, lapse_count=2,
+    )
+    updated = review(progress, quality=1, config=config)
+    assert updated.lapse_count == 3
+    assert updated.state == CardState.SUSPENDED
+
+
+def test_leech_detection_disabled():
+    config = ReviewConfig(leech_threshold=0)
+    progress = _review_progress(
+        repetitions=3, interval=10, lapse_count=100,
+    )
+    updated = review(progress, quality=1, config=config)
+    assert updated.state != CardState.SUSPENDED
+    assert updated.lapse_count == 101
+
+
+def test_suspended_card_skipped_in_select(
+    db_with_words,
+):
+    all_words = db_with_words.get_words("en", "es")
+    suspended_word = all_words[0]
+
+    db_with_words.upsert_progress(UserProgress(
+        user_id="u1",
+        word_id=suspended_word.id,
+        state=CardState.SUSPENDED,
+        next_review=datetime(2020, 1, 1),
+    ))
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+    )
+    ids = [w.id for w in words]
+    assert suspended_word.id not in ids
+
+
+def test_review_suspended_card_unchanged():
+    progress = UserProgress(
+        user_id="u1",
+        word_id=1,
+        state=CardState.SUSPENDED,
+        lapse_count=8,
+        interval=10,
+        easiness_factor=2.0,
+        next_review=datetime(2026, 1, 1),
+    )
+    updated = review(progress, quality=5)
+    assert updated.state == CardState.SUSPENDED
+    assert updated.lapse_count == 8
+    assert updated.interval == 10
+    assert updated.easiness_factor == 2.0
