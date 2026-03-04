@@ -18,3 +18,11 @@
 - [x] Define SM-2 constants (`QUALITY_PASS_THRESHOLD = 3`, `SECOND_CORRECT_INTERVAL = 6`) in `spaced_repetition.py` — replaces magic numbers
 - [x] Wrap `db.py::_migrate()` ALTER TABLE statements in a transaction for schema consistency
 - [x] Extract complex SQL queries (`weak_words`, `daily_stats`) to module-level constants in `db.py`
+
+### 2026.03.04 — Refactoring review (v0.38.0)
+
+- [x] Deduplicate SQL in `get_answer_history()` — two near-identical queries (with/without `since` filter) differ only in the WHERE clause; build query dynamically
+- [x] Extract magic numbers in `exercises.py` — definition-mode thresholds `0.4`/`0.7` (line 498-500) and shuffle retry limit `20` (line 383) should be module-level constants
+- [x] Extract mastery threshold constant — `repetitions >= 3` in `lessons.py:123` should use a named constant (shared or local)
+- [x] Consolidate `session_db` and `db_with_words` test fixtures — both create an EN-ES database with 4-5 words; unify in `conftest.py` to reduce duplication
+- [x] Rename `quick_session` key params for consistency — `word_key`/`definition_key` → `word_from_key`/`word_to_key` to match codebase terminology (breaking change — major bump)
