@@ -24,6 +24,13 @@ from rembrandt.models import (
 )
 
 
+# Definition-mode exercise distribution thresholds
+_DEF_MC_THRESHOLD = 0.4
+_DEF_FLASHCARD_THRESHOLD = 0.7
+
+# Maximum attempts to produce a non-identity shuffle
+_MAX_SHUFFLE_ATTEMPTS = 20
+
 # --- Helpers ---
 
 
@@ -380,7 +387,7 @@ def generate_sentence_order(word: Word) -> Exercise:
     while shuffled == words_list and len(words_list) > 1:
         random.shuffle(shuffled)
         attempts += 1
-        if attempts > 20:
+        if attempts > _MAX_SHUFFLE_ATTEMPTS:
             break
     return Exercise(
         word=word,
@@ -495,9 +502,9 @@ def generate_exercise(
         return generate_reverse_flashcard(word)
 
     roll = random.random()
-    if roll < 0.4:
+    if roll < _DEF_MC_THRESHOLD:
         return generate_multiple_choice(word, all_words)
-    if roll < 0.7:
+    if roll < _DEF_FLASHCARD_THRESHOLD:
         return generate_reverse_flashcard(word)
     return generate_self_graded(word)
 

@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.38.2 - 4th March 2026
+
+- Extracted magic numbers in `exercises` to module-level
+  constants:
+  - `_DEF_MC_THRESHOLD`
+  - `_DEF_FLASHCARD_THRESHOLD`
+  - `_MAX_SHUFFLE_ATTEMPTS`
+
+
 ### v0.38.1 - 4th March 2026
 
 - Refactored `get_answer_history()` in `db`: deduplicated
