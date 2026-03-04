@@ -8,7 +8,7 @@
 - [x] Add fuzz factor to intervals (small randomization to prevent review clustering)
 - [x] Add leech detection (flag/suspend cards that repeatedly fail)
 - [x] Add daily limits (separate caps for new cards and review cards per session)
-- [ ] Add sibling burying (avoid showing the same word in different exercise types in one session)
+- [x] Add sibling burying (avoid showing the same word in different exercise types in one session)
 
 ### 2026.03.03 — Refactoring review (v0.37.0)
 
