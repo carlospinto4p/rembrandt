@@ -596,8 +596,8 @@ def test_quick_session_custom_keys(tmp_path):
         vocab_file,
         language_from="en",
         language_to="es",
-        word_key="term",
-        definition_key="meaning",
+        word_from_key="term",
+        word_to_key="meaning",
     )
     words = s.db.get_words("en", "es")
     assert len(words) == 2

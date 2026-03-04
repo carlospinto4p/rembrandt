@@ -273,8 +273,8 @@ def quick_session(
     language_to: str,
     user_id: str = "default",
     limit: int | None = None,
-    word_key: str = "word",
-    definition_key: str = "definition",
+    word_from_key: str = "word",
+    word_to_key: str = "definition",
     review_config: ReviewConfig | None = None,
 ) -> Session:
     """Create a `Session` from a JSON file or inline word list.
@@ -292,8 +292,8 @@ def quick_session(
     :param user_id: User identifier.
     :param limit: Maximum number of words to load. `None` loads
         all.
-    :param word_key: Key in each dict for the word.
-    :param definition_key: Key in each dict for the definition.
+    :param word_from_key: Key in each dict for `word_from`.
+    :param word_to_key: Key in each dict for `word_to`.
     :param review_config: Anki-style learning/relearning
         step configuration. Uses default `ReviewConfig`
         when `None`.
@@ -324,8 +324,8 @@ def quick_session(
             Word(
                 language_from=language_from,
                 language_to=language_to,
-                word_from=e[word_key],
-                word_to=e[definition_key],
+                word_from=e[word_from_key],
+                word_to=e[word_to_key],
                 gender=e.get("gender"),
                 conjugation_group=e.get(
                     "conjugation_group"

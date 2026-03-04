@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v1.0.0 - 4th March 2026
+
+- Renamed `quick_session()` parameters:
+  - `word_key` → `word_from_key`
+  - `definition_key` → `word_to_key`
+
+
 ### v0.38.4 - 4th March 2026
 
 - Consolidated test fixtures: moved `definition_db` to

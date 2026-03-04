@@ -44,8 +44,8 @@ def main() -> None:
         db_path=_DB_PATH,
         language_from="en",
         language_to="es",
-        word_key="definition",
-        definition_key="word",
+        word_from_key="definition",
+        word_to_key="word",
         limit=_TOP_N,
     )
     db = qs.db
