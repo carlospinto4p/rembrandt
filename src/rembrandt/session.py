@@ -58,6 +58,7 @@ class Session:
         self._word_ids = word_ids
         self._review_config = review_config
         self._current_exercise: Exercise | None = None
+        self._buried_word_ids: set[int] = set()
         self._correct = 0
         self._incorrect = 0
         self._streak = 0
@@ -92,6 +93,7 @@ class Session:
             count=1,
             mode=self.mode,
             word_ids=self._word_ids,
+            exclude_word_ids=self._buried_word_ids or None,
             max_new=max_new,
             max_review=max_review,
         )
@@ -99,6 +101,8 @@ class Session:
             return None
 
         word = words[0]
+        if word.id is not None:
+            self._buried_word_ids.add(word.id)
         self._track_served(word)
         all_words = self.db.get_words(
             self.language_from, self.language_to

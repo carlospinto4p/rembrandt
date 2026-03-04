@@ -743,3 +743,32 @@ def test_select_words_limits_none_means_unlimited(
         max_new=None, max_review=None,
     )
     assert len(words) == 5
+
+
+# --- Exclude Word IDs Tests ---
+
+
+def test_select_words_excludes_word_ids(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
+    exclude = {all_words[0].id, all_words[1].id}
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        exclude_word_ids=exclude,
+    )
+    returned_ids = {w.id for w in words}
+    assert returned_ids.isdisjoint(exclude)
+    assert len(words) == 3
+
+
+def test_select_words_exclude_all_returns_empty(
+    db_with_words,
+):
+    all_words = db_with_words.get_words("en", "es")
+    exclude = {w.id for w in all_words}
+
+    words = select_words(
+        db_with_words, "u1", "en", "es", count=5,
+        exclude_word_ids=exclude,
+    )
+    assert words == []

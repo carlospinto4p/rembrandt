@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v0.38.0 - 4th March 2026
+
+- Added `exclude_word_ids` parameter to `select_words()`:
+  filters out specified word ids before selection.
+- Added sibling burying to `Session`: each word is only
+  served once per session, preventing the same word from
+  appearing in different exercise types.
+
+
 ### v0.37.6 - 4th March 2026
 
 - Extracted `_DAILY_STATS_SQL` and `_WEAK_WORDS_SQL` to

@@ -618,6 +618,26 @@ def test_session_respects_max_review_cards(session_db):
     assert s._review_served == 1
 
 
+# --- Sibling Burying Tests ---
+
+
+def test_sibling_burying_skips_shown_words(session_db):
+    s = Session(
+        session_db, user_id="u1",
+        language_from="en", language_to="es",
+    )
+    seen_word_ids: set[int | None] = set()
+    for _ in range(4):
+        ex = s.next_exercise()
+        assert ex is not None
+        assert ex.word.id not in seen_word_ids
+        seen_word_ids.add(ex.word.id)
+        s.answer(ex.expected_answer or ex.word.word_to)
+
+    # All 4 words used up — next should be None
+    assert s.next_exercise() is None
+
+
 def test_quick_session_custom_keys(tmp_path):
     custom_words = [
         {"term": "cat", "meaning": "gato"},

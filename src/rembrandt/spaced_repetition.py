@@ -372,6 +372,7 @@ def select_words(
     *,
     mode: SessionMode = SessionMode.MIXED,
     word_ids: list[int] | None = None,
+    exclude_word_ids: set[int] | None = None,
     prioritize_weak: bool = False,
     max_new: int | None = None,
     max_review: int | None = None,
@@ -393,6 +394,8 @@ def select_words(
         words. `REVIEW_DUE` returns only due words.
     :param word_ids: If provided, restrict selection to these
         word ids (e.g. from a lesson).
+    :param exclude_word_ids: Word ids to exclude from
+        selection (e.g. sibling burying).
     :param prioritize_weak: When `True`, sorts due words so
         that weak words (high error rate) come first.
     :param max_new: Cap on new words returned. `None` means
@@ -409,6 +412,14 @@ def select_words(
         allowed = set(word_ids)
         all_words = [
             w for w in all_words if w.id in allowed
+        ]
+        if not all_words:
+            return []
+
+    if exclude_word_ids:
+        all_words = [
+            w for w in all_words
+            if w.id not in exclude_word_ids
         ]
         if not all_words:
             return []
