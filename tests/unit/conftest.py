@@ -75,6 +75,41 @@ def definition_words():
 
 
 @pytest.fixture
+def definition_db(tmp_path):
+    """Database pre-loaded with EN-EN definition pairs."""
+    database = Database(tmp_path / "def.db")
+    database.add_words([
+        Word(
+            language_from="en", language_to="en",
+            word_from="ephemeral",
+            word_to="lasting for a very short time",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="ubiquitous",
+            word_to="present everywhere",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="candid",
+            word_to="truthful and straightforward",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="pragmatic",
+            word_to="dealing with things practically",
+        ),
+        Word(
+            language_from="en", language_to="en",
+            word_from="verbose",
+            word_to="using more words than needed",
+        ),
+    ])
+    yield database
+    database.close()
+
+
+@pytest.fixture
 def db_with_words(tmp_path):
     """Database pre-loaded with EN-ES word pairs."""
     database = Database(tmp_path / "test.db")

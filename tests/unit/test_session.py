@@ -13,71 +13,16 @@ from rembrandt.models import (
     ReviewConfig,
     SessionMode,
     UserProgress,
-    Word,
 )
 from rembrandt.session import Session, quick_session
 
 
 @pytest.fixture
-def session_db(tmp_path):
-    database = Database(tmp_path / "test.db")
-    database.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="book", word_to="libro",
-        ),
-    ])
-    yield database
-    database.close()
-
-
-@pytest.fixture
-def session(session_db):
+def session(db_with_words):
     return Session(
-        session_db, user_id="u1",
+        db_with_words, user_id="u1",
         language_from="en", language_to="es",
     )
-
-
-@pytest.fixture
-def definition_db(tmp_path):
-    database = Database(tmp_path / "def.db")
-    database.add_words([
-        Word(
-            language_from="en", language_to="en",
-            word_from="ephemeral",
-            word_to="lasting for a very short time",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="ubiquitous",
-            word_to="present everywhere",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="candid",
-            word_to="truthful and straightforward",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="pragmatic",
-            word_to="dealing with things practically",
-        ),
-    ])
-    yield database
-    database.close()
 
 
 @pytest.fixture
@@ -455,17 +400,17 @@ def test_quick_session_limit(tmp_path):
 # --- Session Mode Tests ---
 
 
-def test_session_learn_new_mode(session_db):
-    all_words = session_db.get_words("en", "es")
+def test_session_learn_new_mode(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
-    session_db.upsert_progress(UserProgress(
+    db_with_words.upsert_progress(UserProgress(
         user_id="u1",
         word_id=due_word.id,
         next_review=datetime(2020, 1, 1),
     ))
 
     s = Session(
-        session_db, "u1", "en", "es",
+        db_with_words, "u1", "en", "es",
         mode=SessionMode.LEARN_NEW,
     )
     ex = s.next_exercise()
@@ -473,17 +418,17 @@ def test_session_learn_new_mode(session_db):
     assert ex.word.id != due_word.id
 
 
-def test_session_review_due_mode(session_db):
-    all_words = session_db.get_words("en", "es")
+def test_session_review_due_mode(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
-    session_db.upsert_progress(UserProgress(
+    db_with_words.upsert_progress(UserProgress(
         user_id="u1",
         word_id=due_word.id,
         next_review=datetime(2020, 1, 1),
     ))
 
     s = Session(
-        session_db, "u1", "en", "es",
+        db_with_words, "u1", "en", "es",
         mode=SessionMode.REVIEW_DUE,
     )
     ex = s.next_exercise()
@@ -491,12 +436,12 @@ def test_session_review_due_mode(session_db):
     assert ex.word.id == due_word.id
 
 
-def test_session_word_ids_filter(session_db):
-    all_words = session_db.get_words("en", "es")
+def test_session_word_ids_filter(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
     subset = [all_words[0].id, all_words[1].id]
 
     s = Session(
-        session_db, "u1", "en", "es",
+        db_with_words, "u1", "en", "es",
         word_ids=subset,
     )
     seen_ids = set()
@@ -569,10 +514,10 @@ def test_multiple_answers_recorded(session):
 # --- Daily Limit Tests ---
 
 
-def test_session_respects_max_new_cards(session_db):
+def test_session_respects_max_new_cards(db_with_words):
     config = ReviewConfig(max_new_cards=2)
     s = Session(
-        session_db, "u1", "en", "es",
+        db_with_words, "u1", "en", "es",
         review_config=config,
     )
     served = []
@@ -587,10 +532,10 @@ def test_session_respects_max_new_cards(session_db):
     assert s._new_served == 2
 
 
-def test_session_respects_max_review_cards(session_db):
-    all_words = session_db.get_words("en", "es")
+def test_session_respects_max_review_cards(db_with_words):
+    all_words = db_with_words.get_words("en", "es")
     for w in all_words:
-        session_db.upsert_progress(UserProgress(
+        db_with_words.upsert_progress(UserProgress(
             user_id="u1",
             word_id=w.id,
             state=CardState.REVIEW,
@@ -599,7 +544,7 @@ def test_session_respects_max_review_cards(session_db):
 
     config = ReviewConfig(max_review_cards=1)
     s = Session(
-        session_db, "u1", "en", "es",
+        db_with_words, "u1", "en", "es",
         mode=SessionMode.REVIEW_DUE,
         review_config=config,
     )
@@ -621,20 +566,20 @@ def test_session_respects_max_review_cards(session_db):
 # --- Sibling Burying Tests ---
 
 
-def test_sibling_burying_skips_shown_words(session_db):
+def test_sibling_burying_skips_shown_words(db_with_words):
     s = Session(
-        session_db, user_id="u1",
+        db_with_words, user_id="u1",
         language_from="en", language_to="es",
     )
     seen_word_ids: set[int | None] = set()
-    for _ in range(4):
+    for _ in range(5):
         ex = s.next_exercise()
         assert ex is not None
         assert ex.word.id not in seen_word_ids
         seen_word_ids.add(ex.word.id)
         s.answer(ex.expected_answer or ex.word.word_to)
 
-    # All 4 words used up — next should be None
+    # All 5 words used up — next should be None
     assert s.next_exercise() is None
 
 

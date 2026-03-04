@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.38.4 - 4th March 2026
+
+- Consolidated test fixtures: moved `definition_db` to
+  `conftest.py` and replaced `session_db` with shared
+  `db_with_words` fixture.
+
+
 ### v0.38.3 - 4th March 2026
 
 - Extracted `MASTERY_REPETITIONS` constant in `lessons`,
