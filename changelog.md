@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v0.38.3 - 4th March 2026
+
+- Extracted `MASTERY_REPETITIONS` constant in `lessons`,
+  replacing hardcoded `repetitions >= 3`.
+
+
 ### v0.38.2 - 4th March 2026
 
 - Extracted magic numbers in `exercises` to module-level

@@ -9,6 +9,9 @@ from rembrandt.models import CardState, Lesson, LessonProgress
 
 logger = logging.getLogger(__name__)
 
+# Minimum SM-2 repetitions to consider a word mastered
+MASTERY_REPETITIONS = 3
+
 
 def load_lessons(
     lessons_path: str | Path,
@@ -120,7 +123,7 @@ def lesson_progress(
     mastered = sum(
         1 for p in progress_map.values()
         if p.state == CardState.REVIEW
-        and p.repetitions >= 3
+        and p.repetitions >= MASTERY_REPETITIONS
     )
 
     return LessonProgress(
