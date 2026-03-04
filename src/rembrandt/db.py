@@ -795,33 +795,25 @@ class Database:
         :param since: Only return answers after this datetime.
         :return: List of `AnswerHistory` records, newest first.
         """
+        sql = (
+            "SELECT id, user_id, word_id, "
+            "exercise_type, correct, quality, "
+            "answered_at "
+            "FROM answer_history "
+            "WHERE user_id = ? "
+        )
+        params: list[str | int] = [user_id]
         if since is not None:
-            rows = self._conn.execute(
-                "SELECT id, user_id, word_id, "
-                "exercise_type, correct, quality, "
-                "answered_at "
-                "FROM answer_history "
-                "WHERE user_id = ? "
-                "AND answered_at >= ? "
-                "ORDER BY answered_at DESC, id DESC "
-                "LIMIT ?",
-                (
-                    user_id,
-                    since.strftime(_ISO_FMT),
-                    limit,
-                ),
-            ).fetchall()
-        else:
-            rows = self._conn.execute(
-                "SELECT id, user_id, word_id, "
-                "exercise_type, correct, quality, "
-                "answered_at "
-                "FROM answer_history "
-                "WHERE user_id = ? "
-                "ORDER BY answered_at DESC, id DESC "
-                "LIMIT ?",
-                (user_id, limit),
-            ).fetchall()
+            sql += "AND answered_at >= ? "
+            params.append(since.strftime(_ISO_FMT))
+        sql += (
+            "ORDER BY answered_at DESC, id DESC "
+            "LIMIT ?"
+        )
+        params.append(limit)
+        rows = self._conn.execute(
+            sql, params,
+        ).fetchall()
         return [
             AnswerHistory(
                 id=r["id"],

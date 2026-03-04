@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v0.38.1 - 4th March 2026
+
+- Refactored `get_answer_history()` in `db`: deduplicated
+  SQL by building the query dynamically instead of two
+  near-identical branches.
+
+
 ### v0.38.0 - 4th March 2026
 
 - Added `exclude_word_ids` parameter to `select_words()`:
