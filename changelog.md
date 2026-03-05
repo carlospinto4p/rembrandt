@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v1.0.3 - 5th March 2026
+
+- Added `examples/17_word_selection.py`: demonstrates advanced
+  `select_words()` usage with session modes, `max_new`/`max_review`
+  caps, `prioritize_weak`, `word_ids`, and `exclude_word_ids`.
+
+
 ### v1.0.2 - 5th March 2026
 
 - Added `examples/16_card_states.py`: walks through the full
