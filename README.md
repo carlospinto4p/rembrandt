@@ -367,6 +367,7 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `12_progress_export_import.py` | Export and import spaced-repetition progress between databases |
 | `13_answer_history.py` | Answer history, daily stats, weak word detection |
 | `14_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
+| `15_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
 
 Run any example with:
 

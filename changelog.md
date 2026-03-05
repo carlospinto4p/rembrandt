@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v1.0.1 - 5th March 2026
+
+- Added `examples/15_review_config.py`: demonstrates `ReviewConfig`
+  customisation (learning steps, graduating interval, relearning,
+  leech threshold, daily limits, fuzz factor).
+- Fixed missing `Usage::` block in `examples/04_spaced_repetition_demo.py`.
+
+
 ### v1.0.0 - 4th March 2026
 
 - Renamed `quick_session()` parameters:
