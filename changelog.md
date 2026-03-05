@@ -1,6 +1,20 @@
 
 ## Changelog - Rembrandt
 
+### v1.1.0 - 5th March 2026
+
+- Added `PostgresDatabase` class in `db_postgres`: full PostgreSQL
+  backend with identical public API to `Database` (SQLite).
+- Added `psycopg[binary]>=3.2` to dependencies.
+- Added `docker-compose.yml`: PostgreSQL 17 service for local
+  development and testing.
+- Added `examples/19_postgres.py`: demonstrates `PostgresDatabase`
+  usage with Docker Compose.
+- Added `tests/unit/test_db_postgres.py`: PostgreSQL test suite
+  (auto-skipped when PG is unavailable).
+- Exported `PostgresDatabase` from the package.
+
+
 ### v1.0.4 - 5th March 2026
 
 - Added `examples/18_tags_and_cefr.py`: demonstrates tag and CEFR

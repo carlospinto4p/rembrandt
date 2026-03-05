@@ -31,6 +31,6 @@
 ### 2026.03.05 — Feature roadmap
 
 - [x] Add examples for all library functionalities — review existing examples, improve them, and add missing ones for full coverage
-- [ ] Add PostgreSQL database support with Docker Compose for production-ready persistence
+- [x] Add PostgreSQL database support with Docker Compose for production-ready persistence
 - [ ] Add user IDs to the database — persist sessions, vocabulary, and progress per user
 - [ ] Add Telegram bot support — design the interaction model and integrate with the library

@@ -3,6 +3,7 @@
 from importlib.metadata import version
 
 from rembrandt.db import Database
+from rembrandt.db_postgres import PostgresDatabase
 from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
     AnswerHistory,
@@ -30,6 +31,7 @@ __all__ = [
     "DailyStats",
     "Database",
     "Hint",
+    "PostgresDatabase",
     "Lesson",
     "ReviewConfig",
     "Session",

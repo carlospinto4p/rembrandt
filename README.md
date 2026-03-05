@@ -338,6 +338,38 @@ The JSON file supports two optional keys:
 Template keys: `verb`, `noun_m`, `noun_f`, `adjective`, `en_verb`,
 `en_noun`, `en_adjective`. Each template must contain `{word}`.
 
+## PostgreSQL Backend
+
+For production use, Rembrandt supports PostgreSQL via the
+`PostgresDatabase` class, which has the same API as the SQLite
+`Database`:
+
+```bash
+# Start PostgreSQL with Docker Compose
+docker compose up -d
+```
+
+```python
+from rembrandt import PostgresDatabase, Word
+from rembrandt.session import Session
+
+dsn = "postgresql://rembrandt:rembrandt@localhost/rembrandt"
+
+with PostgresDatabase(dsn) as db:
+    db.add_words([
+        Word(language_from="en", language_to="es",
+             word_from="cat", word_to="gato"),
+    ])
+
+    session = Session(db, user_id="user1",
+                      language_from="en", language_to="es")
+    exercise = session.next_exercise()
+```
+
+All features (lessons, progress, answer history, weak words, etc.)
+work identically with both backends. Tags are stored as native
+`JSONB` and booleans as `BOOLEAN` in PostgreSQL.
+
 ## Documentation
 
 The `docs/` folder explains the theory behind the library:
@@ -371,6 +403,7 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `16_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
 | `17_word_selection.py` | Advanced `select_words()`: modes, caps, weak priority, filtering |
 | `18_tags_and_cefr.py` | Organising vocabulary by tags and CEFR levels |
+| `19_postgres.py` | PostgreSQL backend with Docker Compose |
 
 Run any example with:
 
