@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS words (
 );
 
 CREATE TABLE IF NOT EXISTS progress (
-    user_id          TEXT    NOT NULL,
+    user_id          INTEGER NOT NULL,
     word_id          INTEGER NOT NULL,
     easiness_factor  REAL    NOT NULL DEFAULT 2.5,
     interval         INTEGER NOT NULL DEFAULT 0,
@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS progress (
     step_index       INTEGER NOT NULL DEFAULT 0,
     lapse_count      INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, word_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (word_id) REFERENCES words(id)
 );
 
@@ -90,12 +91,13 @@ CREATE TABLE IF NOT EXISTS lesson_words (
 
 CREATE TABLE IF NOT EXISTS answer_history (
     id            SERIAL PRIMARY KEY,
-    user_id       TEXT    NOT NULL,
+    user_id       INTEGER NOT NULL,
     word_id       INTEGER NOT NULL,
     exercise_type TEXT    NOT NULL,
     correct       BOOLEAN NOT NULL,
     quality       INTEGER NOT NULL,
     answered_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (word_id) REFERENCES words(id)
 );
 """
@@ -587,12 +589,12 @@ class PostgresDatabase:
 
     def get_progress(
         self,
-        user_id: str,
+        user_id: int,
         word_id: int,
     ) -> UserProgress | None:
         """Fetch progress for a user-word pair.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_id: The word identifier.
         :return: `UserProgress` or `None` if no record exists.
         """
@@ -609,12 +611,12 @@ class PostgresDatabase:
 
     def get_all_progress(
         self,
-        user_id: str,
+        user_id: int,
         word_ids: list[int],
     ) -> dict[int, UserProgress]:
         """Fetch progress for multiple words in a single query.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_ids: List of word identifiers.
         :return: Dict mapping `word_id` to `UserProgress` for
             words that have a progress record.
@@ -670,7 +672,7 @@ class PostgresDatabase:
         self._conn.commit()
 
     def export_progress(
-        self, user_id: str,
+        self, user_id: int,
     ) -> list[dict]:
         """Export all progress rows for a user as dicts.
 
@@ -679,7 +681,7 @@ class PostgresDatabase:
         `next_review` (ISO 8601 string), `state`, and
         `step_index`. The result is JSON-serializable.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :return: List of progress dicts.
         """
         with self._conn.cursor() as cur:
@@ -777,7 +779,7 @@ class PostgresDatabase:
 
     def record_answer(
         self,
-        user_id: str,
+        user_id: int,
         word_id: int,
         exercise_type: str,
         correct: bool,
@@ -785,7 +787,7 @@ class PostgresDatabase:
     ) -> None:
         """Record a single answer in the history log.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_id: The word identifier.
         :param exercise_type: The exercise type string.
         :param correct: Whether the answer was correct.
@@ -806,14 +808,14 @@ class PostgresDatabase:
 
     def get_answer_history(
         self,
-        user_id: str,
+        user_id: int,
         *,
         limit: int = 100,
         since: datetime | None = None,
     ) -> list[AnswerHistory]:
         """Fetch recent answer history for a user.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param limit: Maximum number of records to return.
         :param since: Only return answers after this datetime.
         :return: List of `AnswerHistory` records, newest first.
@@ -852,13 +854,13 @@ class PostgresDatabase:
 
     def daily_stats(
         self,
-        user_id: str,
+        user_id: int,
         *,
         days: int = 30,
     ) -> list[DailyStats]:
         """Aggregate answer history into daily statistics.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param days: Number of past days to include.
         :return: List of `DailyStats`, most recent first.
         """
@@ -883,7 +885,7 @@ class PostgresDatabase:
 
     def weak_words(
         self,
-        user_id: str,
+        user_id: int,
         language_from: str,
         language_to: str,
         *,
@@ -896,7 +898,7 @@ class PostgresDatabase:
         A word is "weak" when its error rate meets or exceeds
         `threshold` and it has at least `min_attempts` answers.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param language_from: Source language code.
         :param language_to: Target language code.
         :param threshold: Minimum error rate (0.0-1.0).

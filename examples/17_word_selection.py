@@ -44,6 +44,8 @@ def main() -> None:
     _DB_PATH.unlink(missing_ok=True)
 
     with Database(_DB_PATH) as db:
+        user = db.register_user("demo", "demo")
+
         db.add_words([
             Word(
                 language_from="en", language_to="es",
@@ -58,7 +60,7 @@ def main() -> None:
         yesterday = datetime.now() - timedelta(days=1)
         for w in all_words[:4]:
             p = UserProgress(
-                user_id="demo", word_id=w.id,
+                user_id=user.id, word_id=w.id,
             )
             p = review(p, 4)
             # Several passes to reach REVIEW state
@@ -74,11 +76,11 @@ def main() -> None:
         # so they are detected as weak words.
         for _ in range(5):
             db.record_answer(
-                "demo", all_words[0].id,
+                user.id, all_words[0].id,
                 "flashcard", False, 1,
             )
             db.record_answer(
-                "demo", all_words[1].id,
+                user.id, all_words[1].id,
                 "flashcard", False, 1,
             )
 
@@ -86,19 +88,19 @@ def main() -> None:
         print("=== Session Modes ===\n")
 
         new_only = select_words(
-            db, "demo", "en", "es", count=5,
+            db, user.id, "en", "es", count=5,
             mode=SessionMode.LEARN_NEW,
         )
         _print_words("LEARN_NEW", new_only)
 
         due_only = select_words(
-            db, "demo", "en", "es", count=5,
+            db, user.id, "en", "es", count=5,
             mode=SessionMode.REVIEW_DUE,
         )
         _print_words("REVIEW_DUE", due_only)
 
         mixed = select_words(
-            db, "demo", "en", "es", count=5,
+            db, user.id, "en", "es", count=5,
             mode=SessionMode.MIXED,
         )
         _print_words("MIXED", mixed)
@@ -107,7 +109,7 @@ def main() -> None:
         print("\n=== Caps ===\n")
 
         capped = select_words(
-            db, "demo", "en", "es", count=10,
+            db, user.id, "en", "es", count=10,
             max_new=2, max_review=1,
         )
         _print_words("max_new=2, max_review=1", capped)
@@ -116,13 +118,13 @@ def main() -> None:
         print("\n=== Prioritise Weak ===\n")
 
         normal = select_words(
-            db, "demo", "en", "es", count=4,
+            db, user.id, "en", "es", count=4,
             mode=SessionMode.REVIEW_DUE,
         )
         _print_words("Normal order", normal)
 
         weak_first = select_words(
-            db, "demo", "en", "es", count=4,
+            db, user.id, "en", "es", count=4,
             mode=SessionMode.REVIEW_DUE,
             prioritize_weak=True,
         )
@@ -136,7 +138,7 @@ def main() -> None:
             all_words[6].id,
         ]
         subset = select_words(
-            db, "demo", "en", "es", count=5,
+            db, user.id, "en", "es", count=5,
             word_ids=subset_ids,
         )
         _print_words(
@@ -148,7 +150,7 @@ def main() -> None:
 
         exclude = {all_words[0].id, all_words[1].id}
         buried = select_words(
-            db, "demo", "en", "es", count=5,
+            db, user.id, "en", "es", count=5,
             exclude_word_ids=exclude,
         )
         _print_words(

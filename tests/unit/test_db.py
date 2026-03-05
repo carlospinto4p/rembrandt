@@ -353,13 +353,15 @@ def test_delete_word_not_found_raises(db):
 
 
 def test_get_progress_nonexistent(db):
-    result = db.get_progress("u1", 999)
+    u = db.register_user("u1", "pass")
+    result = db.get_progress(u.id, 999)
     assert result is None
 
 
 def test_upsert_progress_insert(db):
+    u = db.register_user("u1", "pass")
     progress = UserProgress(
-        user_id="u1",
+        user_id=u.id,
         word_id=1,
         easiness_factor=2.5,
         interval=1,
@@ -369,7 +371,7 @@ def test_upsert_progress_insert(db):
     )
     db.upsert_progress(progress)
 
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded is not None
     assert loaded.easiness_factor == 2.5
     assert loaded.interval == 1
@@ -379,8 +381,9 @@ def test_upsert_progress_insert(db):
 
 
 def test_upsert_progress_update(db):
+    u = db.register_user("u1", "pass")
     progress = UserProgress(
-        user_id="u1",
+        user_id=u.id,
         word_id=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
@@ -391,7 +394,7 @@ def test_upsert_progress_update(db):
     progress.repetitions = 3
     db.upsert_progress(progress)
 
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded is not None
     assert loaded.easiness_factor == 2.1
     assert loaded.interval == 6
@@ -399,29 +402,31 @@ def test_upsert_progress_update(db):
 
 
 def test_progress_roundtrip_datetime(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 6, 15, 10, 30, 0)
     progress = UserProgress(
-        user_id="u1",
+        user_id=u.id,
         word_id=1,
         next_review=dt,
     )
     db.upsert_progress(progress)
 
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded is not None
     assert loaded.next_review == dt
 
 
 def test_get_all_progress(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1, next_review=dt,
+        user_id=u.id, word_id=1, next_review=dt,
     ))
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=3, next_review=dt,
+        user_id=u.id, word_id=3, next_review=dt,
     ))
 
-    result = db.get_all_progress("u1", [1, 2, 3])
+    result = db.get_all_progress(u.id, [1, 2, 3])
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -429,7 +434,8 @@ def test_get_all_progress(db):
 
 
 def test_get_all_progress_empty(db):
-    result = db.get_all_progress("u1", [])
+    u = db.register_user("u1", "pass")
+    result = db.get_all_progress(u.id, [])
     assert result == {}
 
 
@@ -792,51 +798,57 @@ def test_delete_lesson_not_found_raises(db):
 
 
 def test_export_progress_empty(db):
-    result = db.export_progress("u1")
+    u = db.register_user("u1", "pass")
+    result = db.export_progress(u.id)
     assert result == []
 
 
 def test_export_progress_returns_all(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1, next_review=dt,
+        user_id=u.id, word_id=1, next_review=dt,
     ))
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=2,
+        user_id=u.id, word_id=2,
         easiness_factor=2.1, interval=6, repetitions=3,
         next_review=dt,
     ))
-    result = db.export_progress("u1")
+    result = db.export_progress(u.id)
     assert len(result) == 2
     assert all(isinstance(r, dict) for r in result)
 
 
 def test_export_progress_filters_by_user(db):
+    u1 = db.register_user("u1", "pass")
+    u2 = db.register_user("u2", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1, next_review=dt,
+        user_id=u1.id, word_id=1, next_review=dt,
     ))
     db.upsert_progress(UserProgress(
-        user_id="u2", word_id=2, next_review=dt,
+        user_id=u2.id, word_id=2, next_review=dt,
     ))
-    result = db.export_progress("u1")
+    result = db.export_progress(u1.id)
     assert len(result) == 1
-    assert result[0]["user_id"] == "u1"
+    assert result[0]["user_id"] == u1.id
 
 
 def test_export_progress_next_review_is_string(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 6, 15, 10, 30, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1, next_review=dt,
+        user_id=u.id, word_id=1, next_review=dt,
     ))
-    result = db.export_progress("u1")
+    result = db.export_progress(u.id)
     assert result[0]["next_review"] == "2026-06-15T10:30:00"
 
 
 def test_import_progress_inserts(db):
+    u = db.register_user("u1", "pass")
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": u.id, "word_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
@@ -844,71 +856,76 @@ def test_import_progress_inserts(db):
     ]
     count = db.import_progress(records)
     assert count == 1
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded is not None
     assert loaded.repetitions == 1
 
 
 def test_import_progress_upserts(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1,
+        user_id=u.id, word_id=1,
         repetitions=1, next_review=dt,
     ))
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": u.id, "word_id": 1,
             "easiness_factor": 2.1, "interval": 6,
             "repetitions": 3,
             "next_review": "2026-04-01T12:00:00",
         },
     ]
     db.import_progress(records)
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded is not None
     assert loaded.repetitions == 3
     assert loaded.easiness_factor == 2.1
 
 
 def test_import_export_roundtrip(db):
+    u = db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1,
+        user_id=u.id, word_id=1,
         easiness_factor=2.3, interval=6,
         repetitions=4, next_review=dt,
     ))
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=2,
+        user_id=u.id, word_id=2,
         easiness_factor=1.8, interval=1,
         repetitions=0, next_review=dt,
     ))
-    exported = db.export_progress("u1")
+    exported = db.export_progress(u.id)
 
     # Import into a fresh database
     db2 = Database(":memory:")
+    db2.register_user("u1", "pass")
     count = db2.import_progress(exported)
     assert count == 2
 
-    re_exported = db2.export_progress("u1")
+    re_exported = db2.export_progress(u.id)
     assert re_exported == exported
     db2.close()
 
 
 def test_export_progress_includes_state(db):
+    u = db.register_user("u1", "pass")
     db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1,
+        user_id=u.id, word_id=1,
         state=CardState.LEARNING, step_index=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     ))
-    result = db.export_progress("u1")
+    result = db.export_progress(u.id)
     assert result[0]["state"] == "learning"
     assert result[0]["step_index"] == 1
 
 
 def test_import_progress_with_state(db):
+    u = db.register_user("u1", "pass")
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": u.id, "word_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
@@ -916,22 +933,23 @@ def test_import_progress_with_state(db):
         },
     ]
     db.import_progress(records)
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded.state == CardState.RELEARNING
     assert loaded.step_index == 2
 
 
 def test_import_progress_without_state_defaults(db):
+    u = db.register_user("u1", "pass")
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": u.id, "word_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
         },
     ]
     db.import_progress(records)
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(u.id, 1)
     assert loaded.state == CardState.REVIEW
     assert loaded.step_index == 0
 
@@ -939,7 +957,7 @@ def test_import_progress_without_state_defaults(db):
 def test_import_progress_missing_key_raises(db):
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": 1, "word_id": 1,
             "easiness_factor": 2.5,
             # missing interval, repetitions, next_review
         },
@@ -955,8 +973,19 @@ def test_migrate_adds_state_columns(tmp_path):
     db_path = tmp_path / "legacy.db"
     conn = sqlite3.connect(str(db_path))
     conn.executescript(
+        "CREATE TABLE IF NOT EXISTS users ("
+        "    id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "    username TEXT NOT NULL UNIQUE,"
+        "    display_name TEXT,"
+        "    password_hash TEXT NOT NULL,"
+        "    created_at TEXT NOT NULL"
+        "        DEFAULT (datetime('now'))"
+        ");"
+        "INSERT INTO users "
+        "(username, password_hash) "
+        "VALUES ('u1', 'x');"
         "CREATE TABLE IF NOT EXISTS progress ("
-        "    user_id TEXT NOT NULL,"
+        "    user_id INTEGER NOT NULL,"
         "    word_id INTEGER NOT NULL,"
         "    easiness_factor REAL NOT NULL DEFAULT 2.5,"
         "    interval INTEGER NOT NULL DEFAULT 0,"
@@ -970,13 +999,13 @@ def test_migrate_adds_state_columns(tmp_path):
         "(user_id, word_id, easiness_factor, interval, "
         "repetitions, next_review) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        ("u1", 1, 2.5, 6, 3, "2026-03-01T12:00:00"),
+        (1, 1, 2.5, 6, 3, "2026-03-01T12:00:00"),
     )
     conn.commit()
     conn.close()
 
     db = Database(db_path)
-    loaded = db.get_progress("u1", 1)
+    loaded = db.get_progress(1, 1)
     assert loaded is not None
     assert loaded.state == CardState.REVIEW
     assert loaded.step_index == 0
@@ -988,8 +1017,9 @@ def test_migrate_adds_state_columns(tmp_path):
 
 
 def test_record_answer(db):
-    db.record_answer("u1", 1, "flashcard", True, 5)
-    history = db.get_answer_history("u1")
+    u = db.register_user("u1", "pass")
+    db.record_answer(u.id, 1, "flashcard", True, 5)
+    history = db.get_answer_history(u.id)
     assert len(history) == 1
     assert history[0].word_id == 1
     assert history[0].correct is True
@@ -997,41 +1027,46 @@ def test_record_answer(db):
 
 
 def test_record_answer_incorrect(db):
-    db.record_answer("u1", 1, "flashcard", False, 1)
-    history = db.get_answer_history("u1")
+    u = db.register_user("u1", "pass")
+    db.record_answer(u.id, 1, "flashcard", False, 1)
+    history = db.get_answer_history(u.id)
     assert len(history) == 1
     assert history[0].correct is False
     assert history[0].quality == 1
 
 
 def test_get_answer_history_empty(db):
-    history = db.get_answer_history("u1")
+    u = db.register_user("u1", "pass")
+    history = db.get_answer_history(u.id)
     assert history == []
 
 
 def test_get_answer_history_ordered_newest_first(db):
-    db.record_answer("u1", 1, "flashcard", True, 5)
-    db.record_answer("u1", 2, "multiple_choice", False, 1)
-    history = db.get_answer_history("u1")
+    u = db.register_user("u1", "pass")
+    db.record_answer(u.id, 1, "flashcard", True, 5)
+    db.record_answer(u.id, 2, "multiple_choice", False, 1)
+    history = db.get_answer_history(u.id)
     assert len(history) == 2
     assert history[0].word_id == 2
     assert history[1].word_id == 1
 
 
 def test_get_answer_history_limit(db):
+    u = db.register_user("u1", "pass")
     for i in range(5):
-        db.record_answer("u1", i, "flashcard", True, 5)
-    history = db.get_answer_history("u1", limit=3)
+        db.record_answer(u.id, i, "flashcard", True, 5)
+    history = db.get_answer_history(u.id, limit=3)
     assert len(history) == 3
 
 
 def test_get_answer_history_since(db):
+    u = db.register_user("u1", "pass")
     db._conn.execute(
         "INSERT INTO answer_history "
         "(user_id, word_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        ("u1", 1, "flashcard", 1, 5,
+        (u.id, 1, "flashcard", 1, 5,
          "2026-01-01T00:00:00"),
     )
     db._conn.execute(
@@ -1039,37 +1074,41 @@ def test_get_answer_history_since(db):
         "(user_id, word_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        ("u1", 2, "flashcard", 1, 5,
+        (u.id, 2, "flashcard", 1, 5,
          "2026-06-01T00:00:00"),
     )
     db._conn.commit()
     history = db.get_answer_history(
-        "u1", since=datetime(2026, 3, 1),
+        u.id, since=datetime(2026, 3, 1),
     )
     assert len(history) == 1
     assert history[0].word_id == 2
 
 
 def test_get_answer_history_filters_by_user(db):
-    db.record_answer("u1", 1, "flashcard", True, 5)
-    db.record_answer("u2", 2, "flashcard", True, 5)
-    history = db.get_answer_history("u1")
+    u1 = db.register_user("u1", "pass")
+    u2 = db.register_user("u2", "pass")
+    db.record_answer(u1.id, 1, "flashcard", True, 5)
+    db.record_answer(u2.id, 2, "flashcard", True, 5)
+    history = db.get_answer_history(u1.id)
     assert len(history) == 1
-    assert history[0].user_id == "u1"
+    assert history[0].user_id == u1.id
 
 
 def test_daily_stats_empty(db):
-    stats = db.daily_stats("u1")
+    u = db.register_user("u1", "pass")
+    stats = db.daily_stats(u.id)
     assert stats == []
 
 
 def test_daily_stats_aggregation(db):
+    u = db.register_user("u1", "pass")
     db._conn.execute(
         "INSERT INTO answer_history "
         "(user_id, word_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        ("u1", 1, "flashcard", 1, 5,
+        (u.id, 1, "flashcard", 1, 5,
          "2026-02-27T10:00:00"),
     )
     db._conn.execute(
@@ -1077,11 +1116,11 @@ def test_daily_stats_aggregation(db):
         "(user_id, word_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
-        ("u1", 2, "flashcard", 0, 1,
+        (u.id, 2, "flashcard", 0, 1,
          "2026-02-27T11:00:00"),
     )
     db._conn.commit()
-    stats = db.daily_stats("u1", days=365)
+    stats = db.daily_stats(u.id, days=365)
     assert len(stats) == 1
     assert stats[0].date == "2026-02-27"
     assert stats[0].answers == 2
@@ -1090,6 +1129,7 @@ def test_daily_stats_aggregation(db):
 
 
 def test_daily_stats_multiple_days(db):
+    u = db.register_user("u1", "pass")
     for day, word_id in [("2026-02-26", 1),
                          ("2026-02-27", 2)]:
         db._conn.execute(
@@ -1097,11 +1137,11 @@ def test_daily_stats_multiple_days(db):
             "(user_id, word_id, exercise_type, "
             " correct, quality, answered_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            ("u1", word_id, "flashcard", 1, 5,
+            (u.id, word_id, "flashcard", 1, 5,
              f"{day}T10:00:00"),
         )
     db._conn.commit()
-    stats = db.daily_stats("u1", days=365)
+    stats = db.daily_stats(u.id, days=365)
     assert len(stats) == 2
     assert stats[0].date == "2026-02-27"
     assert stats[1].date == "2026-02-26"
@@ -1126,16 +1166,18 @@ def _add_history(db, user_id, word_id, correct, n):
 
 
 def test_weak_words_empty(db):
-    result = db.weak_words("u1", "en", "es")
+    u = db.register_user("u1", "pass")
+    result = db.weak_words(u.id, "en", "es")
     assert result == []
 
 
 def test_weak_words_detects_weak(db):
+    u = db.register_user("u1", "pass")
     w = db.add_word("en", "es", "cat", "gato")
     # 1 correct + 3 incorrect = 75% error rate
-    _add_history(db, "u1", w.id, True, 1)
-    _add_history(db, "u1", w.id, False, 3)
-    result = db.weak_words("u1", "en", "es")
+    _add_history(db, u.id, w.id, True, 1)
+    _add_history(db, u.id, w.id, False, 3)
+    result = db.weak_words(u.id, "en", "es")
     assert len(result) == 1
     assert result[0].word.id == w.id
     assert result[0].attempts == 4
@@ -1144,86 +1186,94 @@ def test_weak_words_detects_weak(db):
 
 
 def test_weak_words_excludes_strong(db):
+    u = db.register_user("u1", "pass")
     w = db.add_word("en", "es", "cat", "gato")
     # 4 correct + 0 incorrect = 0% error rate
-    _add_history(db, "u1", w.id, True, 4)
-    result = db.weak_words("u1", "en", "es")
+    _add_history(db, u.id, w.id, True, 4)
+    result = db.weak_words(u.id, "en", "es")
     assert result == []
 
 
 def test_weak_words_min_attempts(db):
+    u = db.register_user("u1", "pass")
     w = db.add_word("en", "es", "cat", "gato")
     # Only 2 attempts (below default min_attempts=3)
-    _add_history(db, "u1", w.id, False, 2)
-    result = db.weak_words("u1", "en", "es")
+    _add_history(db, u.id, w.id, False, 2)
+    result = db.weak_words(u.id, "en", "es")
     assert result == []
 
     result = db.weak_words(
-        "u1", "en", "es", min_attempts=2,
+        u.id, "en", "es", min_attempts=2,
     )
     assert len(result) == 1
 
 
 def test_weak_words_threshold(db):
+    u = db.register_user("u1", "pass")
     w = db.add_word("en", "es", "cat", "gato")
     # 2 correct + 1 incorrect = 33% error rate
-    _add_history(db, "u1", w.id, True, 2)
-    _add_history(db, "u1", w.id, False, 1)
+    _add_history(db, u.id, w.id, True, 2)
+    _add_history(db, u.id, w.id, False, 1)
 
     # Default threshold 0.5 => not weak
-    result = db.weak_words("u1", "en", "es")
+    result = db.weak_words(u.id, "en", "es")
     assert result == []
 
     # Lower threshold => weak
     result = db.weak_words(
-        "u1", "en", "es", threshold=0.3,
+        u.id, "en", "es", threshold=0.3,
     )
     assert len(result) == 1
 
 
 def test_weak_words_ordered_by_error_rate(db):
+    u = db.register_user("u1", "pass")
     w1 = db.add_word("en", "es", "cat", "gato")
     w2 = db.add_word("en", "es", "dog", "perro")
     # w1: 50% error rate
-    _add_history(db, "u1", w1.id, True, 2)
-    _add_history(db, "u1", w1.id, False, 2)
+    _add_history(db, u.id, w1.id, True, 2)
+    _add_history(db, u.id, w1.id, False, 2)
     # w2: 75% error rate
-    _add_history(db, "u1", w2.id, True, 1)
-    _add_history(db, "u1", w2.id, False, 3)
+    _add_history(db, u.id, w2.id, True, 1)
+    _add_history(db, u.id, w2.id, False, 3)
 
-    result = db.weak_words("u1", "en", "es")
+    result = db.weak_words(u.id, "en", "es")
     assert len(result) == 2
     assert result[0].word.id == w2.id
     assert result[1].word.id == w1.id
 
 
 def test_weak_words_filters_by_language(db):
+    u = db.register_user("u1", "pass")
     w1 = db.add_word("en", "es", "cat", "gato")
     w2 = db.add_word("en", "fr", "cat", "chat")
-    _add_history(db, "u1", w1.id, False, 4)
-    _add_history(db, "u1", w2.id, False, 4)
+    _add_history(db, u.id, w1.id, False, 4)
+    _add_history(db, u.id, w2.id, False, 4)
 
-    result = db.weak_words("u1", "en", "es")
+    result = db.weak_words(u.id, "en", "es")
     assert len(result) == 1
     assert result[0].word.id == w1.id
 
 
 def test_weak_words_filters_by_user(db):
+    u1 = db.register_user("u1", "pass")
+    u2 = db.register_user("u2", "pass")
     w = db.add_word("en", "es", "cat", "gato")
-    _add_history(db, "u1", w.id, False, 4)
-    _add_history(db, "u2", w.id, False, 4)
+    _add_history(db, u1.id, w.id, False, 4)
+    _add_history(db, u2.id, w.id, False, 4)
 
-    result = db.weak_words("u1", "en", "es")
+    result = db.weak_words(u1.id, "en", "es")
     assert len(result) == 1
 
-    result = db.weak_words("u2", "en", "es")
+    result = db.weak_words(u2.id, "en", "es")
     assert len(result) == 1
 
 
 def test_weak_words_limit(db):
+    u = db.register_user("u1", "pass")
     for i in range(5):
         w = db.add_word("en", "es", f"word{i}", f"w{i}")
-        _add_history(db, "u1", w.id, False, 4)
+        _add_history(db, u.id, w.id, False, 4)
 
-    result = db.weak_words("u1", "en", "es", limit=3)
+    result = db.weak_words(u.id, "en", "es", limit=3)
     assert len(result) == 3

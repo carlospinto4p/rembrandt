@@ -48,10 +48,11 @@ def main() -> None:
     # --- Step 1: Build source DB and generate progress ---
     with Database(_DB_SRC) as src:
         src.add_words(words)
+        user = src.register_user("demo", "demo")
 
         session = Session(
             db=src,
-            user_id="demo",
+            user_id=user.id,
             language_from="en",
             language_to="es",
         )
@@ -68,17 +69,18 @@ def main() -> None:
         )
 
         # --- Step 2: Export progress ---
-        records = src.export_progress("demo")
+        records = src.export_progress(user.id)
         print(f"Exported {len(records)} progress records")
 
     # --- Step 3: Import into a fresh DB ---
     with Database(_DB_DST) as dst:
         dst.add_words(words)
+        dst.register_user("demo", "demo")
         count = dst.import_progress(records)
         print(f"Imported {count} records into new DB")
 
         # --- Step 4: Verify roundtrip ---
-        reimported = dst.export_progress("demo")
+        reimported = dst.export_progress(user.id)
         assert len(reimported) == len(records), (
             f"Mismatch: {len(reimported)} != {len(records)}"
         )

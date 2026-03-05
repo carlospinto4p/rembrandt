@@ -180,6 +180,7 @@ def test_load_lessons_empty_input(tmp_path):
 def _make_db_with_lesson(tmp_path):
     """Create a DB with 4 words and a lesson containing them."""
     db = Database(tmp_path / "progress.db")
+    db.register_user("u1", "pass")
     words = db.add_words([
         Word(
             language_from="en", language_to="es",
@@ -212,7 +213,7 @@ def _make_db_with_lesson(tmp_path):
 
 def test_lesson_progress_no_progress(tmp_path):
     db, lesson, _ = _make_db_with_lesson(tmp_path)
-    lp = lesson_progress(db, "u1", lesson)
+    lp = lesson_progress(db, 1, lesson)
     assert lp.words_total == 4
     assert lp.words_studied == 0
     assert lp.words_mastered == 0
@@ -224,18 +225,18 @@ def test_lesson_progress_no_progress(tmp_path):
 def test_lesson_progress_partial(tmp_path):
     db, lesson, words = _make_db_with_lesson(tmp_path)
     db.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=words[0].id,
         repetitions=1,
         next_review=datetime(2026, 1, 1),
     ))
     db.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=words[1].id,
         repetitions=2,
         next_review=datetime(2026, 1, 1),
     ))
-    lp = lesson_progress(db, "u1", lesson)
+    lp = lesson_progress(db, 1, lesson)
     assert lp.words_studied == 2
     assert lp.words_mastered == 0
     assert lp.completion_pct == 50.0
@@ -246,20 +247,20 @@ def test_lesson_progress_partial(tmp_path):
 def test_lesson_progress_mastered(tmp_path):
     db, lesson, words = _make_db_with_lesson(tmp_path)
     db.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=words[0].id,
         repetitions=3,
         state=CardState.REVIEW,
         next_review=datetime(2026, 1, 1),
     ))
     db.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=words[1].id,
         repetitions=5,
         state=CardState.REVIEW,
         next_review=datetime(2026, 1, 1),
     ))
-    lp = lesson_progress(db, "u1", lesson)
+    lp = lesson_progress(db, 1, lesson)
     assert lp.words_studied == 2
     assert lp.words_mastered == 2
     assert lp.completion_pct == 50.0
@@ -271,12 +272,12 @@ def test_lesson_progress_full_completion(tmp_path):
     db, lesson, words = _make_db_with_lesson(tmp_path)
     for w in words:
         db.upsert_progress(UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id=w.id,
             repetitions=1,
             next_review=datetime(2026, 1, 1),
         ))
-    lp = lesson_progress(db, "u1", lesson)
+    lp = lesson_progress(db, 1, lesson)
     assert lp.words_studied == 4
     assert lp.completion_pct == 100.0
     db.close()
@@ -284,6 +285,7 @@ def test_lesson_progress_full_completion(tmp_path):
 
 def test_lesson_progress_empty_lesson(tmp_path):
     db = Database(tmp_path / "empty.db")
+    db.register_user("u1", "pass")
     lesson = Lesson(
         id=1,
         title="Empty",
@@ -292,7 +294,7 @@ def test_lesson_progress_empty_lesson(tmp_path):
         word_count=0,
         word_ids=[],
     )
-    lp = lesson_progress(db, "u1", lesson)
+    lp = lesson_progress(db, 1, lesson)
     assert lp.words_total == 0
     assert lp.completion_pct == 0.0
     assert lp.mastery_pct == 0.0

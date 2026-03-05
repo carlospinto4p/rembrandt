@@ -78,9 +78,13 @@ def main() -> None:
     )
 
     # --- Step 3: Run a lesson-scoped session ---
+    user = db.get_user("default")
+    if user is None:
+        user = db.register_user("default", "default")
+
     session = Session(
         db=db,
-        user_id="demo",
+        user_id=user.id,
         language_from="en",
         language_to="es",
         mode=SessionMode.LEARN_NEW,
@@ -104,7 +108,7 @@ def main() -> None:
     )
 
     # --- Step 4: Check lesson progress ---
-    lp = lesson_progress(db, "demo", lesson)
+    lp = lesson_progress(db, user.id, lesson)
     print(f"\nLesson progress for '{lesson.title}':")
     print(
         f"  Studied : {lp.words_studied}/{lp.words_total}"

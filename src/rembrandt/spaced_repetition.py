@@ -365,7 +365,7 @@ def review(
 
 def select_words(
     db: Database,
-    user_id: str,
+    user_id: int,
     language_from: str,
     language_to: str,
     count: int = 5,
@@ -384,7 +384,7 @@ def select_words(
     `next_review` has passed.
 
     :param db: The database instance.
-    :param user_id: The user identifier.
+    :param user_id: The user's database id.
     :param language_from: Source language code.
     :param language_to: Target language code.
     :param count: Number of words to select.

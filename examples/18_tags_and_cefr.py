@@ -64,6 +64,7 @@ def main() -> None:
     _DB_PATH.unlink(missing_ok=True)
 
     with Database(_DB_PATH) as db:
+        user = db.register_user("demo", "demo")
         db.add_words(_WORDS)
         all_words = db.get_words("en", "es")
 
@@ -103,7 +104,7 @@ def main() -> None:
 
         session = Session(
             db=db,
-            user_id="demo",
+            user_id=user.id,
             language_from="en",
             language_to="es",
             word_ids=nature_ids,

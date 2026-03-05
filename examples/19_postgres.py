@@ -18,6 +18,10 @@ _DSN = "postgresql://rembrandt:rembrandt@localhost/rembrandt"
 
 def main() -> None:
     with PostgresDatabase(_DSN) as db:
+        user = db.get_user("user1")
+        if user is None:
+            user = db.register_user("user1", "user1")
+
         words = db.add_words([
             Word(
                 language_from="en", language_to="es",
@@ -44,7 +48,7 @@ def main() -> None:
 
         session = Session(
             db,
-            user_id="user1",
+            user_id=user.id,
             language_from="en",
             language_to="es",
         )

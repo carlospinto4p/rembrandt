@@ -24,7 +24,7 @@ from rembrandt.spaced_repetition import (
 def _review_progress(**kwargs) -> UserProgress:
     """Create a REVIEW-state progress for SM-2 tests."""
     defaults = dict(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         state=CardState.REVIEW,
         next_review=datetime(2026, 1, 1),
@@ -119,7 +119,7 @@ def test_review_next_review_in_future():
 
 def test_new_card_enters_learning():
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     updated = review(progress, quality=5)
@@ -129,7 +129,7 @@ def test_new_card_enters_learning():
 
 def test_new_card_fail_enters_learning():
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     updated = review(progress, quality=1)
@@ -143,7 +143,7 @@ def test_new_card_no_learning_steps_graduates():
         max_fuzz_factor=0,
     )
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     updated = review(progress, quality=5, config=config)
@@ -155,7 +155,7 @@ def test_new_card_no_learning_steps_graduates():
 def test_learning_step_advancement():
     config = ReviewConfig(learning_steps=[1, 10])
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.LEARNING,
         step_index=0,
     )
@@ -176,7 +176,7 @@ def test_learning_graduation():
         graduating_interval=1,
     )
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.LEARNING,
         step_index=1,
     )
@@ -190,7 +190,7 @@ def test_learning_graduation():
 def test_learning_fail_resets_to_step_zero():
     config = ReviewConfig(learning_steps=[1, 10])
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.LEARNING,
         step_index=1,
     )
@@ -207,7 +207,7 @@ def test_learning_fail_resets_to_step_zero():
 
 def test_learning_ef_always_updated():
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
         easiness_factor=2.5,
     )
@@ -231,7 +231,7 @@ def test_lapse_enters_relearning():
 def test_relearning_step_advancement():
     config = ReviewConfig(relearning_steps=[5, 20])
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.RELEARNING,
         step_index=0,
         interval=30,
@@ -249,7 +249,7 @@ def test_relearning_returns_to_review():
         max_fuzz_factor=0,
     )
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.RELEARNING,
         step_index=0,
         interval=30,
@@ -268,7 +268,7 @@ def test_relearning_min_interval():
         max_fuzz_factor=0,
     )
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.RELEARNING,
         step_index=0,
         interval=10,
@@ -281,7 +281,7 @@ def test_relearning_min_interval():
 def test_relearning_fail_resets_to_step_zero():
     config = ReviewConfig(relearning_steps=[5, 20])
     progress = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.RELEARNING,
         step_index=1,
         interval=30,
@@ -300,7 +300,7 @@ def test_custom_learning_steps():
         graduating_interval=2,
     )
     p = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     p = review(p, quality=5, config=config)
@@ -326,7 +326,7 @@ def test_single_learning_step():
         graduating_interval=1,
     )
     p = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     p = review(p, quality=5, config=config)
@@ -345,7 +345,7 @@ def test_empty_learning_and_relearning_steps():
         graduating_interval=1,
     )
     p = UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         state=CardState.NEW,
     )
     # Graduates immediately
@@ -362,14 +362,14 @@ def test_empty_learning_and_relearning_steps():
 
 def test_select_words_returns_new_words(db_with_words):
     words = select_words(
-        db_with_words, "u1", "en", "es", count=3,
+        db_with_words, 1, "en", "es", count=3,
     )
     assert len(words) == 3
 
 
 def test_select_words_empty_db(tmp_path):
     db = Database(tmp_path / "empty.db")
-    words = select_words(db, "u1", "en", "es", count=5)
+    words = select_words(db, 1, "en", "es", count=5)
     assert words == []
     db.close()
 
@@ -379,7 +379,7 @@ def test_select_words_due_before_new(db_with_words):
     due_word = all_words[0]
 
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         state=CardState.REVIEW,
         next_review=datetime(2020, 1, 1),
@@ -387,7 +387,7 @@ def test_select_words_due_before_new(db_with_words):
     db_with_words.upsert_progress(progress)
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=1,
+        db_with_words, 1, "en", "es", count=1,
     )
     assert len(words) == 1
     assert words[0].id == due_word.id
@@ -399,20 +399,20 @@ def test_select_words_learning_before_due(db_with_words):
     review_word = all_words[1]
 
     db_with_words.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=learning_word.id,
         state=CardState.LEARNING,
         next_review=datetime(2020, 1, 1),
     ))
     db_with_words.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=review_word.id,
         state=CardState.REVIEW,
         next_review=datetime(2020, 1, 1),
     ))
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=1,
+        db_with_words, 1, "en", "es", count=1,
     )
     assert len(words) == 1
     assert words[0].id == learning_word.id
@@ -420,7 +420,7 @@ def test_select_words_learning_before_due(db_with_words):
 
 def test_select_words_respects_count(db_with_words):
     words = select_words(
-        db_with_words, "u1", "en", "es", count=2,
+        db_with_words, 1, "en", "es", count=2,
     )
     assert len(words) == 2
 
@@ -432,7 +432,7 @@ def test_select_words_learn_new_only(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         state=CardState.REVIEW,
         next_review=datetime(2020, 1, 1),
@@ -440,7 +440,7 @@ def test_select_words_learn_new_only(db_with_words):
     db_with_words.upsert_progress(progress)
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         mode=SessionMode.LEARN_NEW,
     )
     ids = [w.id for w in words]
@@ -452,7 +452,7 @@ def test_select_words_review_due_only(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         state=CardState.REVIEW,
         next_review=datetime(2020, 1, 1),
@@ -460,7 +460,7 @@ def test_select_words_review_due_only(db_with_words):
     db_with_words.upsert_progress(progress)
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         mode=SessionMode.REVIEW_DUE,
     )
     assert len(words) == 1
@@ -471,7 +471,7 @@ def test_select_words_mixed_default(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         state=CardState.REVIEW,
         next_review=datetime(2020, 1, 1),
@@ -479,7 +479,7 @@ def test_select_words_mixed_default(db_with_words):
     db_with_words.upsert_progress(progress)
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=3,
+        db_with_words, 1, "en", "es", count=3,
     )
     assert len(words) == 3
     assert words[0].id == due_word.id
@@ -490,7 +490,7 @@ def test_select_words_word_ids_filter(db_with_words):
     subset_ids = [all_words[0].id, all_words[1].id]
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         word_ids=subset_ids,
     )
     assert len(words) == 2
@@ -509,7 +509,7 @@ def test_select_words_prioritize_weak(db_with_words):
     # Make both due for review
     for w in [strong_word, weak_word]:
         db_with_words.upsert_progress(UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id=w.id,
             state=CardState.REVIEW,
             next_review=datetime(2020, 1, 1),
@@ -518,14 +518,14 @@ def test_select_words_prioritize_weak(db_with_words):
     # Record history: strong_word correct, weak_word wrong
     for _ in range(4):
         db_with_words.record_answer(
-            "u1", strong_word.id, "flashcard", True, 5,
+            1, strong_word.id, "flashcard", True, 5,
         )
         db_with_words.record_answer(
-            "u1", weak_word.id, "flashcard", False, 1,
+            1, weak_word.id, "flashcard", False, 1,
         )
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=2,
+        db_with_words, 1, "en", "es", count=2,
         mode=SessionMode.REVIEW_DUE,
         prioritize_weak=True,
     )
@@ -538,7 +538,7 @@ def test_select_words_no_prioritize_by_default(
 ):
     # Without prioritize_weak, order is unchanged
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
     )
     assert len(words) > 0
 
@@ -646,14 +646,14 @@ def test_suspended_card_skipped_in_select(
     suspended_word = all_words[0]
 
     db_with_words.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=suspended_word.id,
         state=CardState.SUSPENDED,
         next_review=datetime(2020, 1, 1),
     ))
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
     )
     ids = [w.id for w in words]
     assert suspended_word.id not in ids
@@ -661,7 +661,7 @@ def test_suspended_card_skipped_in_select(
 
 def test_review_suspended_card_unchanged():
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         state=CardState.SUSPENDED,
         lapse_count=8,
@@ -683,7 +683,7 @@ def test_select_words_max_new_limits_new_words(
     db_with_words,
 ):
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         max_new=2,
     )
     assert len(words) == 2
@@ -695,14 +695,14 @@ def test_select_words_max_review_limits_due_words(
     all_words = db_with_words.get_words("en", "es")
     for w in all_words[:3]:
         db_with_words.upsert_progress(UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id=w.id,
             state=CardState.REVIEW,
             next_review=datetime(2020, 1, 1),
         ))
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         max_review=1,
     )
     # 1 due + 2 new = 3
@@ -719,14 +719,14 @@ def test_select_words_in_steps_not_capped(
     all_words = db_with_words.get_words("en", "es")
     for w in all_words[:2]:
         db_with_words.upsert_progress(UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id=w.id,
             state=CardState.LEARNING,
             next_review=datetime(2020, 1, 1),
         ))
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         max_new=0, max_review=0,
     )
     # in_steps are not capped, new=0, review=0
@@ -739,7 +739,7 @@ def test_select_words_limits_none_means_unlimited(
     db_with_words,
 ):
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         max_new=None, max_review=None,
     )
     assert len(words) == 5
@@ -753,7 +753,7 @@ def test_select_words_excludes_word_ids(db_with_words):
     exclude = {all_words[0].id, all_words[1].id}
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         exclude_word_ids=exclude,
     )
     returned_ids = {w.id for w in words}
@@ -768,7 +768,7 @@ def test_select_words_exclude_all_returns_empty(
     exclude = {w.id for w in all_words}
 
     words = select_words(
-        db_with_words, "u1", "en", "es", count=5,
+        db_with_words, 1, "en", "es", count=5,
         exclude_word_ids=exclude,
     )
     assert words == []

@@ -27,6 +27,8 @@ def main() -> None:
     _DB_PATH.unlink(missing_ok=True)
 
     with Database(_DB_PATH) as db:
+        user = db.register_user("demo", "demo")
+
         db.add_words([
             Word(
                 language_from="en", language_to="es",
@@ -53,7 +55,7 @@ def main() -> None:
         # Run one session to see it in action.
         session = Session(
             db=db,
-            user_id="demo",
+            user_id=user.id,
             language_from="en",
             language_to="es",
         )
@@ -74,15 +76,15 @@ def main() -> None:
         # and 3 ("cat", "house") get many errors.
         for _ in range(4):
             db.record_answer(
-                "demo", 1, "flashcard", False, 1,
+                user.id, 1, "flashcard", False, 1,
             )
             db.record_answer(
-                "demo", 3, "flashcard", False, 1,
+                user.id, 3, "flashcard", False, 1,
             )
 
         # --- Answer History ---
         print("=== Recent Answer History ===")
-        history = db.get_answer_history("demo", limit=5)
+        history = db.get_answer_history(user.id, limit=5)
         for h in history:
             tag = "correct" if h.correct else "wrong"
             print(
@@ -92,7 +94,7 @@ def main() -> None:
 
         # --- Daily Stats ---
         print("\n=== Daily Stats ===")
-        for day in db.daily_stats("demo", days=7):
+        for day in db.daily_stats(user.id, days=7):
             print(
                 f"  {day.date}: "
                 f"{day.correct}/{day.answers} "
@@ -102,7 +104,7 @@ def main() -> None:
         # --- Weak Words ---
         print("\n=== Weak Words ===")
         weak = db.weak_words(
-            "demo", "en", "es",
+            user.id, "en", "es",
             threshold=0.3, min_attempts=2,
         )
         if weak:
@@ -121,7 +123,7 @@ def main() -> None:
         # because their next_review is in the future.
         print("\n=== Prioritised Selection ===")
         chosen = select_words(
-            db, "demo", "en", "es",
+            db, user.id, "en", "es",
             count=4,
             prioritize_weak=True,
         )

@@ -92,13 +92,13 @@ def load_lessons(
 
 def lesson_progress(
     db: Database,
-    user_id: str,
+    user_id: int,
     lesson: Lesson,
 ) -> LessonProgress:
     """Compute progress statistics for a user in a lesson.
 
     :param db: The database instance.
-    :param user_id: The user identifier.
+    :param user_id: The user's database id.
     :param lesson: The lesson to check progress for.
     :return: A `LessonProgress` with completion and mastery
         statistics.

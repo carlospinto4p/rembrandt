@@ -27,8 +27,9 @@ with Database("vocab.db") as db:
              word_from="book", word_to="libro"),
     ])
 
-    # Start a session
-    session = Session(db, user_id="user1", language_from="en",
+    # Register a user and start a session
+    user = db.register_user("user1", "pass")
+    session = Session(db, user_id=user.id, language_from="en",
                       language_to="es")
 
     # Get an exercise
@@ -125,7 +126,8 @@ db.add_words([
          word_to="truthful and straightforward"),
 ])
 
-session = Session(db, user_id="user1", language_from="en",
+user = db.register_user("user1", "pass")
+session = Session(db, user_id=user.id, language_from="en",
                   language_to="en")
 exercise = session.next_exercise()
 ```
@@ -143,16 +145,18 @@ Control which words appear in a session using `SessionMode`:
 from rembrandt import Database, Session, SessionMode
 
 with Database("vocab.db") as db:
+    user = db.register_user("user1", "pass")
+
     # Only new (unreviewed) words
-    s = Session(db, "user1", "en", "es",
+    s = Session(db, user.id, "en", "es",
                 mode=SessionMode.LEARN_NEW)
 
     # Only words due for review
-    s = Session(db, "user1", "en", "es",
+    s = Session(db, user.id, "en", "es",
                 mode=SessionMode.REVIEW_DUE)
 
     # Due first, then new (default)
-    s = Session(db, "user1", "en", "es",
+    s = Session(db, user.id, "en", "es",
                 mode=SessionMode.MIXED)
 ```
 
@@ -160,7 +164,7 @@ You can also restrict a session to a lesson's words:
 
 ```python
 lesson = db.get_lessons("en", "es", cefr="A1")[0]
-s = Session(db, "user1", "en", "es",
+s = Session(db, user.id, "en", "es",
             word_ids=lesson.word_ids)
 ```
 
@@ -175,7 +179,7 @@ for better retention:
 from rembrandt import ReviewConfig, Session
 
 # Default: learning_steps=[1, 10], relearning_steps=[10]
-session = Session(db, "user1", "en", "es")
+session = Session(db, user.id, "en", "es")
 
 # Custom configuration
 config = ReviewConfig(
@@ -188,7 +192,7 @@ config = ReviewConfig(
     max_new_cards=20,               # new cards per session (0=off)
     max_review_cards=100,           # review cards per session (0=off)
 )
-session = Session(db, "user1", "en", "es",
+session = Session(db, user.id, "en", "es",
                   review_config=config)
 ```
 
@@ -237,7 +241,7 @@ Track how far a user has progressed in a lesson:
 ```python
 from rembrandt import lesson_progress
 
-lp = lesson_progress(db, "user1", lesson)
+lp = lesson_progress(db, user.id, lesson)
 print(f"Studied: {lp.words_studied}/{lp.words_total}"
       f" ({lp.completion_pct}%)")
 print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
@@ -254,7 +258,7 @@ review sessions:
 
 ```python
 # Find weak words (>= 50% error rate, >= 3 attempts)
-weak = db.weak_words("user1", "en", "es")
+weak = db.weak_words(user.id, "en", "es")
 for ww in weak:
     print(f"{ww.word.word_from}: {ww.errors}/{ww.attempts}"
           f" ({ww.error_rate:.0%} error rate)")
@@ -263,7 +267,7 @@ for ww in weak:
 from rembrandt.spaced_repetition import select_words
 
 words = select_words(
-    db, "user1", "en", "es",
+    db, user.id, "en", "es",
     prioritize_weak=True,
 )
 ```
@@ -275,13 +279,13 @@ the history for trends and daily summaries:
 
 ```python
 # Recent answer history
-history = db.get_answer_history("user1", limit=50)
+history = db.get_answer_history(user.id, limit=50)
 for h in history:
     status = "correct" if h.correct else "wrong"
     print(f"Word {h.word_id}: {status} (q={h.quality})")
 
 # Daily statistics (last 30 days)
-for day in db.daily_stats("user1", days=30):
+for day in db.daily_stats(user.id, days=30):
     print(f"{day.date}: {day.correct}/{day.answers}"
           f" ({day.accuracy_pct}%)")
 ```
@@ -293,7 +297,7 @@ and import them into another database:
 
 ```python
 # Export
-records = db.export_progress("user1")
+records = db.export_progress(user.id)
 
 # Save to file
 import json
@@ -361,7 +365,8 @@ with PostgresDatabase(dsn) as db:
              word_from="cat", word_to="gato"),
     ])
 
-    session = Session(db, user_id="user1",
+    user = db.register_user("user1", "pass")
+    session = Session(db, user_id=user.id,
                       language_from="en", language_to="es")
     exercise = session.next_exercise()
 ```

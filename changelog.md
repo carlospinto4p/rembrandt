@@ -1,6 +1,33 @@
 
 ## Changelog - Rembrandt
 
+### v2.0.0 - 6th March 2026
+
+- Changed `user_id` from `str` to `int` across all models:
+  - `UserProgress`
+  - `AnswerHistory`
+  - `LessonProgress`
+- Changed `user_id` from `str` to `int` in all method signatures:
+  - `Database`: `get_progress()`, `get_all_progress()`,
+    `export_progress()`, `record_answer()`,
+    `get_answer_history()`, `daily_stats()`, `weak_words()`
+  - `PostgresDatabase`: same methods
+  - `Session.__init__()`
+  - `select_words()`
+  - `lesson_progress()`
+- Updated `quick_session()`: `user_id` is now `int | None`
+  (default `None`); auto-registers a `"default"` user when
+  omitted.
+- Updated `db.py` schema: `progress.user_id` and
+  `answer_history.user_id` are now `INTEGER` with foreign
+  keys to `users(id)`.
+- Added `_migrate_user_id_to_int()` in `Database`: migrates
+  existing databases from TEXT to INTEGER user_id columns.
+- Updated `db_postgres.py` schema: same foreign key changes.
+- Updated all examples to register users and use `user.id`.
+- Updated `README.md` code snippets.
+
+
 ### v1.1.0 - 5th March 2026
 
 - Added `PostgresDatabase` class in `db_postgres`: full PostgreSQL

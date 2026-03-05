@@ -27,7 +27,7 @@ class Session:
     """Main entry point for vocabulary exercise sessions.
 
     :param db: The database instance.
-    :param user_id: Identifier for the user.
+    :param user_id: The user's database id.
     :param language_from: Source language code.
     :param language_to: Target language code.
     :param mode: Session mode (`MIXED`, `LEARN_NEW`, or
@@ -42,7 +42,7 @@ class Session:
     def __init__(
         self,
         db: Database,
-        user_id: str,
+        user_id: int,
         language_from: str,
         language_to: str,
         *,
@@ -271,7 +271,7 @@ def quick_session(
     db_path: str | Path | None = None,
     language_from: str,
     language_to: str,
-    user_id: str = "default",
+    user_id: int | None = None,
     limit: int | None = None,
     word_from_key: str = "word",
     word_to_key: str = "definition",
@@ -289,7 +289,8 @@ def quick_session(
         Required when `vocab` is a list.
     :param language_from: Source language code.
     :param language_to: Target language code.
-    :param user_id: User identifier.
+    :param user_id: The user's database id. When `None`,
+        auto-registers a `"default"` user and uses its id.
     :param limit: Maximum number of words to load. `None` loads
         all.
     :param word_from_key: Key in each dict for `word_from`.
@@ -315,6 +316,12 @@ def quick_session(
     db_path = Path(db_path)
     fresh = not db_path.exists()
     db = Database(db_path)
+
+    if user_id is None:
+        user = db.get_user("default")
+        if user is None:
+            user = db.register_user("default", "default")
+        user_id = user.id
 
     if fresh:
         if not isinstance(vocab, list):

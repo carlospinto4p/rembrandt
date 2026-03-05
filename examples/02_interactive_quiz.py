@@ -72,9 +72,13 @@ def main() -> None:
         if fresh:
             db.add_words(_WORDS)
 
+        user = db.get_user("player")
+        if user is None:
+            user = db.register_user("player", "player")
+
         session = Session(
             db=db,
-            user_id="player",
+            user_id=user.id,
             language_from="en",
             language_to="es",
             mode=SessionMode.LEARN_NEW,

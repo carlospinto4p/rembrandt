@@ -323,7 +323,7 @@ def test_answer_result_incorrect():
 
 
 def test_user_progress_defaults():
-    progress = UserProgress(user_id="u1", word_id=1)
+    progress = UserProgress(user_id=1, word_id=1)
     assert progress.easiness_factor == 2.5
     assert progress.interval == 0
     assert progress.repetitions == 0
@@ -333,7 +333,7 @@ def test_user_progress_defaults():
 def test_user_progress_custom_values():
     dt = datetime(2026, 3, 1, 12, 0, 0)
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         easiness_factor=2.1,
         interval=6,
@@ -348,7 +348,7 @@ def test_user_progress_custom_values():
 def test_user_progress_validates_types():
     with pytest.raises(Exception):
         UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id="not_an_int",  # type: ignore[arg-type]
         )
 
@@ -396,7 +396,7 @@ def test_lesson_all_fields():
 def test_lesson_progress_creation():
     lp = LessonProgress(
         lesson_id=1,
-        user_id="u1",
+        user_id=1,
         words_total=10,
         words_studied=5,
         words_mastered=2,
@@ -404,7 +404,7 @@ def test_lesson_progress_creation():
         mastery_pct=20.0,
     )
     assert lp.lesson_id == 1
-    assert lp.user_id == "u1"
+    assert lp.user_id == 1
     assert lp.words_total == 10
     assert lp.words_studied == 5
     assert lp.words_mastered == 2
@@ -455,14 +455,14 @@ def test_session_stats_custom():
 
 def test_answer_history_creation():
     ah = AnswerHistory(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         exercise_type="flashcard",
         correct=True,
         quality=5,
     )
     assert ah.id is None
-    assert ah.user_id == "u1"
+    assert ah.user_id == 1
     assert ah.correct is True
     assert ah.quality == 5
     assert isinstance(ah.answered_at, datetime)

@@ -78,6 +78,7 @@ def definition_words():
 def definition_db(tmp_path):
     """Database pre-loaded with EN-EN definition pairs."""
     database = Database(tmp_path / "def.db")
+    database.register_user("u1", "pass")
     database.add_words([
         Word(
             language_from="en", language_to="en",
@@ -111,8 +112,10 @@ def definition_db(tmp_path):
 
 @pytest.fixture
 def db_with_words(tmp_path):
-    """Database pre-loaded with EN-ES word pairs."""
+    """Database pre-loaded with EN-ES word pairs and a user."""
     database = Database(tmp_path / "test.db")
+    database.register_user("u1", "pass")
+    database.register_user("u2", "pass")
     database.add_words([
         Word(
             language_from="en", language_to="es",

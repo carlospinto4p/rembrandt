@@ -38,7 +38,7 @@ def _print_step(
 
 
 def main() -> None:
-    p = UserProgress(user_id="demo", word_id=1)
+    p = UserProgress(user_id=1, word_id=1)
     print("=== CardState Lifecycle ===\n")
     print(f"  Initial state: {p.state.value}\n")
 

@@ -68,6 +68,7 @@ def pg_db():
     conn.close()
 
     db = PostgresDatabase(_DSN)
+    db.register_user("u1", "pass")
     yield db
     db.close()
 
@@ -253,7 +254,7 @@ def test_upsert_progress_insert(pg_db):
     from rembrandt.models import CardState, UserProgress
 
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         easiness_factor=2.5,
         interval=1,
@@ -262,7 +263,7 @@ def test_upsert_progress_insert(pg_db):
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
     pg_db.upsert_progress(progress)
-    loaded = pg_db.get_progress("u1", 1)
+    loaded = pg_db.get_progress(1, 1)
     assert loaded is not None
     assert loaded.easiness_factor == 2.5
     assert loaded.state == CardState.REVIEW
@@ -272,7 +273,7 @@ def test_upsert_progress_update(pg_db):
     from rembrandt.models import UserProgress
 
     progress = UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
@@ -283,7 +284,7 @@ def test_upsert_progress_update(pg_db):
     progress.repetitions = 3
     pg_db.upsert_progress(progress)
 
-    loaded = pg_db.get_progress("u1", 1)
+    loaded = pg_db.get_progress(1, 1)
     assert loaded.easiness_factor == 2.1
     assert loaded.interval == 6
     assert loaded.repetitions == 3
@@ -294,12 +295,12 @@ def test_get_all_progress(pg_db):
 
     dt = datetime(2026, 3, 1, 12, 0, 0)
     pg_db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1, next_review=dt,
+        user_id=1, word_id=1, next_review=dt,
     ))
     pg_db.upsert_progress(UserProgress(
-        user_id="u1", word_id=3, next_review=dt,
+        user_id=1, word_id=3, next_review=dt,
     ))
-    result = pg_db.get_all_progress("u1", [1, 2, 3])
+    result = pg_db.get_all_progress(1, [1, 2, 3])
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -307,7 +308,7 @@ def test_get_all_progress(pg_db):
 
 
 def test_get_all_progress_empty(pg_db):
-    result = pg_db.get_all_progress("u1", [])
+    result = pg_db.get_all_progress(1, [])
     assert result == {}
 
 
@@ -319,11 +320,11 @@ def test_export_import_roundtrip(pg_db):
 
     dt = datetime(2026, 3, 1, 12, 0, 0)
     pg_db.upsert_progress(UserProgress(
-        user_id="u1", word_id=1,
+        user_id=1, word_id=1,
         easiness_factor=2.3, interval=6,
         repetitions=4, next_review=dt,
     ))
-    exported = pg_db.export_progress("u1")
+    exported = pg_db.export_progress(1)
     assert len(exported) == 1
     assert exported[0]["next_review"] == (
         "2026-03-01T12:00:00"
@@ -333,7 +334,7 @@ def test_export_import_roundtrip(pg_db):
 def test_import_progress_missing_key_raises(pg_db):
     records = [
         {
-            "user_id": "u1", "word_id": 1,
+            "user_id": 1, "word_id": 1,
             "easiness_factor": 2.5,
         },
     ]
@@ -346,9 +347,9 @@ def test_import_progress_missing_key_raises(pg_db):
 
 def test_record_answer(pg_db):
     pg_db.record_answer(
-        "u1", 1, "flashcard", True, 5,
+        1, 1, "flashcard", True, 5,
     )
-    history = pg_db.get_answer_history("u1")
+    history = pg_db.get_answer_history(1)
     assert len(history) == 1
     assert history[0].correct is True
     assert history[0].quality == 5
@@ -356,12 +357,12 @@ def test_record_answer(pg_db):
 
 def test_get_answer_history_ordered(pg_db):
     pg_db.record_answer(
-        "u1", 1, "flashcard", True, 5,
+        1, 1, "flashcard", True, 5,
     )
     pg_db.record_answer(
-        "u1", 2, "multiple_choice", False, 1,
+        1, 2, "multiple_choice", False, 1,
     )
-    history = pg_db.get_answer_history("u1")
+    history = pg_db.get_answer_history(1)
     assert len(history) == 2
     assert history[0].word_id == 2
     assert history[1].word_id == 1
@@ -370,9 +371,9 @@ def test_get_answer_history_ordered(pg_db):
 def test_get_answer_history_limit(pg_db):
     for i in range(5):
         pg_db.record_answer(
-            "u1", i, "flashcard", True, 5,
+            1, i, "flashcard", True, 5,
         )
-    history = pg_db.get_answer_history("u1", limit=3)
+    history = pg_db.get_answer_history(1, limit=3)
     assert len(history) == 3
 
 

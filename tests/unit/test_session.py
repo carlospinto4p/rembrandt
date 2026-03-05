@@ -20,7 +20,7 @@ from rembrandt.session import Session, quick_session
 @pytest.fixture
 def session(db_with_words):
     return Session(
-        db_with_words, user_id="u1",
+        db_with_words, user_id=1,
         language_from="en", language_to="es",
     )
 
@@ -28,7 +28,7 @@ def session(db_with_words):
 @pytest.fixture
 def definition_session(definition_db):
     return Session(
-        definition_db, user_id="u1",
+        definition_db, user_id=1,
         language_from="en", language_to="en",
     )
 
@@ -49,7 +49,8 @@ def test_next_exercise_returns_exercise(session):
 
 def test_next_exercise_no_words(tmp_path):
     db = Database(tmp_path / "empty.db")
-    s = Session(db, "u1", "en", "es")
+    u = db.register_user("u1", "pass")
+    s = Session(db, u.id, "en", "es")
     assert s.next_exercise() is None
     db.close()
 
@@ -74,7 +75,7 @@ def test_answer_updates_progress(session):
     word_id = ex.word.id
     session.answer(ex.word.word_to)
 
-    progress = session.db.get_progress("u1", word_id)
+    progress = session.db.get_progress(1, word_id)
     assert progress is not None
     assert progress.state == CardState.LEARNING
 
@@ -213,7 +214,7 @@ def test_skip_does_not_affect_progress(session):
     assert ex is not None
     word_id = ex.word.id
     session.skip()
-    assert session.db.get_progress("u1", word_id) is None
+    assert session.db.get_progress(1, word_id) is None
 
 
 def test_skip_does_not_affect_stats(session):
@@ -258,7 +259,7 @@ def test_definition_reverse_flashcard_answer(
     definition_db,
 ):
     session = Session(
-        definition_db, "u1", "en", "en",
+        definition_db, 1, "en", "en",
     )
     # Keep generating until we get a reverse flashcard
     for _ in range(100):
@@ -276,7 +277,7 @@ def test_definition_reverse_flashcard_answer(
 
 def test_definition_self_graded_answer(definition_db):
     session = Session(
-        definition_db, "u1", "en", "en",
+        definition_db, 1, "en", "en",
     )
     for _ in range(100):
         ex = session.next_exercise()
@@ -295,7 +296,7 @@ def test_definition_self_graded_updates_progress(
     definition_db,
 ):
     session = Session(
-        definition_db, "u1", "en", "en",
+        definition_db, 1, "en", "en",
     )
     for _ in range(100):
         ex = session.next_exercise()
@@ -307,7 +308,7 @@ def test_definition_self_graded_updates_progress(
             word_id = ex.word.id
             session.answer(quality=4)
             progress = definition_db.get_progress(
-                "u1", word_id,
+                1, word_id,
             )
             assert progress is not None
             assert progress.state == CardState.LEARNING
@@ -404,13 +405,13 @@ def test_session_learn_new_mode(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
     db_with_words.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         next_review=datetime(2020, 1, 1),
     ))
 
     s = Session(
-        db_with_words, "u1", "en", "es",
+        db_with_words, 1, "en", "es",
         mode=SessionMode.LEARN_NEW,
     )
     ex = s.next_exercise()
@@ -422,13 +423,13 @@ def test_session_review_due_mode(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     due_word = all_words[0]
     db_with_words.upsert_progress(UserProgress(
-        user_id="u1",
+        user_id=1,
         word_id=due_word.id,
         next_review=datetime(2020, 1, 1),
     ))
 
     s = Session(
-        db_with_words, "u1", "en", "es",
+        db_with_words, 1, "en", "es",
         mode=SessionMode.REVIEW_DUE,
     )
     ex = s.next_exercise()
@@ -441,7 +442,7 @@ def test_session_word_ids_filter(db_with_words):
     subset = [all_words[0].id, all_words[1].id]
 
     s = Session(
-        db_with_words, "u1", "en", "es",
+        db_with_words, 1, "en", "es",
         word_ids=subset,
     )
     seen_ids = set()
@@ -470,7 +471,7 @@ def test_answer_records_history(session):
     ex = session.next_exercise()
     assert ex is not None
     session.answer(ex.word.word_to)
-    history = session.db.get_answer_history("u1")
+    history = session.db.get_answer_history(1)
     assert len(history) == 1
     assert history[0].word_id == ex.word.id
     assert history[0].correct is True
@@ -480,7 +481,7 @@ def test_answer_incorrect_records_history(session):
     ex = session.next_exercise()
     assert ex is not None
     session.answer("wrong_answer_xyz")
-    history = session.db.get_answer_history("u1")
+    history = session.db.get_answer_history(1)
     assert len(history) == 1
     assert history[0].correct is False
 
@@ -489,7 +490,7 @@ def test_answer_records_exercise_type(session):
     ex = session.next_exercise()
     assert ex is not None
     session.answer(ex.word.word_to)
-    history = session.db.get_answer_history("u1")
+    history = session.db.get_answer_history(1)
     assert history[0].exercise_type == ex.exercise_type.value
 
 
@@ -497,7 +498,7 @@ def test_answer_records_quality(session):
     ex = session.next_exercise()
     assert ex is not None
     session.answer(ex.word.word_to)
-    history = session.db.get_answer_history("u1")
+    history = session.db.get_answer_history(1)
     assert history[0].quality == 5  # correct -> quality 5
 
 
@@ -507,7 +508,7 @@ def test_multiple_answers_recorded(session):
         if ex is None:
             break
         session.answer(ex.word.word_to)
-    history = session.db.get_answer_history("u1")
+    history = session.db.get_answer_history(1)
     assert len(history) == 3
 
 
@@ -517,7 +518,7 @@ def test_multiple_answers_recorded(session):
 def test_session_respects_max_new_cards(db_with_words):
     config = ReviewConfig(max_new_cards=2)
     s = Session(
-        db_with_words, "u1", "en", "es",
+        db_with_words, 1, "en", "es",
         review_config=config,
     )
     served = []
@@ -536,7 +537,7 @@ def test_session_respects_max_review_cards(db_with_words):
     all_words = db_with_words.get_words("en", "es")
     for w in all_words:
         db_with_words.upsert_progress(UserProgress(
-            user_id="u1",
+            user_id=1,
             word_id=w.id,
             state=CardState.REVIEW,
             next_review=datetime(2020, 1, 1),
@@ -544,7 +545,7 @@ def test_session_respects_max_review_cards(db_with_words):
 
     config = ReviewConfig(max_review_cards=1)
     s = Session(
-        db_with_words, "u1", "en", "es",
+        db_with_words, 1, "en", "es",
         mode=SessionMode.REVIEW_DUE,
         review_config=config,
     )
@@ -568,7 +569,7 @@ def test_session_respects_max_review_cards(db_with_words):
 
 def test_sibling_burying_skips_shown_words(db_with_words):
     s = Session(
-        db_with_words, user_id="u1",
+        db_with_words, user_id=1,
         language_from="en", language_to="es",
     )
     seen_word_ids: set[int | None] = set()

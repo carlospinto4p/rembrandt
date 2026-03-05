@@ -100,7 +100,7 @@ class LessonProgress(BaseModel):
     """Progress statistics for a user within a lesson.
 
     :param lesson_id: Lesson identifier.
-    :param user_id: User identifier.
+    :param user_id: The user's database id.
     :param words_total: Total words in the lesson.
     :param words_studied: Words with at least one review.
     :param words_mastered: Words with `repetitions >= 3`.
@@ -109,7 +109,7 @@ class LessonProgress(BaseModel):
     """
 
     lesson_id: int
-    user_id: str
+    user_id: int
     words_total: int
     words_studied: int
     words_mastered: int
@@ -294,7 +294,7 @@ class SessionStats(BaseModel):
 class UserProgress(BaseModel):
     """Spaced-repetition progress for a user-word pair.
 
-    :param user_id: Identifier for the user.
+    :param user_id: The user's database id.
     :param word_id: Identifier for the word.
     :param easiness_factor: SM-2 easiness factor (>= 1.3).
     :param interval: Days until next review.
@@ -307,7 +307,7 @@ class UserProgress(BaseModel):
         failures). Does not reset on success.
     """
 
-    user_id: str
+    user_id: int
     word_id: int
     easiness_factor: float = 2.5
     interval: int = 0
@@ -341,7 +341,7 @@ class AnswerHistory(BaseModel):
     """A single recorded answer in the history log.
 
     :param id: Unique identifier (assigned by the database).
-    :param user_id: Identifier for the user.
+    :param user_id: The user's database id.
     :param word_id: Identifier for the word.
     :param exercise_type: The exercise type used.
     :param correct: Whether the answer was correct.
@@ -350,7 +350,7 @@ class AnswerHistory(BaseModel):
     """
 
     id: int | None = None
-    user_id: str
+    user_id: int
     word_id: int
     exercise_type: str
     correct: bool

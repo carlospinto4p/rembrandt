@@ -25,7 +25,7 @@ LABELS = {
 
 
 def main() -> None:
-    progress = UserProgress(user_id="demo", word_id=1)
+    progress = UserProgress(user_id=1, word_id=1)
 
     # Simulate a sequence of reviews with varying quality
     qualities = [5, 4, 5, 2, 5, 5, 4, 5]

@@ -55,6 +55,8 @@ def main() -> None:
 
     # --- Step 3: Run a session using the expanded pools ---
     with Database(_DB_PATH) as db:
+        user = db.register_user("demo", "demo")
+
         db.add_words([
             Word(
                 language_from="en", language_to="es",
@@ -80,7 +82,7 @@ def main() -> None:
 
         session = Session(
             db=db,
-            user_id="demo",
+            user_id=user.id,
             language_from="en",
             language_to="es",
         )

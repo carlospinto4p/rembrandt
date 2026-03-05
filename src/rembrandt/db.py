@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS words (
 );
 
 CREATE TABLE IF NOT EXISTS progress (
-    user_id          TEXT    NOT NULL,
+    user_id          INTEGER NOT NULL,
     word_id          INTEGER NOT NULL,
     easiness_factor  REAL    NOT NULL DEFAULT 2.5,
     interval         INTEGER NOT NULL DEFAULT 0,
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS progress (
     state            TEXT    NOT NULL DEFAULT 'new',
     step_index       INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (user_id, word_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (word_id) REFERENCES words(id)
 );
 
@@ -87,12 +88,13 @@ CREATE TABLE IF NOT EXISTS lesson_words (
 
 CREATE TABLE IF NOT EXISTS answer_history (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id       TEXT    NOT NULL,
+    user_id       INTEGER NOT NULL,
     word_id       INTEGER NOT NULL,
     exercise_type TEXT    NOT NULL,
     correct       INTEGER NOT NULL,
     quality       INTEGER NOT NULL,
     answered_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (word_id) REFERENCES words(id)
 );
 """
@@ -259,6 +261,69 @@ class Database:
                     "ADD COLUMN lapse_count INTEGER "
                     "NOT NULL DEFAULT 0"
                 )
+        self._migrate_user_id_to_int()
+
+    def _migrate_user_id_to_int(self) -> None:
+        """Migrate user_id from TEXT to INTEGER."""
+        col_info = self._conn.execute(
+            "PRAGMA table_info(progress)"
+        ).fetchall()
+        col_types = {row[1]: row[2] for row in col_info}
+        if col_types.get("user_id", "").upper() != "TEXT":
+            return
+        with self._conn:
+            self._conn.executescript("""
+                CREATE TABLE progress_new (
+                    user_id INTEGER NOT NULL,
+                    word_id INTEGER NOT NULL,
+                    easiness_factor REAL NOT NULL DEFAULT 2.5,
+                    interval INTEGER NOT NULL DEFAULT 0,
+                    repetitions INTEGER NOT NULL DEFAULT 0,
+                    next_review TEXT NOT NULL,
+                    state TEXT NOT NULL DEFAULT 'new',
+                    step_index INTEGER NOT NULL DEFAULT 0,
+                    lapse_count INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (user_id, word_id),
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id),
+                    FOREIGN KEY (word_id)
+                        REFERENCES words(id)
+                );
+                INSERT INTO progress_new
+                    SELECT CAST(user_id AS INTEGER),
+                        word_id, easiness_factor,
+                        interval, repetitions,
+                        next_review, state,
+                        step_index, lapse_count
+                    FROM progress;
+                DROP TABLE progress;
+                ALTER TABLE progress_new
+                    RENAME TO progress;
+
+                CREATE TABLE answer_history_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    word_id INTEGER NOT NULL,
+                    exercise_type TEXT NOT NULL,
+                    correct INTEGER NOT NULL,
+                    quality INTEGER NOT NULL,
+                    answered_at TEXT NOT NULL
+                        DEFAULT (datetime('now')),
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id),
+                    FOREIGN KEY (word_id)
+                        REFERENCES words(id)
+                );
+                INSERT INTO answer_history_new
+                    SELECT id,
+                        CAST(user_id AS INTEGER),
+                        word_id, exercise_type,
+                        correct, quality, answered_at
+                    FROM answer_history;
+                DROP TABLE answer_history;
+                ALTER TABLE answer_history_new
+                    RENAME TO answer_history;
+            """)
 
     # -- Users --------------------------------------------------------
 
@@ -577,12 +642,12 @@ class Database:
 
     def get_progress(
         self,
-        user_id: str,
+        user_id: int,
         word_id: int,
     ) -> UserProgress | None:
         """Fetch progress for a user-word pair.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_id: The word identifier.
         :return: `UserProgress` or `None` if no record exists.
         """
@@ -597,12 +662,12 @@ class Database:
 
     def get_all_progress(
         self,
-        user_id: str,
+        user_id: int,
         word_ids: list[int],
     ) -> dict[int, UserProgress]:
         """Fetch progress for multiple words in a single query.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_ids: List of word identifiers.
         :return: Dict mapping `word_id` to `UserProgress` for
             words that have a progress record.
@@ -654,7 +719,7 @@ class Database:
         self._conn.commit()
 
     def export_progress(
-        self, user_id: str,
+        self, user_id: int,
     ) -> list[dict]:
         """Export all progress rows for a user as dicts.
 
@@ -663,7 +728,7 @@ class Database:
         `next_review` (ISO 8601 string), `state`, and
         `step_index`. The result is JSON-serializable.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :return: List of progress dicts.
         """
         rows = self._conn.execute(
@@ -755,7 +820,7 @@ class Database:
 
     def record_answer(
         self,
-        user_id: str,
+        user_id: int,
         word_id: int,
         exercise_type: str,
         correct: bool,
@@ -763,7 +828,7 @@ class Database:
     ) -> None:
         """Record a single answer in the history log.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param word_id: The word identifier.
         :param exercise_type: The exercise type string.
         :param correct: Whether the answer was correct.
@@ -783,14 +848,14 @@ class Database:
 
     def get_answer_history(
         self,
-        user_id: str,
+        user_id: int,
         *,
         limit: int = 100,
         since: datetime | None = None,
     ) -> list[AnswerHistory]:
         """Fetch recent answer history for a user.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param limit: Maximum number of records to return.
         :param since: Only return answers after this datetime.
         :return: List of `AnswerHistory` records, newest first.
@@ -802,7 +867,7 @@ class Database:
             "FROM answer_history "
             "WHERE user_id = ? "
         )
-        params: list[str | int] = [user_id]
+        params: list[int | str] = [user_id]
         if since is not None:
             sql += "AND answered_at >= ? "
             params.append(since.strftime(_ISO_FMT))
@@ -831,13 +896,13 @@ class Database:
 
     def daily_stats(
         self,
-        user_id: str,
+        user_id: int,
         *,
         days: int = 30,
     ) -> list[DailyStats]:
         """Aggregate answer history into daily statistics.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param days: Number of past days to include.
         :return: List of `DailyStats`, most recent first.
         """
@@ -861,7 +926,7 @@ class Database:
 
     def weak_words(
         self,
-        user_id: str,
+        user_id: int,
         language_from: str,
         language_to: str,
         *,
@@ -874,7 +939,7 @@ class Database:
         A word is "weak" when its error rate meets or exceeds
         `threshold` and it has at least `min_attempts` answers.
 
-        :param user_id: The user identifier.
+        :param user_id: The user's database id.
         :param language_from: Source language code.
         :param language_to: Target language code.
         :param threshold: Minimum error rate (0.0-1.0).

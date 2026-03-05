@@ -73,9 +73,13 @@ def main() -> None:
                 ),
             ])
 
+        user = db.get_user("demo")
+        if user is None:
+            user = db.register_user("demo", "demo")
+
         session = Session(
             db=db,
-            user_id="demo",
+            user_id=user.id,
             language_from="en",
             language_to="en",
         )

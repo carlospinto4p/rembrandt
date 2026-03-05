@@ -32,7 +32,7 @@ def _run_reviews(
     label: str, cfg: ReviewConfig, qualities: list[int],
 ) -> None:
     """Run a sequence of reviews and show state evolution."""
-    progress = UserProgress(user_id="demo", word_id=1)
+    progress = UserProgress(user_id=1, word_id=1)
 
     header = (
         f"{'#':<4}"

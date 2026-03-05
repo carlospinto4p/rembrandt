@@ -70,7 +70,6 @@ def main() -> None:
         db_path=_DB_PATH,
         language_from="es",
         language_to="es",
-        user_id="demo",
     )
 
     print("=== Vocabulario en Español ===")
