@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v1.0.4 - 5th March 2026
+
+- Added `examples/18_tags_and_cefr.py`: demonstrates tag and CEFR
+  level metadata on words, filtering, and tag-scoped sessions.
+
+
 ### v1.0.3 - 5th March 2026
 
 - Added `examples/17_word_selection.py`: demonstrates advanced

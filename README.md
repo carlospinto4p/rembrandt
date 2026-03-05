@@ -370,6 +370,7 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `15_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
 | `16_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
 | `17_word_selection.py` | Advanced `select_words()`: modes, caps, weak priority, filtering |
+| `18_tags_and_cefr.py` | Organising vocabulary by tags and CEFR levels |
 
 Run any example with:
 

@@ -26,3 +26,11 @@
 - [x] Extract mastery threshold constant — `repetitions >= 3` in `lessons.py:123` should use a named constant (shared or local)
 - [x] Consolidate `session_db` and `db_with_words` test fixtures — both create an EN-ES database with 4-5 words; unify in `conftest.py` to reduce duplication
 - [x] Rename `quick_session` key params for consistency — `word_key`/`definition_key` → `word_from_key`/`word_to_key` to match codebase terminology (breaking change — major bump)
+
+
+### 2026.03.05 — Feature roadmap
+
+- [x] Add examples for all library functionalities — review existing examples, improve them, and add missing ones for full coverage
+- [ ] Add PostgreSQL database support with Docker Compose for production-ready persistence
+- [ ] Add user IDs to the database — persist sessions, vocabulary, and progress per user
+- [ ] Add Telegram bot support — design the interaction model and integrate with the library
