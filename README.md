@@ -368,6 +368,7 @@ The `examples/` folder contains runnable scripts that showcase the full API:
 | `13_answer_history.py` | Answer history, daily stats, weak word detection |
 | `14_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
 | `15_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
+| `16_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
 
 Run any example with:
 

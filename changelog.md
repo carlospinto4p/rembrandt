@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v1.0.2 - 5th March 2026
+
+- Added `examples/16_card_states.py`: walks through the full
+  `CardState` lifecycle (NEW → LEARNING → REVIEW → RELEARNING →
+  SUSPENDED) using the low-level `review()` API.
+
+
 ### v1.0.1 - 5th March 2026
 
 - Added `examples/15_review_config.py`: demonstrates `ReviewConfig`
