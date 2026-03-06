@@ -5,7 +5,7 @@ Runs a short quiz demonstrating `Session.hint()`,
 
 Usage::
 
-    uv run python examples/09_session_features.py
+    uv run python examples/exercises/07_session_features.py
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ from pathlib import Path
 from rembrandt import Database, Session, Word
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "session_features.db"
 )

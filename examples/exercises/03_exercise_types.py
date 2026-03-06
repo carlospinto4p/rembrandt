@@ -8,7 +8,7 @@ and sentence ordering.  Uses words with `gender` and
 
 Usage::
 
-    uv run python examples/03_exercise_types.py
+    uv run python examples/exercises/03_exercise_types.py
 """
 
 from pathlib import Path
@@ -17,7 +17,7 @@ from rembrandt import Database, Session, Word
 from rembrandt.models import ExerciseType
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "exercise_types.db"
 )

@@ -7,7 +7,7 @@ Demonstrates using `PostgresDatabase` instead of the default SQLite
 Usage::
 
     docker compose up -d
-    uv run python examples/19_postgres.py
+    uv run python examples/infrastructure/03_postgres.py
 """
 
 from rembrandt import PostgresDatabase, Word

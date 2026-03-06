@@ -9,7 +9,7 @@ Requires the data files in ``data/`` — see `README.md`.
 
 Usage::
 
-    uv run python examples/11_lessons_and_progress.py
+    uv run python examples/exercises/12_lessons_and_progress.py
 """
 
 from pathlib import Path
@@ -22,7 +22,7 @@ from rembrandt import (
     quick_session,
 )
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent.parent
 _VOCAB_PATH = _ROOT / "data" / "spanish_top10000.json"
 _LESSONS_PATH = _ROOT / "data" / "spanish_lessons.json"
 _DB_PATH = _ROOT / "data" / "lessons_demo.db"

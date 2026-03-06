@@ -6,7 +6,7 @@ and validating/revoking session tokens.
 
 Usage::
 
-    uv run python examples/08_user_auth.py
+    uv run python examples/infrastructure/02_user_auth.py
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from pathlib import Path
 from rembrandt import Database
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "user_auth.db"
 )

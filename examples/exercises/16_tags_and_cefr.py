@@ -5,7 +5,7 @@ application code, and run tag-scoped or level-scoped sessions.
 
 Usage::
 
-    uv run python examples/18_tags_and_cefr.py
+    uv run python examples/exercises/16_tags_and_cefr.py
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ from pathlib import Path
 from rembrandt import Database, Session, Word
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "tags_cefr_demo.db"
 )

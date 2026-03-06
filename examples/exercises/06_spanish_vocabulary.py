@@ -7,7 +7,7 @@ reverse flashcard, and self-graded.
 
 Usage::
 
-    uv run python examples/07_spanish_vocabulary.py
+    uv run python examples/exercises/06_spanish_vocabulary.py
 """
 
 from pathlib import Path
@@ -16,7 +16,7 @@ from rembrandt import quick_session
 from rembrandt.models import ExerciseType
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "spanish_definitions.db"
 )

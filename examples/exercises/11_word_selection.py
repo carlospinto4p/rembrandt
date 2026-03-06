@@ -6,7 +6,7 @@ filtering, and `exclude_word_ids` for sibling burying.
 
 Usage::
 
-    uv run python examples/17_word_selection.py
+    uv run python examples/exercises/11_word_selection.py
 """
 
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ from rembrandt.models import UserProgress
 from rembrandt.spaced_repetition import review, select_words
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "selection_demo.db"
 )

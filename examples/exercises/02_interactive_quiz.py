@@ -7,7 +7,7 @@ between runs — switch to `MIXED` or `REVIEW_DUE` on later runs.
 
 Usage::
 
-    uv run python examples/02_interactive_quiz.py
+    uv run python examples/exercises/02_interactive_quiz.py
 """
 
 from pathlib import Path
@@ -16,7 +16,7 @@ from rembrandt import Database, Session, SessionMode, Word
 from rembrandt.models import ExerciseType
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "interactive_quiz.db"
 )

@@ -5,7 +5,7 @@ printing the type, prompt, and auto-answer for each one.
 
 Usage::
 
-    uv run python examples/01_quickstart.py
+    uv run python examples/exercises/01_quickstart.py
 """
 
 from pathlib import Path
@@ -14,7 +14,7 @@ from rembrandt import quick_session
 from rembrandt.models import ExerciseType
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "quickstart.db"
 )

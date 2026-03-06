@@ -7,14 +7,14 @@ the records into a second database and verifies the roundtrip.
 
 Usage::
 
-    uv run python examples/12_progress_export_import.py
+    uv run python examples/exercises/14_progress_export_import.py
 """
 
 from pathlib import Path
 
 from rembrandt import Database, Session, Word
 
-_ROOT = Path(__file__).resolve().parent.parent / "data"
+_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
 _DB_SRC = _ROOT / "export_demo_src.db"
 _DB_DST = _ROOT / "export_demo_dst.db"
 

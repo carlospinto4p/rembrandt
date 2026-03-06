@@ -5,7 +5,7 @@ using the `Database` API.
 
 Usage::
 
-    uv run python examples/10_crud_operations.py
+    uv run python examples/infrastructure/01_crud_operations.py
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ from pathlib import Path
 from rembrandt import Database, Lesson, Word
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "crud_demo.db"
 )

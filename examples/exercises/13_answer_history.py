@@ -8,7 +8,7 @@ a mix of correct and incorrect answers, then queries
 
 Usage::
 
-    uv run python examples/13_answer_history.py
+    uv run python examples/exercises/13_answer_history.py
 """
 
 from pathlib import Path
@@ -17,7 +17,7 @@ from rembrandt import Database, Session, Word
 from rembrandt.spaced_repetition import select_words
 
 _DB_PATH = (
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent.parent
     / "data"
     / "history_demo.db"
 )

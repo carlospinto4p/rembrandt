@@ -7,7 +7,7 @@ single call. Progress is persisted between runs.
 
 Usage::
 
-    uv run python examples/06_spanish_translation_quiz.py
+    uv run python examples/exercises/05_spanish_translation_quiz.py
 """
 
 from pathlib import Path
@@ -15,7 +15,7 @@ from pathlib import Path
 from rembrandt import quick_session
 from rembrandt.models import ExerciseType
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent.parent
 _VOCAB_PATH = _ROOT / "data" / "spanish_top10000.json"
 _DB_PATH = _ROOT / "data" / "spanish_vocab.db"
 _TOP_N = 500

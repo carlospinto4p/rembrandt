@@ -7,7 +7,7 @@ exercises that use the expanded pools.
 
 Usage::
 
-    uv run python examples/14_custom_templates.py
+    uv run python examples/exercises/15_custom_templates.py
 """
 
 import json
@@ -15,7 +15,7 @@ from pathlib import Path
 
 from rembrandt import Database, Session, Word, load_exercise_config
 
-_ROOT = Path(__file__).resolve().parent.parent / "data"
+_ROOT = Path(__file__).resolve().parent.parent.parent / "data"
 _DB_PATH = _ROOT / "custom_config_demo.db"
 _CONFIG_PATH = _ROOT / "custom_config_demo.json"
 

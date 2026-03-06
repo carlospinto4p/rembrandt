@@ -386,32 +386,45 @@ The `docs/` folder explains the theory behind the library:
 
 ## Examples
 
-The `examples/` folder contains runnable scripts that showcase the full API:
+The `examples/` folder contains runnable scripts organised into two
+categories:
+
+### Exercises
+
+Core learning features — exercise types, spaced repetition, sessions,
+and progress tracking.
 
 | Script | Description |
 |--------|-------------|
 | `01_quickstart.py` | Minimal demo using `quick_session()` with an inline word list |
 | `02_interactive_quiz.py` | CLI quiz loop with `SessionMode` and `session.summary()` |
 | `03_exercise_types.py` | All exercise types: gender match, conjugation, cloze, etc. |
-| `04_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
-| `05_definition_quiz.py` | Interactive monolingual definition-based quiz |
-| `06_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
-| `07_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
-| `08_user_auth.py` | User registration, authentication, and session tokens |
-| `09_session_features.py` | Hints, skip, and session statistics |
-| `10_crud_operations.py` | Word and lesson create/update/delete |
-| `11_lessons_and_progress.py` | Lesson loading, progress tracking, and lesson-scoped sessions |
-| `12_progress_export_import.py` | Export and import spaced-repetition progress between databases |
+| `04_definition_quiz.py` | Interactive monolingual definition-based quiz |
+| `05_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
+| `06_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
+| `07_session_features.py` | Hints, skip, and session statistics |
+| `08_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
+| `09_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
+| `10_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
+| `11_word_selection.py` | Advanced `select_words()`: modes, caps, weak priority, filtering |
+| `12_lessons_and_progress.py` | Lesson loading, progress tracking, and lesson-scoped sessions |
 | `13_answer_history.py` | Answer history, daily stats, weak word detection |
-| `14_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
-| `15_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
-| `16_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
-| `17_word_selection.py` | Advanced `select_words()`: modes, caps, weak priority, filtering |
-| `18_tags_and_cefr.py` | Organising vocabulary by tags and CEFR levels |
-| `19_postgres.py` | PostgreSQL backend with Docker Compose |
+| `14_progress_export_import.py` | Export and import spaced-repetition progress between databases |
+| `15_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
+| `16_tags_and_cefr.py` | Organising vocabulary by tags and CEFR levels |
+
+### Infrastructure
+
+Database backends, CRUD operations, and user authentication.
+
+| Script | Description |
+|--------|-------------|
+| `01_crud_operations.py` | Word and lesson create/update/delete |
+| `02_user_auth.py` | User registration, authentication, and session tokens |
+| `03_postgres.py` | PostgreSQL backend with Docker Compose |
 
 Run any example with:
 
 ```bash
-uv run python examples/01_quickstart.py
+uv run python examples/exercises/01_quickstart.py
 ```

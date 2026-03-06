@@ -6,7 +6,7 @@ leech threshold, daily card limits, and fuzz factor.
 
 Usage::
 
-    uv run python examples/15_review_config.py
+    uv run python examples/exercises/09_review_config.py
 """
 
 from rembrandt import ReviewConfig

@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v2.0.1 - 6th March 2026
+
+- Reorganised `examples/` into two subfolders:
+  - `exercises/`: 16 examples showcasing core learning features
+  - `infrastructure/`: 3 examples for database backends and auth
+- Renumbered examples for logical flow within each category.
+- Updated `README.md` examples section with new folder structure.
+
+
 ### v2.0.0 - 6th March 2026
 
 - Changed `user_id` from `str` to `int` across all models:

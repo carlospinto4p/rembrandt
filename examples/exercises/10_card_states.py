@@ -7,7 +7,7 @@ after each review.
 
 Usage::
 
-    uv run python examples/16_card_states.py
+    uv run python examples/exercises/10_card_states.py
 """
 
 from rembrandt import CardState, ReviewConfig

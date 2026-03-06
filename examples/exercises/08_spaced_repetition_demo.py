@@ -7,7 +7,7 @@ low-level `review()` function and `UserProgress` model.
 
 Usage::
 
-    uv run python examples/04_spaced_repetition_demo.py
+    uv run python examples/exercises/08_spaced_repetition_demo.py
 """
 
 from rembrandt.models import UserProgress
