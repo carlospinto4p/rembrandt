@@ -1,6 +1,21 @@
 
 ## Changelog - Rembrandt
 
+### v2.1.0 - 6th March 2026
+
+- Added `owner_id` field to `Word` model: `None` for shared words,
+  user id for private words.
+- Added `owner_id` parameter to `Database.add_word()` and
+  `PostgresDatabase.add_word()`.
+- Added `owner_id` filter to `Database.get_words()` and
+  `PostgresDatabase.get_words()`: when provided, returns shared
+  words plus the specified user's private words.
+- Added auto-migration for `owner_id` column on existing databases
+  (both SQLite and PostgreSQL).
+- Added `SPEC_rembrandt_telegram.md`: specification document for the
+  Telegram bot integration project.
+
+
 ### v2.0.1 - 6th March 2026
 
 - Reorganised `examples/` into two subfolders:

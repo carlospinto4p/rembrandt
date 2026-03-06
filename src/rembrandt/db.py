@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS words (
     conjugation_group TEXT,
     tags              TEXT NOT NULL DEFAULT '[]',
     cefr              TEXT,
-    created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+    owner_id          INTEGER,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS progress (
@@ -116,7 +118,7 @@ _WEAK_WORDS_SQL = (
     "SELECT w.id, w.language_from, "
     "w.language_to, w.word_from, w.word_to, "
     "w.gender, w.conjugation_group, "
-    "w.tags, w.cefr, "
+    "w.tags, w.cefr, w.owner_id, "
     "COUNT(*) AS attempts, "
     "SUM(CASE WHEN ah.correct = 0 "
     "    THEN 1 ELSE 0 END) AS errors, "
@@ -198,6 +200,7 @@ def _row_to_word(r: sqlite3.Row) -> Word:
         conjugation_group=r["conjugation_group"],
         tags=json.loads(r["tags"]),
         cefr=r["cefr"],
+        owner_id=r["owner_id"],
     )
 
 
@@ -261,7 +264,24 @@ class Database:
                     "ADD COLUMN lapse_count INTEGER "
                     "NOT NULL DEFAULT 0"
                 )
+        self._migrate_words_owner_id()
         self._migrate_user_id_to_int()
+
+    def _migrate_words_owner_id(self) -> None:
+        """Add owner_id column to words table."""
+        cols = {
+            row[1]
+            for row in self._conn.execute(
+                "PRAGMA table_info(words)"
+            )
+        }
+        if "owner_id" not in cols:
+            with self._conn:
+                self._conn.execute(
+                    "ALTER TABLE words "
+                    "ADD COLUMN owner_id INTEGER "
+                    "REFERENCES users(id)"
+                )
 
     def _migrate_user_id_to_int(self) -> None:
         """Migrate user_id from TEXT to INTEGER."""
@@ -491,6 +511,7 @@ class Database:
         conjugation_group: str | None = None,
         tags: list[str] | None = None,
         cefr: str | None = None,
+        owner_id: int | None = None,
     ) -> Word:
         """Insert a single word and return it with its new id.
 
@@ -503,20 +524,24 @@ class Database:
             (`"ar"`, `"er"`, or `"ir"`).
         :param tags: Topic tags.
         :param cefr: CEFR level (`"A1"` through `"C2"`).
+        :param owner_id: User who owns this word. `None` for
+            shared words visible to all users.
         :return: The inserted `Word` with its assigned id.
         """
         tags = tags or []
         cur = self._conn.execute(
             "INSERT INTO words "
             "(language_from, language_to, word_from, word_to,"
-            " gender, conjugation_group, tags, cefr) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            " gender, conjugation_group, tags, cefr,"
+            " owner_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 language_from, language_to,
                 word_from, word_to,
                 gender, conjugation_group,
                 json.dumps(tags),
                 cefr,
+                owner_id,
             ),
         )
         self._conn.commit()
@@ -530,6 +555,7 @@ class Database:
             conjugation_group=conjugation_group,
             tags=tags,
             cefr=cefr,
+            owner_id=owner_id,
         )
 
     def add_words(
@@ -549,14 +575,16 @@ class Database:
                     "INSERT INTO words "
                     "(language_from, language_to, "
                     "word_from, word_to, "
-                    "gender, conjugation_group, tags, cefr) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "gender, conjugation_group, tags,"
+                    " cefr, owner_id) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         w.language_from, w.language_to,
                         w.word_from, w.word_to,
                         w.gender, w.conjugation_group,
                         json.dumps(w.tags),
                         w.cefr,
+                        w.owner_id,
                     ),
                 )
                 result.append(
@@ -568,20 +596,37 @@ class Database:
         self,
         language_from: str,
         language_to: str,
+        *,
+        owner_id: int | None = None,
     ) -> list[Word]:
-        """Return all words for a language pair.
+        """Return words for a language pair.
+
+        When `owner_id` is provided, returns shared words
+        (``owner_id IS NULL``) plus words owned by that user.
+        When omitted, returns all words regardless of owner.
 
         :param language_from: Source language code.
         :param language_to: Target language code.
+        :param owner_id: Filter to shared + this user's words.
         :return: List of matching `Word` objects.
         """
-        rows = self._conn.execute(
+        sql = (
             "SELECT id, language_from, language_to, "
             "word_from, word_to, "
-            "gender, conjugation_group, tags, cefr "
+            "gender, conjugation_group, tags, cefr, "
+            "owner_id "
             "FROM words "
-            "WHERE language_from = ? AND language_to = ?",
-            (language_from, language_to),
+            "WHERE language_from = ? AND language_to = ?"
+        )
+        params: list = [language_from, language_to]
+        if owner_id is not None:
+            sql += (
+                " AND (owner_id IS NULL"
+                " OR owner_id = ?)"
+            )
+            params.append(owner_id)
+        rows = self._conn.execute(
+            sql, params,
         ).fetchall()
         return [_row_to_word(r) for r in rows]
 
@@ -601,7 +646,7 @@ class Database:
             "language_from = ?, language_to = ?, "
             "word_from = ?, word_to = ?, "
             "gender = ?, conjugation_group = ?, "
-            "tags = ?, cefr = ? "
+            "tags = ?, cefr = ?, owner_id = ? "
             "WHERE id = ?",
             (
                 word.language_from,
@@ -612,6 +657,7 @@ class Database:
                 word.conjugation_group,
                 json.dumps(word.tags),
                 word.cefr,
+                word.owner_id,
                 word.id,
             ),
         )
@@ -968,6 +1014,7 @@ class Database:
                     ),
                     tags=json.loads(r["tags"]),
                     cefr=r["cefr"],
+                    owner_id=r["owner_id"],
                 ),
                 attempts=r["attempts"],
                 errors=r["errors"],

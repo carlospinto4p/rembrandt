@@ -21,6 +21,8 @@ class Word(BaseModel):
     :param tags: Topic tags (e.g. `["food", "travel"]`).
     :param cefr: CEFR level (`"A1"` through `"C2"`), `None`
         when not assigned.
+    :param owner_id: User who created this word. `None` means
+        the word is shared (visible to all users).
     """
 
     id: int | None = None
@@ -32,6 +34,7 @@ class Word(BaseModel):
     conjugation_group: str | None = None
     tags: list[str] = Field(default_factory=list)
     cefr: str | None = None
+    owner_id: int | None = None
 
 
 class Lesson(BaseModel):

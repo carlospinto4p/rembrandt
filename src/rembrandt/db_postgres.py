@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS words (
     conjugation_group TEXT,
     tags              JSONB NOT NULL DEFAULT '[]',
     cefr              TEXT,
+    owner_id          INTEGER REFERENCES users(id),
     created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -119,7 +120,7 @@ _WEAK_WORDS_SQL = (
     "SELECT w.id, w.language_from, "
     "w.language_to, w.word_from, w.word_to, "
     "w.gender, w.conjugation_group, "
-    "w.tags, w.cefr, "
+    "w.tags, w.cefr, w.owner_id, "
     "COUNT(*) AS attempts, "
     "SUM(CASE WHEN NOT ah.correct "
     "    THEN 1 ELSE 0 END) AS errors, "
@@ -132,7 +133,7 @@ _WEAK_WORDS_SQL = (
     "GROUP BY w.id, w.language_from, "
     "w.language_to, w.word_from, w.word_to, "
     "w.gender, w.conjugation_group, "
-    "w.tags, w.cefr "
+    "w.tags, w.cefr, w.owner_id "
     "HAVING COUNT(*) >= %s "
     "AND CAST(SUM(CASE WHEN NOT ah.correct "
     "    THEN 1 ELSE 0 END) AS REAL) "
@@ -209,6 +210,7 @@ def _row_to_word(r: dict) -> Word:
         conjugation_group=r["conjugation_group"],
         tags=tags,
         cefr=r["cefr"],
+        owner_id=r["owner_id"],
     )
 
 
@@ -247,6 +249,24 @@ class PostgresDatabase:
                 statement = statement.strip()
                 if statement:
                     cur.execute(statement)
+        self._conn.commit()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Add columns introduced after the initial schema."""
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name = 'words'"
+            )
+            cols = {r["column_name"] for r in cur.fetchall()}
+            if "owner_id" not in cols:
+                cur.execute(
+                    "ALTER TABLE words "
+                    "ADD COLUMN owner_id INTEGER "
+                    "REFERENCES users(id)"
+                )
         self._conn.commit()
 
     # -- Users --------------------------------------------------------
@@ -423,6 +443,7 @@ class PostgresDatabase:
         conjugation_group: str | None = None,
         tags: list[str] | None = None,
         cefr: str | None = None,
+        owner_id: int | None = None,
     ) -> Word:
         """Insert a single word and return it with its new id.
 
@@ -435,6 +456,8 @@ class PostgresDatabase:
             (`"ar"`, `"er"`, or `"ir"`).
         :param tags: Topic tags.
         :param cefr: CEFR level (`"A1"` through `"C2"`).
+        :param owner_id: User who owns this word. `None` for
+            shared words visible to all users.
         :return: The inserted `Word` with its assigned id.
         """
         tags = tags or []
@@ -443,14 +466,15 @@ class PostgresDatabase:
                 "INSERT INTO words "
                 "(language_from, language_to, word_from, "
                 "word_to, gender, conjugation_group, "
-                "tags, cefr) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+                "tags, cefr, owner_id) "
+                "VALUES "
+                "(%s, %s, %s, %s, %s, %s, %s, %s, %s) "
                 "RETURNING id",
                 (
                     language_from, language_to,
                     word_from, word_to,
                     gender, conjugation_group,
-                    Json(tags), cefr,
+                    Json(tags), cefr, owner_id,
                 ),
             )
             row = cur.fetchone()
@@ -465,6 +489,7 @@ class PostgresDatabase:
             conjugation_group=conjugation_group,
             tags=tags,
             cefr=cefr,
+            owner_id=owner_id,
         )
 
     def add_words(
@@ -486,15 +511,17 @@ class PostgresDatabase:
                     "(language_from, language_to, "
                     "word_from, word_to, "
                     "gender, conjugation_group, "
-                    "tags, cefr) "
+                    "tags, cefr, owner_id) "
                     "VALUES "
-                    "(%s, %s, %s, %s, %s, %s, %s, %s) "
+                    "(%s, %s, %s, %s, %s, %s, "
+                    "%s, %s, %s) "
                     "RETURNING id",
                     (
                         w.language_from, w.language_to,
                         w.word_from, w.word_to,
                         w.gender, w.conjugation_group,
                         Json(w.tags), w.cefr,
+                        w.owner_id,
                     ),
                 )
                 row = cur.fetchone()
@@ -510,23 +537,38 @@ class PostgresDatabase:
         self,
         language_from: str,
         language_to: str,
+        *,
+        owner_id: int | None = None,
     ) -> list[Word]:
-        """Return all words for a language pair.
+        """Return words for a language pair.
+
+        When `owner_id` is provided, returns shared words
+        (``owner_id IS NULL``) plus words owned by that user.
+        When omitted, returns all words regardless of owner.
 
         :param language_from: Source language code.
         :param language_to: Target language code.
+        :param owner_id: Filter to shared + this user's words.
         :return: List of matching `Word` objects.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, language_from, language_to, "
-                "word_from, word_to, "
-                "gender, conjugation_group, tags, cefr "
-                "FROM words "
-                "WHERE language_from = %s "
-                "AND language_to = %s",
-                (language_from, language_to),
+        sql = (
+            "SELECT id, language_from, language_to, "
+            "word_from, word_to, "
+            "gender, conjugation_group, tags, cefr, "
+            "owner_id "
+            "FROM words "
+            "WHERE language_from = %s "
+            "AND language_to = %s"
+        )
+        params: list = [language_from, language_to]
+        if owner_id is not None:
+            sql += (
+                " AND (owner_id IS NULL"
+                " OR owner_id = %s)"
             )
+            params.append(owner_id)
+        with self._conn.cursor() as cur:
+            cur.execute(sql, params)
             rows = cur.fetchall()
         return [_row_to_word(r) for r in rows]
 
@@ -547,7 +589,8 @@ class PostgresDatabase:
                 "language_from = %s, language_to = %s, "
                 "word_from = %s, word_to = %s, "
                 "gender = %s, conjugation_group = %s, "
-                "tags = %s, cefr = %s "
+                "tags = %s, cefr = %s, "
+                "owner_id = %s "
                 "WHERE id = %s",
                 (
                     word.language_from,
@@ -558,6 +601,7 @@ class PostgresDatabase:
                     word.conjugation_group,
                     Json(word.tags),
                     word.cefr,
+                    word.owner_id,
                     word.id,
                 ),
             )
