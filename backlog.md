@@ -28,6 +28,20 @@
 - [x] Rename `quick_session` key params for consistency — `word_key`/`definition_key` → `word_from_key`/`word_to_key` to match codebase terminology (breaking change — major bump)
 
 
+### 2026.03.09 — Improvements pass
+
+- [ ] Add fuzzy answer matching (Levenshtein distance) to `_answers_match()` — accept near-misses with a warning instead of marking wrong
+- [ ] Add retention & forecast analytics — `retention_rate(user_id)` and `forecast(user_id, days)` for review load prediction
+- [ ] Add CSV/TSV word import — `import_words_csv(path)` for bulk-loading vocabulary from spreadsheets
+- [ ] Add FSRS algorithm as alternative to SM-2 — modern, data-driven scheduler with better retention
+- [ ] Add `LISTENING` exercise type — TTS URL generation via pluggable provider for audio comprehension drills
+- [ ] Add Anki `.apkg` export — export decks in Anki's package format for interoperability
+- [ ] Add `SessionMode.EXAM` — timed session with configurable limit and final score
+- [ ] Add richer hints — example sentence hints and "reveal next letter" progression to `Session.hint()`
+- [ ] Add leech management — `unsuspend_word(user_id, word_id)` and `get_suspended(user_id)` methods
+- [ ] Add French conjugation engine — extend `conjugation.py` with French verb morphology (-er/-ir/-re + irregulars)
+
+
 ### 2026.03.05 — Feature roadmap
 
 - [x] Add examples for all library functionalities — review existing examples, improve them, and add missing ones for full coverage
