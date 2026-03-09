@@ -25,7 +25,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(pytest:*)",
       "Bash(uv sync:*)",
       "Bash(uv run:*)",
       "Bash(uv pip install:*)",

@@ -5,8 +5,8 @@
 **IMPORTANT**: After completing any task that involves code changes, ALWAYS follow this workflow:
 
 1. **Fix tests if needed**: If the changes require test updates, fix
-   them before committing. The `preCommit` hook runs the full test
-   suite automatically — you do not need to run tests manually.
+   them before committing (the `preCommit` hook will catch failures,
+   but fixing upfront avoids wasted commit attempts).
 2. **Update version and changelog**: Follow `versioning.md` rules. Include guideline changes (`.claude/rules/`, `CLAUDE.md`) in the changelog too.
 3. **Update README.md if needed**: When changes affect user-facing functionality:
    - New methods or classes: add usage examples
@@ -19,6 +19,7 @@
    the format below.
    - **Always include `uv.lock`** in the commit — run `git status` to
      verify it is staged before committing.
+   - Use simple `-m "..."` quoting for commit messages (no heredocs).
    - The `preCommit` hook will run tests; if they fail the commit is
      aborted — fix and retry.
 7. **Push to remote**: Push the changes with `git push`

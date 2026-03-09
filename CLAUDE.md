@@ -39,7 +39,6 @@ uv run ruff check src/ tests/ --fix
 ## Code Style
 
 - Line length: 78 characters (enforced by ruff)
-- Pydantic v2 for data validation
 - Type hints required
 - **Do NOT use `from __future__ import annotations`** — the project requires Python >= 3.13, so PEP 604 union syntax (`X | Y`) and all modern annotation features work natively
 - Docstring style: Sphinx/reST (`:param:`, `:return:`, `:raises:`)

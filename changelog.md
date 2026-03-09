@@ -1,6 +1,20 @@
 
 ## Changelog - Rembrandt
 
+### v2.1.1 - 9th March 2026
+
+- Self-refinement pass on Claude settings:
+  - `improvements.md`: rewrote "What to Look For" section (was
+    copied from a trading project, now Rembrandt-specific).
+  - `optimization.md`: removed async-specific bullets (no async
+    code), fixed irrelevant grouping example.
+  - `committing.md`: added `-m` quoting rule, clarified test step.
+  - `shell.md`: commit message quoting now consistent with
+    `committing.md`.
+- Removed "Pydantic v2" line from `CLAUDE.md` (discoverable from
+  `pyproject.toml`).
+
+
 ### v2.1.0 - 6th March 2026
 
 - Added `owner_id` field to `Word` model: `None` for shared words,
