@@ -68,14 +68,18 @@ print(f"Streak: {stats.streak}"
 
 ### Hints
 
-Request a hint before answering — reveals the first letter, word length,
-and a masked pattern:
+Request a hint before answering — each call progressively reveals one more
+letter. When the word has gender or conjugation data, an example sentence
+is included:
 
 ```python
 exercise = session.next_exercise()
-h = session.hint()
-print(f"Hint: {h.pattern} ({h.word_length} letters)")
-# e.g. "g___ (4 letters)"
+h = session.hint()   # "g___ (4 letters)"
+h = session.hint()   # "ga__ (4 letters)"
+h = session.hint()   # "gat_ (4 letters)"
+
+if h.example_sentence:
+    print(h.example_sentence)  # "El ___ es muy importante"
 ```
 
 ### Quick Session

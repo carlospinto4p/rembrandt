@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v2.5.0 - 9th March 2026
+
+- Updated `Session.hint()`: progressive reveal — each call shows
+  one more letter (e.g. `"g___"` → `"ga__"` → `"gat_"`).
+- Added `Hint.reveal_count` field: number of letters currently
+  revealed.
+- Added `Hint.example_sentence` field: a cloze sentence using the
+  word (with `___` blank) when the word has gender or conjugation
+  group, empty string otherwise.
+
+
 ### v2.4.0 - 9th March 2026
 
 - Added `import_words_csv()` in `db`: bulk-import words from CSV

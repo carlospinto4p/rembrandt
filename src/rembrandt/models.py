@@ -264,17 +264,26 @@ class AnswerResult(BaseModel):
 class Hint(BaseModel):
     """A partial hint for the current exercise.
 
+    Calling `Session.hint()` multiple times progressively
+    reveals more letters (e.g. `"g___"` → `"ga__"` → `"gat_"`).
+
     :param first_letter: The first character of the expected
         answer.
     :param word_length: The number of characters in the
         expected answer.
-    :param pattern: A masked pattern where only the first
-        letter is revealed (e.g. `"g___"`).
+    :param pattern: A masked pattern revealing `reveal_count`
+        letters from the start (e.g. `"ga__"`).
+    :param reveal_count: Number of letters currently revealed.
+    :param example_sentence: An example sentence using the
+        word (blank replaced with `___`), or empty string when
+        no sentence is available.
     """
 
     first_letter: str
     word_length: int
     pattern: str
+    reveal_count: int = 1
+    example_sentence: str = ""
 
 
 class SessionStats(BaseModel):

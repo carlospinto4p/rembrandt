@@ -37,7 +37,7 @@
 - [ ] Add `LISTENING` exercise type — TTS URL generation via pluggable provider for audio comprehension drills
 - [ ] Add Anki `.apkg` export — export decks in Anki's package format for interoperability
 - [ ] Add `SessionMode.EXAM` — timed session with configurable limit and final score
-- [ ] Add richer hints — example sentence hints and "reveal next letter" progression to `Session.hint()`
+- [x] Add richer hints — example sentence hints and "reveal next letter" progression to `Session.hint()`
 - [ ] Add leech management — `unsuspend_word(user_id, word_id)` and `get_suspended(user_id)` methods
 - [ ] Add French conjugation engine — extend `conjugation.py` with French verb morphology (-er/-ir/-re + irregulars)
 

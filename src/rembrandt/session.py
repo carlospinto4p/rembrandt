@@ -5,6 +5,7 @@ from pathlib import Path
 
 from rembrandt.db import Database
 from rembrandt.exercises import (
+    _spanish_word,
     evaluate_answer,
     generate_exercise,
 )
@@ -14,12 +15,15 @@ from rembrandt.models import (
     Exercise,
     ExerciseType,
     Hint,
+    LearningMode,
     ReviewConfig,
     SessionMode,
     SessionStats,
     UserProgress,
     Word,
+    learning_mode,
 )
+from rembrandt.sentences import generate_cloze
 from rembrandt.spaced_repetition import review, select_words
 
 
@@ -58,6 +62,7 @@ class Session:
         self._word_ids = word_ids
         self._review_config = review_config
         self._current_exercise: Exercise | None = None
+        self._hint_count = 0
         self._buried_word_ids: set[int] = set()
         self._correct = 0
         self._incorrect = 0
@@ -109,6 +114,7 @@ class Session:
         )
         exercise = generate_exercise(word, all_words)
         self._current_exercise = exercise
+        self._hint_count = 0
         return exercise
 
     def _track_served(self, word: Word) -> None:
@@ -217,11 +223,13 @@ class Session:
         return skipped
 
     def hint(self) -> Hint:
-        """Return a partial hint for the current exercise.
+        """Return a progressive hint for the current exercise.
 
-        The hint reveals the first letter, total length, and
-        a masked pattern (e.g. `"g___"`) of the expected
-        answer.
+        Each successive call reveals one more letter of the
+        expected answer (e.g. `"g___"` → `"ga__"` → `"gat_"`).
+        When the word has gender or a conjugation group, the
+        first call also includes an example sentence with a
+        blank.
 
         :return: A `Hint`.
         :raises RuntimeError: If no exercise is active.
@@ -237,13 +245,41 @@ class Session:
             answer = ex.word.word_from
         else:
             answer = ex.word.word_to
+
+        self._hint_count += 1
+        reveal = min(self._hint_count, len(answer))
+
         first = answer[0] if answer else ""
         length = len(answer)
-        pattern = first + "_" * (length - 1) if length else ""
+        pattern = (
+            answer[:reveal] + "_" * (length - reveal)
+            if length else ""
+        )
+
+        example = ""
+        if (
+            learning_mode(ex.word) == LearningMode.TRANSLATION
+            and (
+                ex.word.gender is not None
+                or ex.word.conjugation_group is not None
+            )
+        ):
+            spanish = _spanish_word(ex.word)
+            sentence, _ = generate_cloze(
+                spanish,
+                gender=ex.word.gender,
+                conjugation_group=(
+                    ex.word.conjugation_group
+                ),
+            )
+            example = sentence
+
         return Hint(
             first_letter=first,
             word_length=length,
             pattern=pattern,
+            reveal_count=reveal,
+            example_sentence=example,
         )
 
     def summary(self) -> SessionStats:

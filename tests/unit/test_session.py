@@ -13,6 +13,7 @@ from rembrandt.models import (
     ReviewConfig,
     SessionMode,
     UserProgress,
+    Word,
 )
 from rembrandt.session import Session, quick_session
 
@@ -183,6 +184,45 @@ def test_hint_pattern_format(session):
     assert h.pattern[0] == h.first_letter
     assert h.pattern.count("_") == h.word_length - 1
     assert len(h.pattern) == h.word_length
+    assert h.reveal_count == 1
+
+
+def test_hint_progressive_reveal(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    expected = ex.word.word_to
+    if ex.expected_answer:
+        expected = ex.expected_answer
+    h1 = session.hint()
+    assert h1.reveal_count == 1
+    assert h1.pattern == expected[0] + "_" * (len(expected) - 1)
+    h2 = session.hint()
+    assert h2.reveal_count == 2
+    assert h2.pattern[:2] == expected[:2]
+    assert h2.pattern.count("_") == len(expected) - 2
+
+
+def test_hint_reveal_caps_at_length(session):
+    ex = session.next_exercise()
+    assert ex is not None
+    expected = ex.word.word_to
+    if ex.expected_answer:
+        expected = ex.expected_answer
+    for _ in range(len(expected) + 5):
+        h = session.hint()
+    assert h.reveal_count == len(expected)
+    assert h.pattern == expected
+
+
+def test_hint_resets_on_new_exercise(session):
+    session.next_exercise()
+    session.hint()
+    session.hint()
+    session.answer("wrong")
+    ex2 = session.next_exercise()
+    assert ex2 is not None
+    h = session.hint()
+    assert h.reveal_count == 1
 
 
 def test_hint_without_exercise_raises(session):
@@ -197,6 +237,40 @@ def test_hint_does_not_consume_exercise(session):
     # Can still answer after getting a hint
     result = session.answer(ex.word.word_to)
     assert result is not None
+
+
+def test_hint_example_sentence_with_gender(tmp_path):
+    database = Database(tmp_path / "hint.db")
+    database.register_user("u1", "pass")
+    database.add_words([
+        Word(
+            language_from="en", language_to="es",
+            word_from="book", word_to="libro",
+            gender="m",
+        ),
+        Word(
+            language_from="en", language_to="es",
+            word_from="house", word_to="casa",
+            gender="f",
+        ),
+    ])
+    s = Session(
+        database, user_id=1,
+        language_from="en", language_to="es",
+    )
+    s.next_exercise()
+    h = s.hint()
+    assert h.example_sentence != ""
+    assert "___" in h.example_sentence
+    database.close()
+
+
+def test_hint_no_example_sentence_for_definitions(
+    definition_session,
+):
+    definition_session.next_exercise()
+    h = definition_session.hint()
+    assert h.example_sentence == ""
 
 
 # --- Skip Tests ---
