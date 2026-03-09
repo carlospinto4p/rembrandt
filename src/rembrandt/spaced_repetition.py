@@ -408,18 +408,13 @@ def select_words(
     if not all_words:
         return []
 
-    if word_ids is not None:
-        allowed = set(word_ids)
-        all_words = [
-            w for w in all_words if w.id in allowed
-        ]
-        if not all_words:
-            return []
-
-    if exclude_word_ids:
+    allowed = set(word_ids) if word_ids is not None else None
+    excluded = exclude_word_ids or set()
+    if allowed is not None or excluded:
         all_words = [
             w for w in all_words
-            if w.id not in exclude_word_ids
+            if (allowed is None or w.id in allowed)
+            and w.id not in excluded
         ]
         if not all_words:
             return []

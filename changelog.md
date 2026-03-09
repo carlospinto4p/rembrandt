@@ -1,6 +1,17 @@
 
 ## Changelog - Rembrandt
 
+### v2.6.2 - 9th March 2026
+
+- Optimised `Session.next_exercise()`: cache the word list instead of
+  querying the database on every call.
+- Added database indexes on `words(language_from, language_to)`,
+  `progress(user_id, state)`, and `answer_history(user_id, word_id)`
+  in both SQLite and PostgreSQL.
+- Optimised `select_words()`: merged allowed-IDs and excluded-IDs
+  filtering into a single list pass.
+
+
 ### v2.6.1 - 9th March 2026
 
 - Added git tags for all 33 previous version releases (v0.33.2–v2.6.0).

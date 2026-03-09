@@ -77,6 +77,7 @@ class Session:
         self._best_streak = 0
         self._new_served = 0
         self._review_served = 0
+        self._all_words: list[Word] | None = None
 
     def next_exercise(self) -> Exercise | None:
         """Select a word and generate an exercise.
@@ -116,10 +117,11 @@ class Session:
         if word.id is not None:
             self._buried_word_ids.add(word.id)
         self._track_served(word)
-        all_words = self.db.get_words(
-            self.language_from, self.language_to
-        )
-        exercise = generate_exercise(word, all_words)
+        if self._all_words is None:
+            self._all_words = self.db.get_words(
+                self.language_from, self.language_to,
+            )
+        exercise = generate_exercise(word, self._all_words)
         self._current_exercise = exercise
         self._hint_count = 0
         return exercise

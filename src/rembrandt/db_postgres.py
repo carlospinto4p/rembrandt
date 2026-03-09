@@ -292,6 +292,21 @@ class PostgresDatabase:
                     "ADD COLUMN difficulty "
                     "DOUBLE PRECISION"
                 )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS "
+                "idx_words_langs "
+                "ON words(language_from, language_to)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS "
+                "idx_progress_user_state "
+                "ON progress(user_id, state)"
+            )
+            cur.execute(
+                "CREATE INDEX IF NOT EXISTS "
+                "idx_answer_user_word "
+                "ON answer_history(user_id, word_id)"
+            )
         self._conn.commit()
 
     # -- Users --------------------------------------------------------
