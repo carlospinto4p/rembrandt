@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v2.3.0 - 9th March 2026
+
+- Added `ReviewForecast` model: predicted review workload per day.
+- Added `Database.retention_rate()` and
+  `PostgresDatabase.retention_rate()`: overall correct-answer
+  percentage over a configurable time window.
+- Added `Database.forecast()` and `PostgresDatabase.forecast()`:
+  predict upcoming review load per day, with past-due cards
+  rolled into today's count.
+- Exported `ReviewForecast` from the package.
+
+
 ### v2.2.0 - 9th March 2026
 
 - Added fuzzy answer matching (Levenshtein distance) to

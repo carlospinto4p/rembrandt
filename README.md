@@ -294,6 +294,18 @@ for day in db.daily_stats(user.id, days=30):
           f" ({day.accuracy_pct}%)")
 ```
 
+### Retention & Forecast
+
+```python
+# Overall retention rate (last 30 days)
+rate = db.retention_rate(user.id, days=30)
+print(f"Retention: {rate}%")
+
+# Upcoming review workload (next 7 days)
+for day in db.forecast(user.id, days=7):
+    print(f"{day.date}: {day.due_count} cards due")
+```
+
 ## Progress Export/Import
 
 Export a user's spaced-repetition progress as JSON-serializable dicts,

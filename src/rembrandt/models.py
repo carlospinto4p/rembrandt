@@ -382,6 +382,17 @@ class DailyStats(BaseModel):
     accuracy_pct: float
 
 
+class ReviewForecast(BaseModel):
+    """Predicted review workload for a single day.
+
+    :param date: The date (YYYY-MM-DD string).
+    :param due_count: Number of cards due for review on that day.
+    """
+
+    date: str
+    due_count: int
+
+
 def learning_mode(word: Word) -> LearningMode:
     """Derive the learning mode from a word's language pair.
 

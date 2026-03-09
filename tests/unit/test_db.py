@@ -1277,3 +1277,66 @@ def test_weak_words_limit(db):
 
     result = db.weak_words(u.id, "en", "es", limit=3)
     assert len(result) == 3
+
+
+# --- Retention Rate Tests ---
+
+
+def test_retention_rate_empty(db):
+    u = db.register_user("u1", "pass")
+    assert db.retention_rate(u.id) == 0.0
+
+
+def test_retention_rate_all_correct(db):
+    u = db.register_user("u1", "pass")
+    w = db.add_word("en", "es", "cat", "gato")
+    _add_history(db, u.id, w.id, True, 10)
+    assert db.retention_rate(u.id) == 100.0
+
+
+def test_retention_rate_mixed(db):
+    u = db.register_user("u1", "pass")
+    w = db.add_word("en", "es", "cat", "gato")
+    _add_history(db, u.id, w.id, True, 7)
+    _add_history(db, u.id, w.id, False, 3)
+    assert db.retention_rate(u.id) == 70.0
+
+
+# --- Forecast Tests ---
+
+
+def test_forecast_empty(db):
+    u = db.register_user("u1", "pass")
+    result = db.forecast(u.id, days=3)
+    assert len(result) == 3
+    assert all(f.due_count == 0 for f in result)
+
+
+def test_forecast_with_due_cards(db):
+    u = db.register_user("u1", "pass")
+    w = db.add_word("en", "es", "cat", "gato")
+    # Schedule a review for today
+    progress = UserProgress(
+        user_id=u.id,
+        word_id=w.id,
+        state=CardState.REVIEW,
+        next_review=datetime.now(),
+    )
+    db.upsert_progress(progress)
+    result = db.forecast(u.id, days=3)
+    assert result[0].due_count == 1
+    assert result[0].date == datetime.now().date().isoformat()
+
+
+def test_forecast_excludes_suspended(db):
+    u = db.register_user("u1", "pass")
+    w = db.add_word("en", "es", "cat", "gato")
+    progress = UserProgress(
+        user_id=u.id,
+        word_id=w.id,
+        state=CardState.SUSPENDED,
+        next_review=datetime.now(),
+    )
+    db.upsert_progress(progress)
+    result = db.forecast(u.id, days=3)
+    assert result[0].due_count == 0

@@ -15,6 +15,7 @@ from rembrandt.models import (
     CardState,
     DailyStats,
     Lesson,
+    ReviewForecast,
     User,
     UserProgress,
     UserSession,
@@ -971,6 +972,94 @@ class PostgresDatabase:
             )
             for r in rows
         ]
+
+    def retention_rate(
+        self,
+        user_id: int,
+        *,
+        days: int = 30,
+    ) -> float:
+        """Calculate the overall retention rate from answer history.
+
+        :param user_id: The user's database id.
+        :param days: Number of past days to include.
+        :return: Percentage of correct answers (0.0-100.0),
+            or 0.0 if no answers exist.
+        """
+        cutoff = datetime.now() - timedelta(days=days)
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) AS total, "
+                "SUM(CASE WHEN correct THEN 1 ELSE 0 "
+                "END) AS correct "
+                "FROM answer_history "
+                "WHERE user_id = %s "
+                "AND answered_at >= %s",
+                (user_id, cutoff),
+            )
+            row = cur.fetchone()
+        total = row["total"]
+        if not total:
+            return 0.0
+        return round(row["correct"] / total * 100, 1)
+
+    def forecast(
+        self,
+        user_id: int,
+        *,
+        days: int = 7,
+    ) -> list[ReviewForecast]:
+        """Predict upcoming review workload per day.
+
+        Counts scheduled reviews from the progress table,
+        grouped by date. Past-due cards are included in
+        today's count.
+
+        :param user_id: The user's database id.
+        :param days: Number of future days to forecast.
+        :return: List of `ReviewForecast`, one per day,
+            in chronological order.
+        """
+        today = datetime.now().date()
+        horizon = today + timedelta(days=days)
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT DATE(next_review) AS day, "
+                "COUNT(*) AS cnt "
+                "FROM progress "
+                "WHERE user_id = %s "
+                "AND state != %s "
+                "AND DATE(next_review) <= %s "
+                "GROUP BY day "
+                "ORDER BY day",
+                (
+                    user_id,
+                    CardState.SUSPENDED.value,
+                    horizon,
+                ),
+            )
+            rows = cur.fetchall()
+        by_day: dict[str, int] = {}
+        for r in rows:
+            by_day[str(r["day"])] = r["cnt"]
+        today_str = today.isoformat()
+        result: list[ReviewForecast] = []
+        overdue = 0
+        for day_str, cnt in by_day.items():
+            if day_str < today_str:
+                overdue += cnt
+        for offset in range(days):
+            d = today + timedelta(days=offset)
+            d_str = d.isoformat()
+            count = by_day.get(d_str, 0)
+            if offset == 0:
+                count += overdue
+            result.append(
+                ReviewForecast(
+                    date=d_str, due_count=count,
+                )
+            )
+        return result
 
     # -- Lessons ------------------------------------------------------
 
