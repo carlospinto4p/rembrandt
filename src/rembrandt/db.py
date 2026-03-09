@@ -220,6 +220,8 @@ def _row_to_progress(r: sqlite3.Row) -> UserProgress:
         state=CardState(r["state"]),
         step_index=r["step_index"],
         lapse_count=r["lapse_count"],
+        stability=r["stability"],
+        difficulty=r["difficulty"],
     )
 
 
@@ -265,6 +267,16 @@ class Database:
                     "ALTER TABLE progress "
                     "ADD COLUMN lapse_count INTEGER "
                     "NOT NULL DEFAULT 0"
+                )
+            if "stability" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN stability REAL"
+                )
+            if "difficulty" not in cols:
+                self._conn.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN difficulty REAL"
                 )
         self._migrate_words_owner_id()
         self._migrate_user_id_to_int()
@@ -742,8 +754,9 @@ class Database:
             "INSERT INTO progress "
             "(user_id, word_id, easiness_factor, "
             " interval, repetitions, next_review, "
-            " state, step_index, lapse_count) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
+            " state, step_index, lapse_count, "
+            " stability, difficulty) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(user_id, word_id) DO UPDATE SET "
             " easiness_factor = excluded.easiness_factor, "
             " interval         = excluded.interval, "
@@ -751,7 +764,9 @@ class Database:
             " next_review      = excluded.next_review, "
             " state            = excluded.state, "
             " step_index       = excluded.step_index, "
-            " lapse_count      = excluded.lapse_count",
+            " lapse_count      = excluded.lapse_count, "
+            " stability        = excluded.stability, "
+            " difficulty        = excluded.difficulty",
             (
                 progress.user_id,
                 progress.word_id,
@@ -762,6 +777,8 @@ class Database:
                 progress.state.value,
                 progress.step_index,
                 progress.lapse_count,
+                progress.stability,
+                progress.difficulty,
             ),
         )
         self._conn.commit()
@@ -782,7 +799,8 @@ class Database:
         rows = self._conn.execute(
             "SELECT user_id, word_id, easiness_factor, "
             "interval, repetitions, next_review, "
-            "state, step_index, lapse_count "
+            "state, step_index, lapse_count, "
+            "stability, difficulty "
             "FROM progress WHERE user_id = ?",
             (user_id,),
         ).fetchall()
@@ -797,6 +815,8 @@ class Database:
                 "state": r["state"],
                 "step_index": r["step_index"],
                 "lapse_count": r["lapse_count"],
+                "stability": r["stability"],
+                "difficulty": r["difficulty"],
             }
             for r in rows
         ]
@@ -830,12 +850,16 @@ class Database:
                 state = rec.get("state", "review")
                 step_index = rec.get("step_index", 0)
                 lapse_count = rec.get("lapse_count", 0)
+                stability = rec.get("stability")
+                difficulty = rec.get("difficulty")
                 self._conn.execute(
                     "INSERT INTO progress "
                     "(user_id, word_id, easiness_factor,"
                     " interval, repetitions, next_review,"
-                    " state, step_index, lapse_count)"
-                    " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    " state, step_index, lapse_count,"
+                    " stability, difficulty)"
+                    " VALUES "
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
                     " ON CONFLICT(user_id, word_id) "
                     "DO UPDATE SET "
                     " easiness_factor "
@@ -849,7 +873,11 @@ class Database:
                     " step_index "
                     "  = excluded.step_index, "
                     " lapse_count "
-                    "  = excluded.lapse_count",
+                    "  = excluded.lapse_count, "
+                    " stability "
+                    "  = excluded.stability, "
+                    " difficulty "
+                    "  = excluded.difficulty",
                     (
                         rec["user_id"],
                         rec["word_id"],
@@ -860,6 +888,8 @@ class Database:
                         state,
                         step_index,
                         lapse_count,
+                        stability,
+                        difficulty,
                     ),
                 )
         return len(records)

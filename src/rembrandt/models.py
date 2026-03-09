@@ -307,6 +307,41 @@ class SessionStats(BaseModel):
     accuracy_pct: float = 0.0
 
 
+class FSRSConfig(BaseModel):
+    """Configuration for the FSRS spaced-repetition algorithm.
+
+    :param weights: FSRS-5 parameter weights (19 values).
+        Uses sensible defaults when not provided.
+    :param desired_retention: Target recall probability when
+        scheduling the next review (0.0-1.0, default 0.9).
+    :param max_interval: Maximum interval in days
+        (default 36500).
+    :param learning_steps: Minutes between learning steps for
+        new cards (e.g. `[1, 10]`). Empty list graduates
+        immediately.
+    :param relearning_steps: Minutes between relearning steps
+        for lapsed cards (e.g. `[10]`). Empty list returns to
+        review immediately.
+    """
+
+    weights: tuple[float, ...] = (
+        0.40255, 1.18385, 3.173, 15.69105,
+        7.1949, 0.5345, 1.4604, 0.0046,
+        1.54575, 0.1192, 1.01925,
+        1.9395, 0.11, 0.29605, 2.2698,
+        0.2315, 2.9898,
+        0.51655, 0.6621,
+    )
+    desired_retention: float = 0.9
+    max_interval: int = 36500
+    learning_steps: list[int] = Field(
+        default_factory=lambda: [1, 10],
+    )
+    relearning_steps: list[int] = Field(
+        default_factory=lambda: [10],
+    )
+
+
 class UserProgress(BaseModel):
     """Spaced-repetition progress for a user-word pair.
 
@@ -321,6 +356,11 @@ class UserProgress(BaseModel):
         relearning steps.
     :param lapse_count: Cumulative number of lapses (REVIEW
         failures). Does not reset on success.
+    :param stability: FSRS stability in days (how long until
+        recall drops to `desired_retention`). `None` when
+        using SM-2.
+    :param difficulty: FSRS difficulty (1.0-10.0). `None`
+        when using SM-2.
     """
 
     user_id: int
@@ -334,6 +374,8 @@ class UserProgress(BaseModel):
     state: CardState = CardState.NEW
     step_index: int = 0
     lapse_count: int = 0
+    stability: float | None = None
+    difficulty: float | None = None
 
 
 class WeakWord(BaseModel):

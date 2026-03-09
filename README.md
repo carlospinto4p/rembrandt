@@ -210,6 +210,44 @@ to `REVIEW` with a reduced interval. Cards that lapse too many times
 (default 8) are flagged as leeches and moved to `SUSPENDED`, where they
 are excluded from review until manually unsuspended.
 
+## FSRS Algorithm
+
+Rembrandt supports the [FSRS-5](https://github.com/open-spaced-repetition/fsrs4anki)
+algorithm as a modern alternative to SM-2. FSRS uses a power-law forgetting
+curve with 19 optimised parameters for more accurate scheduling:
+
+```python
+from rembrandt import Database, FSRSConfig, Session
+
+with Database("vocab.db") as db:
+    user = db.register_user("user1", "pass")
+
+    # Use FSRS instead of SM-2
+    session = Session(
+        db, user.id, "en", "es",
+        fsrs_config=FSRSConfig(),
+    )
+
+    exercise = session.next_exercise()
+    result = session.answer("gato")
+
+    # Custom FSRS parameters
+    config = FSRSConfig(
+        desired_retention=0.85,       # target 85% recall
+        max_interval=180,             # cap at 180 days
+        learning_steps=[1, 10, 30],   # minutes
+        relearning_steps=[5, 20],     # minutes
+    )
+    session = Session(
+        db, user.id, "en", "es",
+        fsrs_config=config,
+    )
+```
+
+Cards track `stability` (expected days at 90% recall) and `difficulty`
+(1-10 scale). The algorithm handles the same state machine as SM-2:
+`NEW` → `LEARNING` → `REVIEW`, with `RELEARNING` on lapses.
+
 ## Lessons
 
 Rembrandt supports structured lessons — named sets of words grouped by

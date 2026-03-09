@@ -227,6 +227,8 @@ def _row_to_progress(r: dict) -> UserProgress:
         state=CardState(r["state"]),
         step_index=r["step_index"],
         lapse_count=r["lapse_count"],
+        stability=r.get("stability"),
+        difficulty=r.get("difficulty"),
     )
 
 
@@ -261,12 +263,34 @@ class PostgresDatabase:
                 "FROM information_schema.columns "
                 "WHERE table_name = 'words'"
             )
-            cols = {r["column_name"] for r in cur.fetchall()}
-            if "owner_id" not in cols:
+            word_cols = {
+                r["column_name"] for r in cur.fetchall()
+            }
+            if "owner_id" not in word_cols:
                 cur.execute(
                     "ALTER TABLE words "
                     "ADD COLUMN owner_id INTEGER "
                     "REFERENCES users(id)"
+                )
+            cur.execute(
+                "SELECT column_name "
+                "FROM information_schema.columns "
+                "WHERE table_name = 'progress'"
+            )
+            prog_cols = {
+                r["column_name"] for r in cur.fetchall()
+            }
+            if "stability" not in prog_cols:
+                cur.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN stability "
+                    "DOUBLE PRECISION"
+                )
+            if "difficulty" not in prog_cols:
+                cur.execute(
+                    "ALTER TABLE progress "
+                    "ADD COLUMN difficulty "
+                    "DOUBLE PRECISION"
                 )
         self._conn.commit()
 
@@ -691,9 +715,12 @@ class PostgresDatabase:
                 "INSERT INTO progress "
                 "(user_id, word_id, easiness_factor, "
                 " interval, repetitions, next_review, "
-                " state, step_index, lapse_count) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                " ON CONFLICT(user_id, word_id) DO UPDATE SET"
+                " state, step_index, lapse_count, "
+                " stability, difficulty) "
+                "VALUES "
+                "(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                " ON CONFLICT(user_id, word_id) "
+                "DO UPDATE SET"
                 " easiness_factor "
                 "  = EXCLUDED.easiness_factor, "
                 " interval = EXCLUDED.interval, "
@@ -701,7 +728,9 @@ class PostgresDatabase:
                 " next_review = EXCLUDED.next_review, "
                 " state = EXCLUDED.state, "
                 " step_index = EXCLUDED.step_index, "
-                " lapse_count = EXCLUDED.lapse_count",
+                " lapse_count = EXCLUDED.lapse_count, "
+                " stability = EXCLUDED.stability, "
+                " difficulty = EXCLUDED.difficulty",
                 (
                     progress.user_id,
                     progress.word_id,
@@ -712,6 +741,8 @@ class PostgresDatabase:
                     progress.state.value,
                     progress.step_index,
                     progress.lapse_count,
+                    progress.stability,
+                    progress.difficulty,
                 ),
             )
         self._conn.commit()

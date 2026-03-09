@@ -9,11 +9,13 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
 )
+from rembrandt.fsrs import fsrs_review
 from rembrandt.models import (
     AnswerResult,
     CardState,
     Exercise,
     ExerciseType,
+    FSRSConfig,
     Hint,
     LearningMode,
     ReviewConfig,
@@ -41,6 +43,9 @@ class Session:
     :param review_config: Anki-style learning/relearning
         step configuration. Uses default `ReviewConfig`
         when `None`.
+    :param fsrs_config: FSRS algorithm configuration.
+        When provided, the session uses FSRS instead of SM-2.
+        Mutually exclusive with `review_config`.
     """
 
     def __init__(
@@ -53,6 +58,7 @@ class Session:
         mode: SessionMode = SessionMode.MIXED,
         word_ids: list[int] | None = None,
         review_config: ReviewConfig | None = None,
+        fsrs_config: FSRSConfig | None = None,
     ) -> None:
         self.db = db
         self.user_id = user_id
@@ -61,6 +67,7 @@ class Session:
         self.mode = mode
         self._word_ids = word_ids
         self._review_config = review_config
+        self._fsrs_config = fsrs_config
         self._current_exercise: Exercise | None = None
         self._hint_count = 0
         self._buried_word_ids: set[int] = set()
@@ -176,10 +183,16 @@ class Session:
                 word_id=word_id,
             )
 
-        updated = review(
-            progress, sm2_quality,
-            config=self._review_config,
-        )
+        if self._fsrs_config is not None:
+            updated = fsrs_review(
+                progress, sm2_quality,
+                config=self._fsrs_config,
+            )
+        else:
+            updated = review(
+                progress, sm2_quality,
+                config=self._review_config,
+            )
         self.db.upsert_progress(updated)
 
         self.db.record_answer(

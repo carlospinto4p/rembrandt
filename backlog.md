@@ -33,7 +33,7 @@
 - [x] Add fuzzy answer matching (Levenshtein distance) to `_answers_match()` — accept near-misses with a warning instead of marking wrong
 - [x] Add retention & forecast analytics — `retention_rate(user_id)` and `forecast(user_id, days)` for review load prediction
 - [x] Add CSV/TSV word import — `import_words_csv(path)` for bulk-loading vocabulary from spreadsheets
-- [ ] Add FSRS algorithm as alternative to SM-2 — modern, data-driven scheduler with better retention
+- [x] Add FSRS algorithm as alternative to SM-2 — modern, data-driven scheduler with better retention
 - [ ] Add `LISTENING` exercise type — TTS URL generation via pluggable provider for audio comprehension drills
 - [ ] Add Anki `.apkg` export — export decks in Anki's package format for interoperability
 - [ ] Add `SessionMode.EXAM` — timed session with configurable limit and final score

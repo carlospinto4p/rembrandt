@@ -1,6 +1,21 @@
 
 ## Changelog - Rembrandt
 
+### v2.6.0 - 9th March 2026
+
+- Added `fsrs` module: FSRS-5 spaced-repetition algorithm as an
+  alternative to SM-2, with power-law forgetting curve, 19-parameter
+  model, and stability/difficulty tracking.
+- Added `FSRSConfig` model: algorithm weights, desired retention,
+  max interval, learning and relearning steps.
+- Added `stability` and `difficulty` fields to `UserProgress`.
+- Updated `Session`: new `fsrs_config` parameter — when provided,
+  uses FSRS instead of SM-2 for scheduling.
+- Updated `Database` and `PostgresDatabase`: migrations and
+  persistence for `stability`/`difficulty` fields.
+- Exported `FSRSConfig` and `fsrs_review` from the package.
+
+
 ### v2.5.0 - 9th March 2026
 
 - Updated `Session.hint()`: progressive reveal — each call shows
