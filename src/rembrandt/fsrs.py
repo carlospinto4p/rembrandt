@@ -190,6 +190,9 @@ def fsrs_review(
         `None`.
     :return: Updated `UserProgress` with new scheduling.
     """
+    if progress.state == CardState.SUSPENDED:
+        return progress
+
     if config is None:
         config = FSRSConfig()
     w = config.weights
@@ -275,10 +278,6 @@ def fsrs_review(
                     config.max_interval,
                 )
             )
-        return updated
-
-    # --- SUSPENDED state ---
-    if progress.state == CardState.SUSPENDED:
         return updated
 
     # --- LEARNING / RELEARNING state ---

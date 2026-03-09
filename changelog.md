@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v2.6.3 - 9th March 2026
+
+- Optimised `review()` and `fsrs_review()`: return the original
+  `UserProgress` for suspended cards instead of deep-copying.
+- Compiled regex patterns at module level in `exercises.py`:
+  `_RE_BRACKETS` and `_RE_PARENS` replace per-call `re.sub()`.
+
+
 ### v2.6.2 - 9th March 2026
 
 - Optimised `Session.next_exercise()`: cache the word list instead of

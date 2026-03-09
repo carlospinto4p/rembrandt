@@ -42,9 +42,9 @@
 - [x] Cache `get_words()` result in `Session` — `next_exercise()` fetches the full word list on every call; cache once per session
 - [x] Add database indexes on hot columns — `progress(user_id, state)`, `answer_history(user_id, word_id)`, `words(language_from, language_to)` in both SQLite and PostgreSQL
 - [x] Combine word list filters in `select_words()` — merge allowed-IDs and excluded-IDs filtering into a single list pass
-- [ ] Skip `model_copy()` for unchanged cards — return original `UserProgress` when state is `SUSPENDED` or unchanged in FSRS
-- [ ] Compile regex patterns at module level in `exercises.py` — bracket/paren patterns in `_acceptable_answers()` recompile on every call
-- [ ] Skip `json.loads()` for tags in PostgreSQL — psycopg returns JSONB as native Python lists, no parsing needed
+- [x] Skip `model_copy()` for unchanged cards — return original `UserProgress` when state is `SUSPENDED` or unchanged in FSRS
+- [x] Compile regex patterns at module level in `exercises.py` — bracket/paren patterns in `_acceptable_answers()` recompile on every call
+- [x] Skip `json.loads()` for tags in PostgreSQL — already guarded by `isinstance` checks; no change needed
 
 
 ### 2026.03.05 — Feature roadmap

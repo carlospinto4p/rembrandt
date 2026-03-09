@@ -35,6 +35,9 @@ _MAX_SHUFFLE_ATTEMPTS = 20
 _FUZZY_MAX_SHORT = 1   # words with len <= 5
 _FUZZY_MAX_LONG = 2    # words with len > 5
 
+_RE_BRACKETS = re.compile(r"\s*\[.*?\]")
+_RE_PARENS = re.compile(r"\s*\(.*?\)")
+
 # --- Helpers ---
 
 
@@ -563,8 +566,8 @@ def _acceptable_answers(expected: str) -> list[str]:
     :return: List of acceptable answer strings (always includes
         the original `expected`).
     """
-    cleaned = re.sub(r"\s*\[.*?\]", "", expected)
-    cleaned = re.sub(r"\s*\(.*?\)", "", cleaned)
+    cleaned = _RE_BRACKETS.sub("", expected)
+    cleaned = _RE_PARENS.sub("", cleaned)
     segments = [
         s.strip() for s in cleaned.split(";") if s.strip()
     ]

@@ -331,7 +331,7 @@ def review(
         )
 
     if progress.state == CardState.SUSPENDED:
-        return progress.model_copy()
+        return progress
 
     if config is None:
         config = _DEFAULT_CONFIG
