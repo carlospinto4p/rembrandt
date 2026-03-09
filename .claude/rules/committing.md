@@ -22,7 +22,10 @@
    - Use simple `-m "..."` quoting for commit messages (no heredocs).
    - The `preCommit` hook will run tests; if they fail the commit is
      aborted — fix and retry.
-7. **Push to remote**: Push the changes with `git push`
+7. **Tag the version**: Run `git tag vX.Y.Z` to create a tag for the
+   new version.
+8. **Push to remote**: Push the changes and tag with `git push` then
+   `git push --tags`
 
 This workflow is MANDATORY after every prompt that results in code changes.
 

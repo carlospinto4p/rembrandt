@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v2.6.1 - 9th March 2026
+
+- Added git tags for all 33 previous version releases (v0.33.2–v2.6.0).
+- Updated `.claude/rules/committing.md`: added tagging step to the
+  post-change workflow.
+
+
 ### v2.6.0 - 9th March 2026
 
 - Added `fsrs` module: FSRS-5 spaced-repetition algorithm as an
