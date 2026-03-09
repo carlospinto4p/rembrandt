@@ -2,7 +2,7 @@
 
 from importlib.metadata import version
 
-from rembrandt.db import Database
+from rembrandt.db import Database, import_words_csv
 from rembrandt.db_postgres import PostgresDatabase
 from rembrandt.lessons import lesson_progress, load_lessons
 from rembrandt.models import (
@@ -43,6 +43,7 @@ __all__ = [
     "UserSession",
     "WeakWord",
     "Word",
+    "import_words_csv",
     "lesson_progress",
     "load_cloze_templates",
     "load_exercise_config",

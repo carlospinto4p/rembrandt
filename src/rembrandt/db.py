@@ -1,5 +1,6 @@
 """SQLite database layer for words and user progress."""
 
+import csv
 import hashlib
 import json
 import os
@@ -1360,3 +1361,80 @@ class Database:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+
+_CSV_DELIMITERS = {".csv": ",", ".tsv": "\t"}
+
+
+def import_words_csv(
+    db: "Database",
+    path: str | Path,
+    language_from: str,
+    language_to: str,
+    *,
+    word_from_col: str = "word_from",
+    word_to_col: str = "word_to",
+    delimiter: str | None = None,
+    owner_id: int | None = None,
+) -> list[Word]:
+    """Import words from a CSV or TSV file.
+
+    The file must have a header row. The `word_from_col` and
+    `word_to_col` columns are required. Optional columns
+    (`gender`, `conjugation_group`, `tags`, `cefr`) are read
+    when present.
+
+    The `tags` column, if present, should contain a
+    comma-separated list of tags (e.g. `"food,travel"`).
+
+    :param db: The database to import into.
+    :param path: Path to the CSV/TSV file.
+    :param language_from: Source language code.
+    :param language_to: Target language code.
+    :param word_from_col: Column name for the source word.
+    :param word_to_col: Column name for the translation.
+    :param delimiter: Field delimiter. When `None`,
+        auto-detected from the file extension (`.tsv` → tab,
+        `.csv` and others → comma).
+    :param owner_id: Owner id for imported words.
+    :return: List of inserted `Word` objects with assigned ids.
+    :raises FileNotFoundError: If the file does not exist.
+    :raises ValueError: If required columns are missing.
+    """
+    path = Path(path)
+    if delimiter is None:
+        delimiter = _CSV_DELIMITERS.get(
+            path.suffix.lower(), ","
+        )
+    with open(path, encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh, delimiter=delimiter)
+        fields = reader.fieldnames or []
+        for col in (word_from_col, word_to_col):
+            if col not in fields:
+                raise ValueError(
+                    f"Required column {col!r} not found "
+                    f"in {path.name}. "
+                    f"Available: {fields}"
+                )
+        words: list[Word] = []
+        for row in reader:
+            tags_raw = row.get("tags", "")
+            tags = (
+                [t.strip() for t in tags_raw.split(",")
+                 if t.strip()]
+                if tags_raw else []
+            )
+            words.append(Word(
+                language_from=language_from,
+                language_to=language_to,
+                word_from=row[word_from_col],
+                word_to=row[word_to_col],
+                gender=row.get("gender") or None,
+                conjugation_group=(
+                    row.get("conjugation_group") or None
+                ),
+                tags=tags,
+                cefr=row.get("cefr") or None,
+                owner_id=owner_id,
+            ))
+    return db.add_words(words)

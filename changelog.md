@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v2.4.0 - 9th March 2026
+
+- Added `import_words_csv()` in `db`: bulk-import words from CSV
+  or TSV files with auto-detected delimiters, custom column names,
+  and optional metadata columns (`gender`, `conjugation_group`,
+  `tags`, `cefr`).
+- Exported `import_words_csv` from the package.
+
+
 ### v2.3.0 - 9th March 2026
 
 - Added `ReviewForecast` model: predicted review workload per day.

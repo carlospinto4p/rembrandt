@@ -306,6 +306,29 @@ for day in db.forecast(user.id, days=7):
     print(f"{day.date}: {day.due_count} cards due")
 ```
 
+## CSV/TSV Import
+
+Bulk-load vocabulary from spreadsheets:
+
+```python
+from rembrandt import Database, import_words_csv
+
+db = Database("vocab.db")
+words = import_words_csv(
+    db, "my_words.csv",
+    language_from="en", language_to="es",
+)
+print(f"Imported {len(words)} words")
+
+# TSV files are auto-detected; custom column names supported
+words = import_words_csv(
+    db, "words.tsv",
+    language_from="en", language_to="es",
+    word_from_col="english",
+    word_to_col="spanish",
+)
+```
+
 ## Progress Export/Import
 
 Export a user's spaced-repetition progress as JSON-serializable dicts,

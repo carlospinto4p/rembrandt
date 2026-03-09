@@ -5,7 +5,7 @@ from datetime import datetime
 
 import pytest
 
-from rembrandt.db import Database
+from rembrandt.db import Database, import_words_csv
 from rembrandt.models import (
     CardState,
     Lesson,
@@ -1340,3 +1340,92 @@ def test_forecast_excludes_suspended(db):
     db.upsert_progress(progress)
     result = db.forecast(u.id, days=3)
     assert result[0].due_count == 0
+
+
+# --- CSV/TSV Import Tests ---
+
+
+def test_import_words_csv_basic(db, tmp_path):
+    csv_file = tmp_path / "words.csv"
+    csv_file.write_text(
+        "word_from,word_to\ncat,gato\ndog,perro\n",
+        encoding="utf-8",
+    )
+    words = import_words_csv(
+        db, csv_file, "en", "es",
+    )
+    assert len(words) == 2
+    assert words[0].word_from == "cat"
+    assert words[0].word_to == "gato"
+    assert words[0].id is not None
+
+
+def test_import_words_csv_optional_columns(db, tmp_path):
+    csv_file = tmp_path / "words.csv"
+    csv_file.write_text(
+        "word_from,word_to,gender,cefr,tags\n"
+        "libro,book,m,A1,\"education,objects\"\n",
+        encoding="utf-8",
+    )
+    words = import_words_csv(
+        db, csv_file, "es", "en",
+    )
+    assert len(words) == 1
+    assert words[0].gender == "m"
+    assert words[0].cefr == "A1"
+    assert words[0].tags == ["education", "objects"]
+
+
+def test_import_words_tsv(db, tmp_path):
+    tsv_file = tmp_path / "words.tsv"
+    tsv_file.write_text(
+        "word_from\tword_to\ncat\tgato\n",
+        encoding="utf-8",
+    )
+    words = import_words_csv(
+        db, tsv_file, "en", "es",
+    )
+    assert len(words) == 1
+    assert words[0].word_from == "cat"
+
+
+def test_import_words_csv_custom_columns(db, tmp_path):
+    csv_file = tmp_path / "words.csv"
+    csv_file.write_text(
+        "spanish,english\ngato,cat\n",
+        encoding="utf-8",
+    )
+    words = import_words_csv(
+        db, csv_file, "es", "en",
+        word_from_col="spanish",
+        word_to_col="english",
+    )
+    assert words[0].word_from == "gato"
+    assert words[0].word_to == "cat"
+
+
+def test_import_words_csv_missing_column(db, tmp_path):
+    csv_file = tmp_path / "words.csv"
+    csv_file.write_text(
+        "word,meaning\ncat,gato\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError, match="Required column"
+    ):
+        import_words_csv(
+            db, csv_file, "en", "es",
+        )
+
+
+def test_import_words_csv_with_owner(db, tmp_path):
+    u = db.register_user("u1", "pass")
+    csv_file = tmp_path / "words.csv"
+    csv_file.write_text(
+        "word_from,word_to\ncat,gato\n",
+        encoding="utf-8",
+    )
+    words = import_words_csv(
+        db, csv_file, "en", "es", owner_id=u.id,
+    )
+    assert words[0].owner_id == u.id
