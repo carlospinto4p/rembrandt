@@ -249,12 +249,16 @@ class AnswerResult(BaseModel):
     :param expected: The expected answer.
     :param given: The answer the user gave.
     :param word: The word that was tested.
+    :param near_miss: ``True`` when the answer was accepted
+        via fuzzy matching (small typo). Consumers can use
+        this to show a "close enough" warning.
     """
 
     correct: bool
     expected: str
     given: str
     word: Word
+    near_miss: bool = False
 
 
 class Hint(BaseModel):

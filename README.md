@@ -44,6 +44,10 @@ with Database("vocab.db") as db:
     result = session.answer("gato")
     print(f"Correct: {result.correct}")
     print(f"Expected: {result.expected}")
+
+    # Typos are accepted with a warning
+    if result.near_miss:
+        print(f"Close! The exact answer was: {result.expected}")
 ```
 
 The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)

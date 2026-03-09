@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v2.2.0 - 9th March 2026
+
+- Added fuzzy answer matching (Levenshtein distance) to
+  `evaluate_answer()`: near-misses with small typos are accepted
+  as correct with a `near_miss` flag.
+- Added `AnswerResult.near_miss` field: ``True`` when the answer
+  was accepted via fuzzy matching, so consumers can show a
+  "close enough" warning.
+- Added `_levenshtein()` and `_fuzzy_threshold()` helpers in
+  `exercises`: distance 1 for short words (≤5 chars), distance 2
+  for longer words.
+
+
 ### v2.1.1 - 9th March 2026
 
 - Self-refinement pass on Claude settings:

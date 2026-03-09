@@ -31,7 +31,47 @@ _DEF_FLASHCARD_THRESHOLD = 0.7
 # Maximum attempts to produce a non-identity shuffle
 _MAX_SHUFFLE_ATTEMPTS = 20
 
+# Fuzzy matching: max Levenshtein distance by word length
+_FUZZY_MAX_SHORT = 1   # words with len <= 5
+_FUZZY_MAX_LONG = 2    # words with len > 5
+
 # --- Helpers ---
+
+
+def _levenshtein(a: str, b: str) -> int:
+    """Compute the Levenshtein edit distance between `a` and `b`.
+
+    :param a: First string.
+    :param b: Second string.
+    :return: Minimum number of single-character edits.
+    """
+    if len(a) < len(b):
+        return _levenshtein(b, a)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a):
+        curr = [i + 1]
+        for j, cb in enumerate(b):
+            cost = 0 if ca == cb else 1
+            curr.append(min(
+                prev[j + 1] + 1,
+                curr[j] + 1,
+                prev[j] + cost,
+            ))
+        prev = curr
+    return prev[-1]
+
+
+def _fuzzy_threshold(expected: str) -> int:
+    """Return the maximum Levenshtein distance for `expected`.
+
+    :param expected: The canonical expected answer.
+    :return: Allowed edit distance.
+    """
+    if len(expected) <= 5:
+        return _FUZZY_MAX_SHORT
+    return _FUZZY_MAX_LONG
 
 
 def _strip_accents(text: str) -> str:
@@ -546,33 +586,47 @@ def _acceptable_answers(expected: str) -> list[str]:
     return unique
 
 
-def _answers_match(given: str, expected: str) -> bool:
+def _answers_match(
+    given: str, expected: str,
+) -> str:
     """Check if `given` matches `expected` with flexible rules.
 
     Handles parenthetical/bracket stripping, semicolon-separated
-    senses, optional "to " verb prefix differences, and accent
-    tolerance (e.g. `"hablo"` matches `"habló"`).
+    senses, optional "to " verb prefix differences, accent
+    tolerance, and fuzzy matching (Levenshtein distance).
 
     :param given: The user's answer (already stripped).
     :param expected: The canonical expected answer.
-    :return: ``True`` if the answers match.
+    :return: `"exact"` for an exact or accent-tolerant match,
+        `"fuzzy"` for a near-miss within the edit-distance
+        threshold, or `"no"` if no match.
     """
     g = given.lower()
     g_stripped = _strip_accents(g)
     candidates = _acceptable_answers(expected)
+    best_distance = None
     for c in candidates:
         e = c.lower()
         if g == e:
-            return True
+            return "exact"
         # Accent-tolerant comparison
-        if g_stripped == _strip_accents(e):
-            return True
+        e_stripped = _strip_accents(e)
+        if g_stripped == e_stripped:
+            return "exact"
         # "to X" ↔ "X" handling
         if g.startswith("to ") and g[3:] == e:
-            return True
+            return "exact"
         if e.startswith("to ") and e[3:] == g:
-            return True
-    return False
+            return "exact"
+        # Track best fuzzy distance
+        threshold = _fuzzy_threshold(e)
+        dist = _levenshtein(g_stripped, e_stripped)
+        if dist <= threshold:
+            if best_distance is None or dist < best_distance:
+                best_distance = dist
+    if best_distance is not None:
+        return "fuzzy"
+    return "no"
 
 
 def _resolve_option_number(
@@ -655,9 +709,11 @@ def evaluate_answer(
         answer_text.strip(), exercise.options,
     )
 
+    match = _answers_match(given, expected)
     return AnswerResult(
-        correct=_answers_match(given, expected),
+        correct=match in ("exact", "fuzzy"),
         expected=expected,
         given=given,
         word=exercise.word,
+        near_miss=match == "fuzzy",
     )

@@ -1051,3 +1051,78 @@ def test_load_exercise_config_adjectives_only(tmp_path):
 def test_load_exercise_config_file_not_found():
     with pytest.raises(FileNotFoundError):
         load_exercise_config("/nonexistent/config.json")
+
+
+# --- Fuzzy Answer Matching Tests ---
+
+
+def test_evaluate_answer_fuzzy_single_typo():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "gat")
+    assert result.correct is True
+    assert result.near_miss is True
+
+
+def test_evaluate_answer_fuzzy_long_word():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="to understand",
+        word_to="comprender",
+    )
+    ex = generate_flashcard(word)
+    # Two typos in a long word — still accepted
+    result = evaluate_answer(ex, "comprendr")
+    assert result.correct is True
+    assert result.near_miss is True
+
+
+def test_evaluate_answer_fuzzy_too_far():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = generate_flashcard(word)
+    # Distance 2 on a short word — rejected
+    result = evaluate_answer(ex, "ga")
+    assert result.correct is False
+    assert result.near_miss is False
+
+
+def test_evaluate_answer_exact_not_near_miss():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="cat",
+        word_to="gato",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "gato")
+    assert result.correct is True
+    assert result.near_miss is False
+
+
+def test_evaluate_answer_fuzzy_swapped_letters():
+    word = Word(
+        id=1,
+        language_from="en",
+        language_to="es",
+        word_from="to speak",
+        word_to="hablar",
+    )
+    ex = generate_flashcard(word)
+    result = evaluate_answer(ex, "hablra")
+    assert result.correct is True
+    assert result.near_miss is True
