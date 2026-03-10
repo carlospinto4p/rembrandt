@@ -691,3 +691,146 @@ async def test_quick_session_custom_keys(tmp_path):
     assert len(words) == 2
     assert words[0].word_from == "cat"
     await s.db.close()
+
+
+# --- Session Snapshot Tests ---
+
+
+async def test_snapshot_roundtrip(session):
+    ex = await session.next_exercise()
+    assert ex is not None
+    await session.answer(ex.word.word_to)
+
+    ex2 = await session.next_exercise()
+    assert ex2 is not None
+    session.hint()
+
+    snap = session.snapshot()
+    assert snap.user_id == 1
+    assert snap.correct == 1
+    assert snap.hint_count == 1
+    assert snap.current_exercise is not None
+    assert len(snap.buried_word_ids) == 2
+
+
+async def test_save_and_restore(db_with_words):
+    s1 = Session(
+        db_with_words, 1, "en", "es",
+    )
+    ex = await s1.next_exercise()
+    assert ex is not None
+    await s1.answer(ex.word.word_to)
+
+    ex2 = await s1.next_exercise()
+    assert ex2 is not None
+    s1.hint()
+
+    await s1.save()
+
+    s2 = await Session.restore(db_with_words, 1)
+    assert s2 is not None
+    assert s2._correct == 1
+    assert s2._hint_count == 1
+    assert s2._current_exercise is not None
+    assert s2._current_exercise.word.id == ex2.word.id
+    assert len(s2._buried_word_ids) == 2
+    assert s2.language_from == "en"
+    assert s2.language_to == "es"
+
+
+async def test_restore_nonexistent(db_with_words):
+    result = await Session.restore(db_with_words, 999)
+    assert result is None
+
+
+async def test_save_with_key(db_with_words):
+    s1 = Session(db_with_words, 1, "en", "es")
+    await s1.save(key="chat_123")
+
+    s2 = Session(db_with_words, 1, "en", "es")
+    ex = await s2.next_exercise()
+    assert ex is not None
+    await s2.answer(ex.word.word_to)
+    await s2.save(key="chat_456")
+
+    r1 = await Session.restore(
+        db_with_words, 1, key="chat_123",
+    )
+    r2 = await Session.restore(
+        db_with_words, 1, key="chat_456",
+    )
+    assert r1 is not None
+    assert r2 is not None
+    assert r1._correct == 0
+    assert r2._correct == 1
+
+
+async def test_save_overwrites_existing(db_with_words):
+    s = Session(db_with_words, 1, "en", "es")
+    await s.save()
+
+    ex = await s.next_exercise()
+    assert ex is not None
+    await s.answer(ex.word.word_to)
+    await s.save()
+
+    restored = await Session.restore(db_with_words, 1)
+    assert restored is not None
+    assert restored._correct == 1
+
+
+async def test_delete_session_snapshot(db_with_words):
+    s = Session(db_with_words, 1, "en", "es")
+    await s.save()
+
+    deleted = await db_with_words.delete_session_snapshot(1)
+    assert deleted is True
+
+    deleted2 = await db_with_words.delete_session_snapshot(1)
+    assert deleted2 is False
+
+    restored = await Session.restore(db_with_words, 1)
+    assert restored is None
+
+
+async def test_restore_preserves_config(db_with_words):
+    config = ReviewConfig(
+        max_new_cards=5,
+        learning_steps=[1, 5, 15],
+    )
+    s = Session(
+        db_with_words, 1, "en", "es",
+        review_config=config,
+        mode=SessionMode.LEARN_NEW,
+        word_ids=[1, 2],
+    )
+    await s.save()
+
+    restored = await Session.restore(db_with_words, 1)
+    assert restored is not None
+    assert restored.mode == SessionMode.LEARN_NEW
+    assert restored._word_ids == [1, 2]
+    assert restored._review_config is not None
+    assert restored._review_config.max_new_cards == 5
+    assert restored._review_config.learning_steps == [
+        1, 5, 15,
+    ]
+
+
+async def test_restore_continues_session(db_with_words):
+    s1 = Session(db_with_words, 1, "en", "es")
+    ex = await s1.next_exercise()
+    assert ex is not None
+    await s1.answer(ex.word.word_to)
+    await s1.save()
+
+    s2 = await Session.restore(db_with_words, 1)
+    assert s2 is not None
+    ex2 = await s2.next_exercise()
+    assert ex2 is not None
+    assert ex2.word.id != ex.word.id
+    await s2.answer(ex2.word.word_to)
+
+    stats = s2.summary()
+    assert stats.correct == 2
+    assert stats.total == 2

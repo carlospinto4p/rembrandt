@@ -183,6 +183,33 @@ s = Session(db, user.id, "en", "es",
             word_ids=lesson.word_ids)
 ```
 
+## Session Persistence
+
+Save and restore sessions across process restarts (useful for bots):
+
+```python
+# Save session state to the database
+await session.save()
+
+# Later, restore it
+session = await Session.restore(db, user_id=user.id)
+if session is not None:
+    exercise = session._current_exercise  # still there
+    stats = session.summary()             # counters preserved
+
+# Use a key to store multiple sessions per user
+await session.save(key="chat_123")
+session = await Session.restore(
+    db, user.id, key="chat_123",
+)
+
+# Delete a snapshot when no longer needed
+await db.delete_session_snapshot(user.id, key="chat_123")
+```
+
+All in-memory state is preserved: current exercise, hint count, streak,
+buried words, and daily limit counters.
+
 ## Learning Steps
 
 By default, new cards go through short-interval learning steps before

@@ -20,6 +20,7 @@ from rembrandt.models import (
     LearningMode,
     ReviewConfig,
     SessionMode,
+    SessionSnapshot,
     SessionStats,
     UserProgress,
     Word,
@@ -321,6 +322,85 @@ class Session:
             best_streak=self._best_streak,
             accuracy_pct=round(pct, 1),
         )
+
+    def snapshot(self) -> SessionSnapshot:
+        """Create a serializable snapshot of this session.
+
+        :return: A `SessionSnapshot` capturing all in-memory
+            state.
+        """
+        return SessionSnapshot(
+            user_id=self.user_id,
+            language_from=self.language_from,
+            language_to=self.language_to,
+            mode=self.mode,
+            word_ids=self._word_ids,
+            review_config=self._review_config,
+            fsrs_config=self._fsrs_config,
+            current_exercise=self._current_exercise,
+            hint_count=self._hint_count,
+            buried_word_ids=sorted(self._buried_word_ids),
+            correct=self._correct,
+            incorrect=self._incorrect,
+            streak=self._streak,
+            best_streak=self._best_streak,
+            new_served=self._new_served,
+            review_served=self._review_served,
+        )
+
+    async def save(self, key: str = "") -> None:
+        """Save this session's state to the database.
+
+        :param key: Optional key to distinguish multiple
+            sessions per user (e.g. a chat id).
+        """
+        await self.db.save_session_snapshot(
+            self.snapshot(), key=key,
+        )
+
+    @classmethod
+    async def restore(
+        cls,
+        db: "Database",
+        user_id: int,
+        key: str = "",
+    ) -> "Session | None":
+        """Restore a session from a saved snapshot.
+
+        :param db: The database instance.
+        :param user_id: The user's database id.
+        :param key: Optional key matching the one used
+            when saving.
+        :return: A restored `Session`, or `None` if no
+            snapshot exists.
+        """
+        snap = await db.get_session_snapshot(
+            user_id, key=key,
+        )
+        if snap is None:
+            return None
+        session = cls(
+            db,
+            snap.user_id,
+            snap.language_from,
+            snap.language_to,
+            mode=snap.mode,
+            word_ids=snap.word_ids,
+            review_config=snap.review_config,
+            fsrs_config=snap.fsrs_config,
+        )
+        session._current_exercise = snap.current_exercise
+        session._hint_count = snap.hint_count
+        session._buried_word_ids = set(
+            snap.buried_word_ids,
+        )
+        session._correct = snap.correct
+        session._incorrect = snap.incorrect
+        session._streak = snap.streak
+        session._best_streak = snap.best_streak
+        session._new_served = snap.new_served
+        session._review_served = snap.review_served
+        return session
 
 
 async def quick_session(

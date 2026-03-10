@@ -342,6 +342,56 @@ class FSRSConfig(BaseModel):
     )
 
 
+class SessionSnapshot(BaseModel):
+    """Serializable snapshot of a `Session`'s in-memory state.
+
+    Used to persist and restore sessions across process
+    restarts (e.g. for a Telegram bot).
+
+    :param user_id: The user's database id.
+    :param language_from: Source language code.
+    :param language_to: Target language code.
+    :param mode: Session mode.
+    :param word_ids: Restricted word ids, or `None`.
+    :param review_config: SM-2 configuration, or `None`.
+    :param fsrs_config: FSRS configuration, or `None`.
+    :param current_exercise: The active exercise, or `None`.
+    :param hint_count: Number of hints given for the current
+        exercise.
+    :param buried_word_ids: Word ids already shown this
+        session.
+    :param correct: Number of correct answers.
+    :param incorrect: Number of incorrect answers.
+    :param streak: Current consecutive correct streak.
+    :param best_streak: Best streak in this session.
+    :param new_served: New cards served so far.
+    :param review_served: Review cards served so far.
+    :param saved_at: Timestamp when the snapshot was saved.
+    """
+
+    user_id: int
+    language_from: str
+    language_to: str
+    mode: SessionMode = SessionMode.MIXED
+    word_ids: list[int] | None = None
+    review_config: ReviewConfig | None = None
+    fsrs_config: FSRSConfig | None = None
+    current_exercise: Exercise | None = None
+    hint_count: int = 0
+    buried_word_ids: list[int] = Field(
+        default_factory=list,
+    )
+    correct: int = 0
+    incorrect: int = 0
+    streak: int = 0
+    best_streak: int = 0
+    new_served: int = 0
+    review_served: int = 0
+    saved_at: datetime = Field(
+        default_factory=datetime.now,
+    )
+
+
 class UserProgress(BaseModel):
     """Spaced-repetition progress for a user-word pair.
 

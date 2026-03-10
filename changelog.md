@@ -1,6 +1,21 @@
 
 ## Changelog - Rembrandt
 
+### v3.1.0 - 10th March 2026
+
+- Added `SessionSnapshot` model for serializing session state.
+- Added `Session.snapshot()`: create a serializable snapshot.
+- Added `Session.save()`: persist session state to the database.
+- Added `Session.restore()`: restore a session from a saved
+  snapshot.
+- Added database methods:
+  - `save_session_snapshot()`
+  - `get_session_snapshot()`
+  - `delete_session_snapshot()`
+- Added `session_snapshots` table to both SQLite and PostgreSQL
+  schemas.
+
+
 ### v3.0.0 - 10th March 2026
 
 - Converted `Database` to async using `aiosqlite`:

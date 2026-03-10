@@ -17,6 +17,7 @@ from rembrandt.models import (
     DailyStats,
     Lesson,
     ReviewForecast,
+    SessionSnapshot,
     User,
     UserProgress,
     UserSession,
@@ -104,6 +105,15 @@ CREATE TABLE IF NOT EXISTS answer_history (
     answered_at   TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (word_id) REFERENCES words(id)
+);
+
+CREATE TABLE IF NOT EXISTS session_snapshots (
+    user_id   INTEGER NOT NULL,
+    key       TEXT    NOT NULL DEFAULT '',
+    data      TEXT    NOT NULL,
+    saved_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 """
 
@@ -1460,6 +1470,79 @@ class Database:
                 f"Lesson not found: {lesson_id}"
             )
         await self._conn.commit()
+
+    async def save_session_snapshot(
+        self,
+        snapshot: SessionSnapshot,
+        key: str = "",
+    ) -> None:
+        """Persist a session snapshot.
+
+        Replaces any existing snapshot for the same
+        `(user_id, key)` pair.
+
+        :param snapshot: The snapshot to save.
+        :param key: Optional key to distinguish multiple
+            snapshots per user (e.g. a chat id).
+        """
+        await self._conn.execute(
+            "INSERT OR REPLACE INTO session_snapshots "
+            "(user_id, key, data, saved_at) "
+            "VALUES (?, ?, ?, ?)",
+            (
+                snapshot.user_id,
+                key,
+                snapshot.model_dump_json(),
+                snapshot.saved_at.strftime(_ISO_FMT),
+            ),
+        )
+        await self._conn.commit()
+
+    async def get_session_snapshot(
+        self,
+        user_id: int,
+        key: str = "",
+    ) -> SessionSnapshot | None:
+        """Load a previously saved session snapshot.
+
+        :param user_id: The user's database id.
+        :param key: Optional key matching the one used
+            when saving.
+        :return: The `SessionSnapshot`, or `None` if no
+            snapshot exists.
+        """
+        cursor = await self._conn.execute(
+            "SELECT data FROM session_snapshots "
+            "WHERE user_id = ? AND key = ?",
+            (user_id, key),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return SessionSnapshot.model_validate_json(
+            row["data"],
+        )
+
+    async def delete_session_snapshot(
+        self,
+        user_id: int,
+        key: str = "",
+    ) -> bool:
+        """Delete a saved session snapshot.
+
+        :param user_id: The user's database id.
+        :param key: Optional key matching the one used
+            when saving.
+        :return: `True` if a snapshot was deleted,
+            `False` if none existed.
+        """
+        cursor = await self._conn.execute(
+            "DELETE FROM session_snapshots "
+            "WHERE user_id = ? AND key = ?",
+            (user_id, key),
+        )
+        await self._conn.commit()
+        return cursor.rowcount > 0
 
     async def close(self) -> None:
         """Close the database connection."""
