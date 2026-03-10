@@ -9,6 +9,8 @@ from rembrandt.fsrs import fsrs_review
 from rembrandt.models import (
     AnswerHistory,
     CardState,
+    ConversationStage,
+    ConversationState,
     DailyStats,
     FSRSConfig,
     Hint,
@@ -32,6 +34,8 @@ __version__ = version("rembrandt")
 __all__ = [
     "AnswerHistory",
     "CardState",
+    "ConversationStage",
+    "ConversationState",
     "DailyStats",
     "Database",
     "FSRSConfig",

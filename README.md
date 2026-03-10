@@ -210,6 +210,39 @@ await db.delete_session_snapshot(user.id, key="chat_123")
 All in-memory state is preserved: current exercise, hint count, streak,
 buried words, and daily limit counters.
 
+## Conversation State
+
+Track where users are in a multi-step bot interaction:
+
+```python
+from rembrandt import ConversationStage, ConversationState
+
+# Save the user's current stage
+state = ConversationState(
+    user_id=user.id,
+    key="chat_123",
+    stage=ConversationStage.AWAITING_ANSWER,
+    data={"lesson_id": 5, "page": 2},
+)
+await db.save_conversation_state(state)
+
+# Later, retrieve it to decide what to do
+state = await db.get_conversation_state(
+    user.id, key="chat_123",
+)
+if state and state.stage == ConversationStage.AWAITING_ANSWER:
+    # process the user's answer...
+    pass
+
+# Clean up when done
+await db.delete_conversation_state(
+    user.id, key="chat_123",
+)
+```
+
+Available stages: `IDLE`, `CHOOSING_LESSON`, `EXERCISING`,
+`AWAITING_ANSWER`, `AWAITING_SELF_GRADE`, `VIEWING_STATS`.
+
 ## Learning Steps
 
 By default, new cards go through short-interval learning steps before

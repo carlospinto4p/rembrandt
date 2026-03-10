@@ -1,6 +1,25 @@
 
 ## Changelog - Rembrandt
 
+### v3.2.0 - 10th March 2026
+
+- Added `ConversationStage` enum:
+  - `IDLE`
+  - `CHOOSING_LESSON`
+  - `EXERCISING`
+  - `AWAITING_ANSWER`
+  - `AWAITING_SELF_GRADE`
+  - `VIEWING_STATS`
+- Added `ConversationState` model for tracking multi-step bot
+  interactions with arbitrary context data.
+- Added database methods:
+  - `save_conversation_state()`
+  - `get_conversation_state()`
+  - `delete_conversation_state()`
+- Added `conversation_states` table to both SQLite and
+  PostgreSQL schemas.
+
+
 ### v3.1.0 - 10th March 2026
 
 - Added `SessionSnapshot` model for serializing session state.

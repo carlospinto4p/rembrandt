@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -492,6 +493,52 @@ class ReviewForecast(BaseModel):
 
     date: str
     due_count: int
+
+
+class ConversationStage(str, Enum):
+    """Stage in a multi-step bot conversation.
+
+    :cvar IDLE: No active interaction.
+    :cvar CHOOSING_LESSON: Browsing or selecting a lesson.
+    :cvar EXERCISING: Session active, ready for next exercise.
+    :cvar AWAITING_ANSWER: Exercise displayed, waiting for the
+        user's answer.
+    :cvar AWAITING_SELF_GRADE: Self-graded exercise shown,
+        waiting for a 0-5 rating.
+    :cvar VIEWING_STATS: Reviewing session or progress
+        statistics.
+    """
+
+    IDLE = "idle"
+    CHOOSING_LESSON = "choosing_lesson"
+    EXERCISING = "exercising"
+    AWAITING_ANSWER = "awaiting_answer"
+    AWAITING_SELF_GRADE = "awaiting_self_grade"
+    VIEWING_STATS = "viewing_stats"
+
+
+class ConversationState(BaseModel):
+    """Persistent state for a bot conversation.
+
+    Tracks which stage the user is in and carries arbitrary
+    context data needed by that stage (e.g. the current page
+    of lessons, the session snapshot key).
+
+    :param user_id: The user's database id.
+    :param key: Conversation key (e.g. a chat id) to
+        distinguish multiple conversations per user.
+    :param stage: Current conversation stage.
+    :param data: Arbitrary context data for the current stage.
+    :param updated_at: Timestamp of the last state change.
+    """
+
+    user_id: int
+    key: str = ""
+    stage: ConversationStage = ConversationStage.IDLE
+    data: dict[str, Any] = Field(default_factory=dict)
+    updated_at: datetime = Field(
+        default_factory=datetime.now,
+    )
 
 
 def learning_mode(word: Word) -> LearningMode:

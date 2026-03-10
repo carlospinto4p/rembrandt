@@ -14,6 +14,8 @@ from psycopg.types.json import Json
 from rembrandt.models import (
     AnswerHistory,
     CardState,
+    ConversationStage,
+    ConversationState,
     DailyStats,
     Lesson,
     ReviewForecast,
@@ -110,6 +112,16 @@ CREATE TABLE IF NOT EXISTS session_snapshots (
     key       TEXT    NOT NULL DEFAULT '',
     data      TEXT    NOT NULL,
     saved_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, key),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS conversation_states (
+    user_id    INTEGER NOT NULL,
+    key        TEXT    NOT NULL DEFAULT '',
+    stage      TEXT    NOT NULL DEFAULT 'idle',
+    data       TEXT    NOT NULL DEFAULT '{}',
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, key),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
@@ -1548,6 +1560,91 @@ class PostgresDatabase:
         async with self._conn.cursor() as cur:
             await cur.execute(
                 "DELETE FROM session_snapshots "
+                "WHERE user_id = %s AND key = %s",
+                (user_id, key),
+            )
+            deleted = cur.rowcount > 0
+        await self._conn.commit()
+        return deleted
+
+    async def save_conversation_state(
+        self,
+        state: ConversationState,
+    ) -> None:
+        """Persist a conversation state.
+
+        Replaces any existing state for the same
+        `(user_id, key)` pair.
+
+        :param state: The conversation state to save.
+        """
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "INSERT INTO conversation_states "
+                "(user_id, key, stage, data, updated_at) "
+                "VALUES (%s, %s, %s, %s, %s) "
+                "ON CONFLICT (user_id, key) DO UPDATE "
+                "SET stage = EXCLUDED.stage, "
+                "data = EXCLUDED.data, "
+                "updated_at = EXCLUDED.updated_at",
+                (
+                    state.user_id,
+                    state.key,
+                    state.stage.value,
+                    json.dumps(state.data),
+                    state.updated_at,
+                ),
+            )
+        await self._conn.commit()
+
+    async def get_conversation_state(
+        self,
+        user_id: int,
+        key: str = "",
+    ) -> ConversationState | None:
+        """Load a conversation state.
+
+        :param user_id: The user's database id.
+        :param key: Conversation key (e.g. a chat id).
+        :return: The `ConversationState`, or `None` if
+            none exists.
+        """
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "SELECT user_id, key, stage, data, "
+                "updated_at "
+                "FROM conversation_states "
+                "WHERE user_id = %s AND key = %s",
+                (user_id, key),
+            )
+            row = await cur.fetchone()
+        if row is None:
+            return None
+        return ConversationState(
+            user_id=row["user_id"],
+            key=row["key"],
+            stage=ConversationStage(row["stage"]),
+            data=row["data"]
+            if isinstance(row["data"], dict)
+            else json.loads(row["data"]),
+            updated_at=row["updated_at"],
+        )
+
+    async def delete_conversation_state(
+        self,
+        user_id: int,
+        key: str = "",
+    ) -> bool:
+        """Delete a conversation state.
+
+        :param user_id: The user's database id.
+        :param key: Conversation key (e.g. a chat id).
+        :return: `True` if a state was deleted,
+            `False` if none existed.
+        """
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "DELETE FROM conversation_states "
                 "WHERE user_id = %s AND key = %s",
                 (user_id, key),
             )

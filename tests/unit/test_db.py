@@ -8,6 +8,8 @@ import pytest
 from rembrandt.db import Database, import_words_csv
 from rembrandt.models import (
     CardState,
+    ConversationStage,
+    ConversationState,
     Lesson,
     UserProgress,
     Word,
@@ -1494,3 +1496,113 @@ async def test_import_words_csv_with_owner(
         db, csv_file, "en", "es", owner_id=u.id,
     )
     assert words[0].owner_id == u.id
+
+
+# --- Conversation State Tests ---
+
+
+async def test_save_and_get_conversation_state(db):
+    u = await db.register_user("u1", "pass")
+    state = ConversationState(
+        user_id=u.id,
+        stage=ConversationStage.AWAITING_ANSWER,
+        data={"exercise_id": 42},
+    )
+    await db.save_conversation_state(state)
+
+    loaded = await db.get_conversation_state(u.id)
+    assert loaded is not None
+    assert loaded.user_id == u.id
+    assert loaded.stage == ConversationStage.AWAITING_ANSWER
+    assert loaded.data == {"exercise_id": 42}
+
+
+async def test_get_conversation_state_nonexistent(db):
+    result = await db.get_conversation_state(999)
+    assert result is None
+
+
+async def test_save_conversation_state_overwrites(db):
+    u = await db.register_user("u1", "pass")
+    state1 = ConversationState(
+        user_id=u.id,
+        stage=ConversationStage.CHOOSING_LESSON,
+    )
+    await db.save_conversation_state(state1)
+
+    state2 = ConversationState(
+        user_id=u.id,
+        stage=ConversationStage.EXERCISING,
+        data={"session_key": "abc"},
+    )
+    await db.save_conversation_state(state2)
+
+    loaded = await db.get_conversation_state(u.id)
+    assert loaded is not None
+    assert loaded.stage == ConversationStage.EXERCISING
+    assert loaded.data == {"session_key": "abc"}
+
+
+async def test_conversation_state_with_key(db):
+    u = await db.register_user("u1", "pass")
+    s1 = ConversationState(
+        user_id=u.id,
+        key="chat_1",
+        stage=ConversationStage.IDLE,
+    )
+    s2 = ConversationState(
+        user_id=u.id,
+        key="chat_2",
+        stage=ConversationStage.EXERCISING,
+    )
+    await db.save_conversation_state(s1)
+    await db.save_conversation_state(s2)
+
+    r1 = await db.get_conversation_state(
+        u.id, key="chat_1",
+    )
+    r2 = await db.get_conversation_state(
+        u.id, key="chat_2",
+    )
+    assert r1 is not None
+    assert r1.stage == ConversationStage.IDLE
+    assert r2 is not None
+    assert r2.stage == ConversationStage.EXERCISING
+
+
+async def test_delete_conversation_state(db):
+    u = await db.register_user("u1", "pass")
+    state = ConversationState(
+        user_id=u.id,
+        stage=ConversationStage.VIEWING_STATS,
+    )
+    await db.save_conversation_state(state)
+
+    deleted = await db.delete_conversation_state(u.id)
+    assert deleted is True
+
+    deleted2 = await db.delete_conversation_state(u.id)
+    assert deleted2 is False
+
+    loaded = await db.get_conversation_state(u.id)
+    assert loaded is None
+
+
+async def test_conversation_state_preserves_data(db):
+    u = await db.register_user("u1", "pass")
+    state = ConversationState(
+        user_id=u.id,
+        stage=ConversationStage.CHOOSING_LESSON,
+        data={
+            "page": 2,
+            "cefr": "A1",
+            "tags": ["food", "travel"],
+        },
+    )
+    await db.save_conversation_state(state)
+
+    loaded = await db.get_conversation_state(u.id)
+    assert loaded is not None
+    assert loaded.data["page"] == 2
+    assert loaded.data["cefr"] == "A1"
+    assert loaded.data["tags"] == ["food", "travel"]
