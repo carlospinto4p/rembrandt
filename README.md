@@ -12,42 +12,48 @@ pip install rembrandt
 ## Quick Start
 
 ```python
+import asyncio
 from rembrandt import Database, Session, Word
 
-# Set up database and add vocabulary
-with Database("vocab.db") as db:
-    db.add_words([
-        Word(language_from="en", language_to="es",
-             word_from="cat", word_to="gato"),
-        Word(language_from="en", language_to="es",
-             word_from="dog", word_to="perro"),
-        Word(language_from="en", language_to="es",
-             word_from="house", word_to="casa"),
-        Word(language_from="en", language_to="es",
-             word_from="book", word_to="libro"),
-    ])
+async def main():
+    # Set up database and add vocabulary
+    async with await Database.connect("vocab.db") as db:
+        await db.add_words([
+            Word(language_from="en", language_to="es",
+                 word_from="cat", word_to="gato"),
+            Word(language_from="en", language_to="es",
+                 word_from="dog", word_to="perro"),
+            Word(language_from="en", language_to="es",
+                 word_from="house", word_to="casa"),
+            Word(language_from="en", language_to="es",
+                 word_from="book", word_to="libro"),
+        ])
 
-    # Register a user and start a session
-    user = db.register_user("user1", "pass")
-    session = Session(db, user_id=user.id, language_from="en",
-                      language_to="es")
+        # Register a user and start a session
+        user = await db.register_user("user1", "pass")
+        session = Session(db, user_id=user.id,
+                          language_from="en",
+                          language_to="es")
 
-    # Get an exercise
-    exercise = session.next_exercise()
-    print(f"Translate: {exercise.word.word_from}")
-    print(f"Type: {exercise.exercise_type}")
+        # Get an exercise
+        exercise = await session.next_exercise()
+        print(f"Translate: {exercise.word.word_from}")
+        print(f"Type: {exercise.exercise_type}")
 
-    if exercise.options:
-        print(f"Options: {exercise.options}")
+        if exercise.options:
+            print(f"Options: {exercise.options}")
 
-    # Submit an answer
-    result = session.answer("gato")
-    print(f"Correct: {result.correct}")
-    print(f"Expected: {result.expected}")
+        # Submit an answer
+        result = await session.answer("gato")
+        print(f"Correct: {result.correct}")
+        print(f"Expected: {result.expected}")
 
-    # Typos are accepted with a warning
-    if result.near_miss:
-        print(f"Close! The exact answer was: {result.expected}")
+        # Typos are accepted with a warning
+        if result.near_miss:
+            print(f"Close! The exact answer was: "
+                  f"{result.expected}")
+
+asyncio.run(main())
 ```
 
 The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
@@ -73,7 +79,7 @@ letter. When the word has gender or conjugation data, an example sentence
 is included:
 
 ```python
-exercise = session.next_exercise()
+exercise = await session.next_exercise()
 h = session.hint()   # "g___ (4 letters)"
 h = session.hint()   # "ga__ (4 letters)"
 h = session.hint()   # "gat_ (4 letters)"
@@ -90,14 +96,14 @@ word loading, and session setup in a single call:
 ```python
 from rembrandt import quick_session
 
-session = quick_session(
+session = await quick_session(
     "vocab.json",              # JSON file with word/definition dicts
     language_from="es",
     language_to="en",
     limit=500,
 )
 
-exercise = session.next_exercise()
+exercise = await session.next_exercise()
 ```
 
 Words are loaded only on first run — subsequent calls reuse the existing
@@ -105,7 +111,7 @@ database and spaced-repetition progress. You can also pass an inline list
 of dicts instead of a file path:
 
 ```python
-session = quick_session(
+session = await quick_session(
     [{"word": "cat", "definition": "gato"}, ...],
     db_path="vocab.db",
     language_from="en",
@@ -121,8 +127,8 @@ words through their definitions within the same language:
 ```python
 from rembrandt import Database, Session, Word
 
-db = Database("vocab.db")
-db.add_words([
+db = await Database.connect("vocab.db")
+await db.add_words([
     Word(language_from="en", language_to="en",
          word_from="ephemeral",
          word_to="lasting for a very short time"),
@@ -134,10 +140,11 @@ db.add_words([
          word_to="truthful and straightforward"),
 ])
 
-user = db.register_user("user1", "pass")
-session = Session(db, user_id=user.id, language_from="en",
+user = await db.register_user("user1", "pass")
+session = Session(db, user_id=user.id,
+                  language_from="en",
                   language_to="en")
-exercise = session.next_exercise()
+exercise = await session.next_exercise()
 ```
 
 When both languages are the same, Rembrandt automatically switches to
@@ -152,8 +159,8 @@ Control which words appear in a session using `SessionMode`:
 ```python
 from rembrandt import Database, Session, SessionMode
 
-with Database("vocab.db") as db:
-    user = db.register_user("user1", "pass")
+async with await Database.connect("vocab.db") as db:
+    user = await db.register_user("user1", "pass")
 
     # Only new (unreviewed) words
     s = Session(db, user.id, "en", "es",
@@ -171,7 +178,7 @@ with Database("vocab.db") as db:
 You can also restrict a session to a lesson's words:
 
 ```python
-lesson = db.get_lessons("en", "es", cefr="A1")[0]
+lesson = (await db.get_lessons("en", "es", cefr="A1"))[0]
 s = Session(db, user.id, "en", "es",
             word_ids=lesson.word_ids)
 ```
@@ -219,8 +226,8 @@ curve with 19 optimised parameters for more accurate scheduling:
 ```python
 from rembrandt import Database, FSRSConfig, Session
 
-with Database("vocab.db") as db:
-    user = db.register_user("user1", "pass")
+async with await Database.connect("vocab.db") as db:
+    user = await db.register_user("user1", "pass")
 
     # Use FSRS instead of SM-2
     session = Session(
@@ -228,8 +235,8 @@ with Database("vocab.db") as db:
         fsrs_config=FSRSConfig(),
     )
 
-    exercise = session.next_exercise()
-    result = session.answer("gato")
+    exercise = await session.next_exercise()
+    result = await session.answer("gato")
 
     # Custom FSRS parameters
     config = FSRSConfig(
@@ -256,10 +263,10 @@ CEFR level or topic. Pre-built Spanish lessons are included:
 ```python
 from rembrandt import Database, Lesson, load_lessons
 
-with Database("spanish.db") as db:
+async with await Database.connect("spanish.db") as db:
     # Load vocabulary first (e.g. via quick_session or add_words)
     # Then load pre-built lessons
-    lessons = load_lessons(
+    lessons = await load_lessons(
         "data/spanish_lessons.json",
         "data/spanish_top10000.json",
         db,
@@ -268,12 +275,12 @@ with Database("spanish.db") as db:
     )
 
     # Browse lessons by CEFR level
-    a1 = db.get_lessons("en", "es", cefr="A1")
+    a1 = await db.get_lessons("en", "es", cefr="A1")
     for lesson in a1:
         print(f"{lesson.title}: {lesson.word_count} words")
 
     # Filter by topic
-    food = db.get_lessons("en", "es", tag="food")
+    food = await db.get_lessons("en", "es", tag="food")
 ```
 
 The `data/spanish_lessons.json` file contains 467 pre-built lessons:
@@ -287,7 +294,7 @@ Track how far a user has progressed in a lesson:
 ```python
 from rembrandt import lesson_progress
 
-lp = lesson_progress(db, user.id, lesson)
+lp = await lesson_progress(db, user.id, lesson)
 print(f"Studied: {lp.words_studied}/{lp.words_total}"
       f" ({lp.completion_pct}%)")
 print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
@@ -304,7 +311,7 @@ review sessions:
 
 ```python
 # Find weak words (>= 50% error rate, >= 3 attempts)
-weak = db.weak_words(user.id, "en", "es")
+weak = await db.weak_words(user.id, "en", "es")
 for ww in weak:
     print(f"{ww.word.word_from}: {ww.errors}/{ww.attempts}"
           f" ({ww.error_rate:.0%} error rate)")
@@ -312,7 +319,7 @@ for ww in weak:
 # Prioritize weak words in a session
 from rembrandt.spaced_repetition import select_words
 
-words = select_words(
+words = await select_words(
     db, user.id, "en", "es",
     prioritize_weak=True,
 )
@@ -325,13 +332,13 @@ the history for trends and daily summaries:
 
 ```python
 # Recent answer history
-history = db.get_answer_history(user.id, limit=50)
+history = await db.get_answer_history(user.id, limit=50)
 for h in history:
     status = "correct" if h.correct else "wrong"
     print(f"Word {h.word_id}: {status} (q={h.quality})")
 
 # Daily statistics (last 30 days)
-for day in db.daily_stats(user.id, days=30):
+for day in await db.daily_stats(user.id, days=30):
     print(f"{day.date}: {day.correct}/{day.answers}"
           f" ({day.accuracy_pct}%)")
 ```
@@ -340,11 +347,11 @@ for day in db.daily_stats(user.id, days=30):
 
 ```python
 # Overall retention rate (last 30 days)
-rate = db.retention_rate(user.id, days=30)
+rate = await db.retention_rate(user.id, days=30)
 print(f"Retention: {rate}%")
 
 # Upcoming review workload (next 7 days)
-for day in db.forecast(user.id, days=7):
+for day in await db.forecast(user.id, days=7):
     print(f"{day.date}: {day.due_count} cards due")
 ```
 
@@ -355,15 +362,15 @@ Bulk-load vocabulary from spreadsheets:
 ```python
 from rembrandt import Database, import_words_csv
 
-db = Database("vocab.db")
-words = import_words_csv(
+db = await Database.connect("vocab.db")
+words = await import_words_csv(
     db, "my_words.csv",
     language_from="en", language_to="es",
 )
 print(f"Imported {len(words)} words")
 
 # TSV files are auto-detected; custom column names supported
-words = import_words_csv(
+words = await import_words_csv(
     db, "words.tsv",
     language_from="en", language_to="es",
     word_from_col="english",
@@ -378,7 +385,7 @@ and import them into another database:
 
 ```python
 # Export
-records = db.export_progress(user.id)
+records = await db.export_progress(user.id)
 
 # Save to file
 import json
@@ -388,7 +395,7 @@ with open("progress.json", "w") as f:
 # Import into another database
 with open("progress.json") as f:
     records = json.load(f)
-count = db.import_progress(records)
+count = await db.import_progress(records)
 print(f"Imported {count} records")
 ```
 
@@ -440,16 +447,17 @@ from rembrandt.session import Session
 
 dsn = "postgresql://rembrandt:rembrandt@localhost/rembrandt"
 
-with PostgresDatabase(dsn) as db:
-    db.add_words([
+async with await PostgresDatabase.connect(dsn) as db:
+    await db.add_words([
         Word(language_from="en", language_to="es",
              word_from="cat", word_to="gato"),
     ])
 
-    user = db.register_user("user1", "pass")
+    user = await db.register_user("user1", "pass")
     session = Session(db, user_id=user.id,
-                      language_from="en", language_to="es")
-    exercise = session.next_exercise()
+                      language_from="en",
+                      language_to="es")
+    exercise = await session.next_exercise()
 ```
 
 All features (lessons, progress, answer history, weak words, etc.)

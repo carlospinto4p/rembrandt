@@ -79,7 +79,7 @@ class Session:
         self._review_served = 0
         self._all_words: list[Word] | None = None
 
-    def next_exercise(self) -> Exercise | None:
+    async def next_exercise(self) -> Exercise | None:
         """Select a word and generate an exercise.
 
         :return: An `Exercise`, or `None` if no words are
@@ -98,7 +98,7 @@ class Session:
             )
             max_review = max(remaining, 0)
 
-        words = select_words(
+        words = await select_words(
             self.db,
             self.user_id,
             self.language_from,
@@ -116,9 +116,9 @@ class Session:
         word = words[0]
         if word.id is not None:
             self._buried_word_ids.add(word.id)
-        self._track_served(word)
+        await self._track_served(word)
         if self._all_words is None:
-            self._all_words = self.db.get_words(
+            self._all_words = await self.db.get_words(
                 self.language_from, self.language_to,
             )
         exercise = generate_exercise(word, self._all_words)
@@ -126,12 +126,12 @@ class Session:
         self._hint_count = 0
         return exercise
 
-    def _track_served(self, word: Word) -> None:
+    async def _track_served(self, word: Word) -> None:
         """Increment new/review served counters.
 
         :param word: The word about to be served.
         """
-        progress = self.db.get_progress(
+        progress = await self.db.get_progress(
             self.user_id, word.id,
         )
         if progress is None:
@@ -144,7 +144,7 @@ class Session:
         else:
             self._review_served += 1
 
-    def answer(
+    async def answer(
         self,
         text: str = "",
         quality: int | None = None,
@@ -162,7 +162,8 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. Call next_exercise() first."
+                "No active exercise. "
+                "Call next_exercise() first."
             )
 
         result = evaluate_answer(
@@ -176,7 +177,7 @@ class Session:
         word_id = result.word.id
         if word_id is None:
             raise ValueError("Word id must be set")
-        progress = self.db.get_progress(
+        progress = await self.db.get_progress(
             self.user_id, word_id
         )
         if progress is None:
@@ -195,9 +196,9 @@ class Session:
                 progress, sm2_quality,
                 config=self._review_config,
             )
-        self.db.upsert_progress(updated)
+        await self.db.upsert_progress(updated)
 
-        self.db.record_answer(
+        await self.db.record_answer(
             self.user_id,
             word_id,
             self._current_exercise.exercise_type.value,
@@ -231,7 +232,8 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. Call next_exercise() first."
+                "No active exercise. "
+                "Call next_exercise() first."
             )
         skipped = self._current_exercise
         self._current_exercise = None
@@ -251,12 +253,16 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. Call next_exercise() first."
+                "No active exercise. "
+                "Call next_exercise() first."
             )
         ex = self._current_exercise
         if ex.expected_answer:
             answer = ex.expected_answer
-        elif ex.exercise_type == ExerciseType.REVERSE_FLASHCARD:
+        elif (
+            ex.exercise_type
+            == ExerciseType.REVERSE_FLASHCARD
+        ):
             answer = ex.word.word_from
         else:
             answer = ex.word.word_to
@@ -273,7 +279,8 @@ class Session:
 
         example = ""
         if (
-            learning_mode(ex.word) == LearningMode.TRANSLATION
+            learning_mode(ex.word)
+            == LearningMode.TRANSLATION
             and (
                 ex.word.gender is not None
                 or ex.word.conjugation_group is not None
@@ -316,7 +323,7 @@ class Session:
         )
 
 
-def quick_session(
+async def quick_session(
     vocab: str | Path | list[dict[str, str]],
     *,
     db_path: str | Path | None = None,
@@ -366,12 +373,14 @@ def quick_session(
 
     db_path = Path(db_path)
     fresh = not db_path.exists()
-    db = Database(db_path)
+    db = await Database.connect(db_path)
 
     if user_id is None:
-        user = db.get_user("default")
+        user = await db.get_user("default")
         if user is None:
-            user = db.register_user("default", "default")
+            user = await db.register_user(
+                "default", "default",
+            )
         user_id = user.id
 
     if fresh:
@@ -393,7 +402,7 @@ def quick_session(
             )
             for e in entries[:limit]
         ]
-        db.add_words(words)
+        await db.add_words(words)
 
     return Session(
         db, user_id, language_from, language_to,

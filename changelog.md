@@ -1,6 +1,26 @@
 
 ## Changelog - Rembrandt
 
+### v3.0.0 - 10th March 2026
+
+- Converted `Database` to async using `aiosqlite`:
+  - `Database(path)` replaced by `await Database.connect(path)` classmethod.
+  - All database methods are now `async def` with `await`.
+  - Context manager protocol uses `__aenter__`/`__aexit__`.
+- Converted `PostgresDatabase` to async using `psycopg.AsyncConnection`:
+  - `PostgresDatabase(dsn)` replaced by `await PostgresDatabase.connect(dsn)`.
+  - All database methods are now `async def` with `await`.
+- Converted `Session` methods to async:
+  - `next_exercise()`, `answer()`, `_track_served()` are now `async def`.
+  - `hint()`, `skip()`, `summary()` remain sync (no I/O).
+- Converted `select_words()` to async in `spaced_repetition.py`.
+- Converted `load_lessons()` and `lesson_progress()` to async in `lessons.py`.
+- Converted `quick_session()` and `import_words_csv()` to async.
+- Added `aiosqlite>=0.20` to dependencies.
+- Added `pytest-asyncio>=0.24` to dev dependencies.
+- Updated all unit tests to async.
+
+
 ### v2.6.3 - 9th March 2026
 
 - Optimised `review()` and `fsrs_review()`: return the original

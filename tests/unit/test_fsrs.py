@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
 
 from rembrandt.fsrs import (
     AGAIN,
@@ -302,7 +301,7 @@ def test_fsrs_review_suspended_unchanged():
 # --- Session Integration Tests ---
 
 
-def test_session_with_fsrs(db_with_words):
+async def test_session_with_fsrs(db_with_words):
     from rembrandt.session import Session
 
     s = Session(
@@ -310,13 +309,13 @@ def test_session_with_fsrs(db_with_words):
         language_from="en", language_to="es",
         fsrs_config=FSRSConfig(),
     )
-    ex = s.next_exercise()
+    ex = await s.next_exercise()
     assert ex is not None
-    result = s.answer(ex.word.word_to)
+    result = await s.answer(ex.word.word_to)
     assert result.correct is True
 
     # Verify FSRS state was persisted
-    progress = db_with_words.get_progress(
+    progress = await db_with_words.get_progress(
         1, ex.word.id,
     )
     assert progress is not None

@@ -1,17 +1,18 @@
 """Shared fixtures for unit tests."""
 
 import pytest
+import pytest_asyncio
 
 from rembrandt.db import Database
 from rembrandt.models import Word
 
 
-@pytest.fixture
-def db(tmp_path):
+@pytest_asyncio.fixture
+async def db(tmp_path):
     """Empty database for tests that don't need pre-loaded words."""
-    database = Database(tmp_path / "test.db")
+    database = await Database.connect(tmp_path / "test.db")
     yield database
-    database.close()
+    await database.close()
 
 
 @pytest.fixture
@@ -74,12 +75,12 @@ def definition_words():
     ]
 
 
-@pytest.fixture
-def definition_db(tmp_path):
+@pytest_asyncio.fixture
+async def definition_db(tmp_path):
     """Database pre-loaded with EN-EN definition pairs."""
-    database = Database(tmp_path / "def.db")
-    database.register_user("u1", "pass")
-    database.add_words([
+    database = await Database.connect(tmp_path / "def.db")
+    await database.register_user("u1", "pass")
+    await database.add_words([
         Word(
             language_from="en", language_to="en",
             word_from="ephemeral",
@@ -107,16 +108,16 @@ def definition_db(tmp_path):
         ),
     ])
     yield database
-    database.close()
+    await database.close()
 
 
-@pytest.fixture
-def db_with_words(tmp_path):
+@pytest_asyncio.fixture
+async def db_with_words(tmp_path):
     """Database pre-loaded with EN-ES word pairs and a user."""
-    database = Database(tmp_path / "test.db")
-    database.register_user("u1", "pass")
-    database.register_user("u2", "pass")
-    database.add_words([
+    database = await Database.connect(tmp_path / "test.db")
+    await database.register_user("u1", "pass")
+    await database.register_user("u2", "pass")
+    await database.add_words([
         Word(
             language_from="en", language_to="es",
             word_from="cat", word_to="gato",
@@ -139,4 +140,4 @@ def db_with_words(tmp_path):
         ),
     ])
     yield database
-    database.close()
+    await database.close()

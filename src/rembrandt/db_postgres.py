@@ -1,4 +1,4 @@
-"""PostgreSQL database layer for words and user progress."""
+"""Async PostgreSQL backend for words and user progress."""
 
 import hashlib
 import json
@@ -7,6 +7,7 @@ import secrets
 from datetime import datetime, timedelta
 
 import psycopg
+from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Json
 
@@ -233,85 +234,105 @@ def _row_to_progress(r: dict) -> UserProgress:
 
 
 class PostgresDatabase:
-    """PostgreSQL backend for vocabulary words and progress.
+    """Async PostgreSQL backend for vocabulary words and
+    progress.
 
-    :param dsn: PostgreSQL connection string, e.g.
-        `"postgresql://rembrandt:rembrandt@localhost/rembrandt"`.
+    Use the `connect` classmethod to create an instance:
+
+    .. code-block:: python
+
+        db = await PostgresDatabase.connect(dsn)
     """
 
-    def __init__(self, dsn: str) -> None:
-        self._conn = psycopg.connect(
+    def __init__(self, conn: AsyncConnection) -> None:
+        self._conn = conn
+
+    @classmethod
+    async def connect(
+        cls, dsn: str,
+    ) -> "PostgresDatabase":
+        """Open a connection and initialise the schema.
+
+        :param dsn: PostgreSQL connection string, e.g.
+            `"postgresql://user:pass@localhost/db"`.
+        :return: A ready-to-use `PostgresDatabase`.
+        """
+        conn = await AsyncConnection.connect(
             dsn, row_factory=dict_row, autocommit=False,
         )
-        self._init_schema()
+        db = cls(conn)
+        await db._init_schema()
+        return db
 
-    def _init_schema(self) -> None:
+    async def _init_schema(self) -> None:
         """Create tables if they do not exist."""
-        with self._conn.cursor() as cur:
+        async with self._conn.cursor() as cur:
             for statement in _PG_SCHEMA.split(";"):
                 statement = statement.strip()
                 if statement:
-                    cur.execute(statement)
-        self._conn.commit()
-        self._migrate()
+                    await cur.execute(statement)
+        await self._conn.commit()
+        await self._migrate()
 
-    def _migrate(self) -> None:
+    async def _migrate(self) -> None:
         """Add columns introduced after the initial schema."""
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT column_name "
                 "FROM information_schema.columns "
                 "WHERE table_name = 'words'"
             )
             word_cols = {
-                r["column_name"] for r in cur.fetchall()
+                r["column_name"]
+                for r in await cur.fetchall()
             }
             if "owner_id" not in word_cols:
-                cur.execute(
+                await cur.execute(
                     "ALTER TABLE words "
                     "ADD COLUMN owner_id INTEGER "
                     "REFERENCES users(id)"
                 )
-            cur.execute(
+            await cur.execute(
                 "SELECT column_name "
                 "FROM information_schema.columns "
                 "WHERE table_name = 'progress'"
             )
             prog_cols = {
-                r["column_name"] for r in cur.fetchall()
+                r["column_name"]
+                for r in await cur.fetchall()
             }
             if "stability" not in prog_cols:
-                cur.execute(
+                await cur.execute(
                     "ALTER TABLE progress "
                     "ADD COLUMN stability "
                     "DOUBLE PRECISION"
                 )
             if "difficulty" not in prog_cols:
-                cur.execute(
+                await cur.execute(
                     "ALTER TABLE progress "
                     "ADD COLUMN difficulty "
                     "DOUBLE PRECISION"
                 )
-            cur.execute(
+            await cur.execute(
                 "CREATE INDEX IF NOT EXISTS "
                 "idx_words_langs "
                 "ON words(language_from, language_to)"
             )
-            cur.execute(
+            await cur.execute(
                 "CREATE INDEX IF NOT EXISTS "
                 "idx_progress_user_state "
                 "ON progress(user_id, state)"
             )
-            cur.execute(
+            await cur.execute(
                 "CREATE INDEX IF NOT EXISTS "
                 "idx_answer_user_word "
                 "ON answer_history(user_id, word_id)"
             )
-        self._conn.commit()
+        await self._conn.commit()
 
-    # -- Users --------------------------------------------------------
+    # -- Users ----------------------------------------------------
 
-    def register_user(
+    async def register_user(
         self,
         username: str,
         password: str,
@@ -329,17 +350,18 @@ class PostgresDatabase:
         """
         pw_hash = _hash_password(password)
         try:
-            with self._conn.cursor() as cur:
-                cur.execute(
+            async with self._conn.cursor() as cur:
+                await cur.execute(
                     "INSERT INTO users "
-                    "(username, display_name, password_hash) "
+                    "(username, display_name, "
+                    "password_hash) "
                     "VALUES (%s, %s, %s) RETURNING id",
                     (username, display_name, pw_hash),
                 )
-                row = cur.fetchone()
-            self._conn.commit()
+                row = await cur.fetchone()
+            await self._conn.commit()
         except psycopg.errors.UniqueViolation:
-            self._conn.rollback()
+            await self._conn.rollback()
             raise ValueError(
                 f"Username already exists: {username!r}"
             )
@@ -350,23 +372,26 @@ class PostgresDatabase:
             password_hash=pw_hash,
         )
 
-    def get_user(self, username: str) -> User | None:
+    async def get_user(
+        self, username: str,
+    ) -> User | None:
         """Fetch a user by username.
 
         :param username: The username to look up.
         :return: `User` or `None` if not found.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT * FROM users WHERE username = %s",
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "SELECT * FROM users "
+                "WHERE username = %s",
                 (username,),
             )
-            row = cur.fetchone()
+            row = await cur.fetchone()
         if row is None:
             return None
         return _row_to_user(row)
 
-    def authenticate_user(
+    async def authenticate_user(
         self,
         username: str,
         password: str,
@@ -378,7 +403,7 @@ class PostgresDatabase:
         :return: `User` if credentials are valid, `None`
             otherwise.
         """
-        user = self.get_user(username)
+        user = await self.get_user(username)
         if user is None:
             return None
         if not _verify_password(
@@ -387,9 +412,9 @@ class PostgresDatabase:
             return None
         return user
 
-    # -- User Sessions ------------------------------------------------
+    # -- User Sessions --------------------------------------------
 
-    def create_session(
+    async def create_session(
         self,
         user_id: int,
         *,
@@ -404,15 +429,17 @@ class PostgresDatabase:
         token = secrets.token_hex(32)
         now = datetime.now()
         expires = now + timedelta(hours=ttl_hours)
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "INSERT INTO user_sessions "
-                "(user_id, token, created_at, expires_at) "
-                "VALUES (%s, %s, %s, %s) RETURNING id",
+                "(user_id, token, created_at, "
+                "expires_at) "
+                "VALUES (%s, %s, %s, %s) "
+                "RETURNING id",
                 (user_id, token, now, expires),
             )
-            row = cur.fetchone()
-        self._conn.commit()
+            row = await cur.fetchone()
+        await self._conn.commit()
         return UserSession(
             id=row["id"],
             user_id=user_id,
@@ -421,7 +448,9 @@ class PostgresDatabase:
             expires_at=expires,
         )
 
-    def get_session(self, token: str) -> UserSession | None:
+    async def get_session(
+        self, token: str,
+    ) -> UserSession | None:
         """Fetch a session by token.
 
         Returns `None` if the token does not exist or the
@@ -430,13 +459,13 @@ class PostgresDatabase:
         :param token: The session token.
         :return: `UserSession` or `None`.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT * FROM user_sessions "
                 "WHERE token = %s",
                 (token,),
             )
-            row = cur.fetchone()
+            row = await cur.fetchone()
         if row is None:
             return None
         session = _row_to_user_session(row)
@@ -444,35 +473,39 @@ class PostgresDatabase:
             return None
         return session
 
-    def delete_session(self, token: str) -> None:
+    async def delete_session(
+        self, token: str,
+    ) -> None:
         """Delete a single session by token.
 
         :param token: The session token to remove.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "DELETE FROM user_sessions "
                 "WHERE token = %s",
                 (token,),
             )
-        self._conn.commit()
+        await self._conn.commit()
 
-    def delete_user_sessions(self, user_id: int) -> None:
+    async def delete_user_sessions(
+        self, user_id: int,
+    ) -> None:
         """Delete all sessions for a user.
 
         :param user_id: The user's database id.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "DELETE FROM user_sessions "
                 "WHERE user_id = %s",
                 (user_id,),
             )
-        self._conn.commit()
+        await self._conn.commit()
 
-    # -- Words --------------------------------------------------------
+    # -- Words ----------------------------------------------------
 
-    def add_word(
+    async def add_word(
         self,
         language_from: str,
         language_to: str,
@@ -501,14 +534,16 @@ class PostgresDatabase:
         :return: The inserted `Word` with its assigned id.
         """
         tags = tags or []
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "INSERT INTO words "
-                "(language_from, language_to, word_from, "
-                "word_to, gender, conjugation_group, "
+                "(language_from, language_to, "
+                "word_from, word_to, gender, "
+                "conjugation_group, "
                 "tags, cefr, owner_id) "
                 "VALUES "
-                "(%s, %s, %s, %s, %s, %s, %s, %s, %s) "
+                "(%s, %s, %s, %s, %s, %s, "
+                "%s, %s, %s) "
                 "RETURNING id",
                 (
                     language_from, language_to,
@@ -517,8 +552,8 @@ class PostgresDatabase:
                     Json(tags), cefr, owner_id,
                 ),
             )
-            row = cur.fetchone()
-        self._conn.commit()
+            row = await cur.fetchone()
+        await self._conn.commit()
         return Word(
             id=row["id"],
             language_from=language_from,
@@ -532,21 +567,22 @@ class PostgresDatabase:
             owner_id=owner_id,
         )
 
-    def add_words(
+    async def add_words(
         self,
         words: list[Word],
     ) -> list[Word]:
         """Bulk-insert words in a single transaction.
 
-        :param words: List of `Word` objects to insert (the `id`
-            field is ignored and assigned by the database).
+        :param words: List of `Word` objects to insert (the
+            `id` field is ignored and assigned by the
+            database).
         :return: List of inserted `Word` objects with assigned
             ids.
         """
         result: list[Word] = []
-        with self._conn.cursor() as cur:
+        async with self._conn.cursor() as cur:
             for w in words:
-                cur.execute(
+                await cur.execute(
                     "INSERT INTO words "
                     "(language_from, language_to, "
                     "word_from, word_to, "
@@ -557,23 +593,25 @@ class PostgresDatabase:
                     "%s, %s, %s) "
                     "RETURNING id",
                     (
-                        w.language_from, w.language_to,
+                        w.language_from,
+                        w.language_to,
                         w.word_from, w.word_to,
-                        w.gender, w.conjugation_group,
+                        w.gender,
+                        w.conjugation_group,
                         Json(w.tags), w.cefr,
                         w.owner_id,
                     ),
                 )
-                row = cur.fetchone()
+                row = await cur.fetchone()
                 result.append(
                     w.model_copy(
                         update={"id": row["id"]},
                     )
                 )
-        self._conn.commit()
+        await self._conn.commit()
         return result
 
-    def get_words(
+    async def get_words(
         self,
         language_from: str,
         language_to: str,
@@ -607,12 +645,12 @@ class PostgresDatabase:
                 " OR owner_id = %s)"
             )
             params.append(owner_id)
-        with self._conn.cursor() as cur:
-            cur.execute(sql, params)
-            rows = cur.fetchall()
+        async with self._conn.cursor() as cur:
+            await cur.execute(sql, params)
+            rows = await cur.fetchall()
         return [_row_to_word(r) for r in rows]
 
-    def update_word(self, word: Word) -> Word:
+    async def update_word(self, word: Word) -> Word:
         """Update an existing word.
 
         :param word: The `Word` with updated fields. The `id`
@@ -623,12 +661,14 @@ class PostgresDatabase:
         """
         if word.id is None:
             raise ValueError("Word id must be set")
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "UPDATE words SET "
-                "language_from = %s, language_to = %s, "
+                "language_from = %s, "
+                "language_to = %s, "
                 "word_from = %s, word_to = %s, "
-                "gender = %s, conjugation_group = %s, "
+                "gender = %s, "
+                "conjugation_group = %s, "
                 "tags = %s, cefr = %s, "
                 "owner_id = %s "
                 "WHERE id = %s",
@@ -649,17 +689,19 @@ class PostgresDatabase:
                 raise ValueError(
                     f"Word not found: {word.id}"
                 )
-        self._conn.commit()
+        await self._conn.commit()
         return word
 
-    def delete_word(self, word_id: int) -> None:
+    async def delete_word(
+        self, word_id: int,
+    ) -> None:
         """Delete a word by id.
 
         :param word_id: The word identifier.
         :raises ValueError: If the word does not exist.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "DELETE FROM words WHERE id = %s",
                 (word_id,),
             )
@@ -667,11 +709,11 @@ class PostgresDatabase:
                 raise ValueError(
                     f"Word not found: {word_id}"
                 )
-        self._conn.commit()
+        await self._conn.commit()
 
-    # -- Progress -----------------------------------------------------
+    # -- Progress -------------------------------------------------
 
-    def get_progress(
+    async def get_progress(
         self,
         user_id: int,
         word_id: int,
@@ -682,23 +724,24 @@ class PostgresDatabase:
         :param word_id: The word identifier.
         :return: `UserProgress` or `None` if no record exists.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT * FROM progress "
-                "WHERE user_id = %s AND word_id = %s",
+                "WHERE user_id = %s "
+                "AND word_id = %s",
                 (user_id, word_id),
             )
-            row = cur.fetchone()
+            row = await cur.fetchone()
         if row is None:
             return None
         return _row_to_progress(row)
 
-    def get_all_progress(
+    async def get_all_progress(
         self,
         user_id: int,
         word_ids: list[int],
     ) -> dict[int, UserProgress]:
-        """Fetch progress for multiple words in a single query.
+        """Fetch progress for multiple words in one query.
 
         :param user_id: The user's database id.
         :param word_ids: List of word identifiers.
@@ -707,29 +750,33 @@ class PostgresDatabase:
         """
         if not word_ids:
             return {}
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT * FROM progress "
                 "WHERE user_id = %s "
-                f"AND word_id IN ({_in_clause(word_ids)})",
+                "AND word_id IN "
+                f"({_in_clause(word_ids)})",
                 [user_id, *word_ids],
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         return {
             row["word_id"]: _row_to_progress(row)
             for row in rows
         }
 
-    def upsert_progress(self, progress: UserProgress) -> None:
+    async def upsert_progress(
+        self, progress: UserProgress,
+    ) -> None:
         """Insert or update progress for a user-word pair.
 
         :param progress: The `UserProgress` to persist.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "INSERT INTO progress "
-                "(user_id, word_id, easiness_factor, "
-                " interval, repetitions, next_review, "
+                "(user_id, word_id, easiness_factor,"
+                " interval, repetitions, "
+                " next_review, "
                 " state, step_index, lapse_count, "
                 " stability, difficulty) "
                 "VALUES "
@@ -739,13 +786,19 @@ class PostgresDatabase:
                 " easiness_factor "
                 "  = EXCLUDED.easiness_factor, "
                 " interval = EXCLUDED.interval, "
-                " repetitions = EXCLUDED.repetitions, "
-                " next_review = EXCLUDED.next_review, "
+                " repetitions "
+                "  = EXCLUDED.repetitions, "
+                " next_review "
+                "  = EXCLUDED.next_review, "
                 " state = EXCLUDED.state, "
-                " step_index = EXCLUDED.step_index, "
-                " lapse_count = EXCLUDED.lapse_count, "
-                " stability = EXCLUDED.stability, "
-                " difficulty = EXCLUDED.difficulty",
+                " step_index "
+                "  = EXCLUDED.step_index, "
+                " lapse_count "
+                "  = EXCLUDED.lapse_count, "
+                " stability "
+                "  = EXCLUDED.stability, "
+                " difficulty "
+                "  = EXCLUDED.difficulty",
                 (
                     progress.user_id,
                     progress.word_id,
@@ -760,9 +813,9 @@ class PostgresDatabase:
                     progress.difficulty,
                 ),
             )
-        self._conn.commit()
+        await self._conn.commit()
 
-    def export_progress(
+    async def export_progress(
         self, user_id: int,
     ) -> list[dict]:
         """Export all progress rows for a user as dicts.
@@ -775,25 +828,30 @@ class PostgresDatabase:
         :param user_id: The user's database id.
         :return: List of progress dicts.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT user_id, word_id, easiness_factor,"
-                " interval, repetitions, next_review, "
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "SELECT user_id, word_id, "
+                "easiness_factor,"
+                " interval, repetitions, "
+                "next_review, "
                 "state, step_index, lapse_count "
-                "FROM progress WHERE user_id = %s",
+                "FROM progress "
+                "WHERE user_id = %s",
                 (user_id,),
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         return [
             {
                 "user_id": r["user_id"],
                 "word_id": r["word_id"],
-                "easiness_factor": r["easiness_factor"],
+                "easiness_factor": (
+                    r["easiness_factor"]
+                ),
                 "interval": r["interval"],
                 "repetitions": r["repetitions"],
-                "next_review": r["next_review"].strftime(
-                    _ISO_FMT,
-                ),
+                "next_review": r[
+                    "next_review"
+                ].strftime(_ISO_FMT),
                 "state": r["state"],
                 "step_index": r["step_index"],
                 "lapse_count": r["lapse_count"],
@@ -801,7 +859,7 @@ class PostgresDatabase:
             for r in rows
         ]
 
-    def import_progress(
+    async def import_progress(
         self, records: list[dict],
     ) -> int:
         """Import progress records, upserting each one.
@@ -820,28 +878,37 @@ class PostgresDatabase:
             "user_id", "word_id", "easiness_factor",
             "interval", "repetitions", "next_review",
         }
-        with self._conn.cursor() as cur:
+        async with self._conn.cursor() as cur:
             for rec in records:
                 missing = required - rec.keys()
                 if missing:
                     raise KeyError(
-                        f"Missing keys: {sorted(missing)}"
+                        "Missing keys: "
+                        f"{sorted(missing)}"
                     )
                 state = rec.get("state", "review")
                 step_index = rec.get("step_index", 0)
-                lapse_count = rec.get("lapse_count", 0)
-                cur.execute(
+                lapse_count = rec.get(
+                    "lapse_count", 0,
+                )
+                await cur.execute(
                     "INSERT INTO progress "
-                    "(user_id, word_id, easiness_factor,"
-                    " interval, repetitions, next_review,"
-                    " state, step_index, lapse_count)"
+                    "(user_id, word_id, "
+                    "easiness_factor,"
+                    " interval, repetitions, "
+                    "next_review,"
+                    " state, step_index, "
+                    "lapse_count)"
                     " VALUES "
-                    "(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                    " ON CONFLICT(user_id, word_id) "
+                    "(%s, %s, %s, %s, %s, "
+                    "%s, %s, %s, %s)"
+                    " ON CONFLICT"
+                    "(user_id, word_id) "
                     "DO UPDATE SET "
                     " easiness_factor "
-                    "  = EXCLUDED.easiness_factor, "
-                    " interval = EXCLUDED.interval, "
+                    "  = EXCLUDED.easiness_factor,"
+                    " interval "
+                    "  = EXCLUDED.interval, "
                     " repetitions "
                     "  = EXCLUDED.repetitions, "
                     " next_review "
@@ -863,12 +930,12 @@ class PostgresDatabase:
                         lapse_count,
                     ),
                 )
-        self._conn.commit()
+        await self._conn.commit()
         return len(records)
 
-    # -- Answer History -----------------------------------------------
+    # -- Answer History -------------------------------------------
 
-    def record_answer(
+    async def record_answer(
         self,
         user_id: int,
         word_id: int,
@@ -884,20 +951,21 @@ class PostgresDatabase:
         :param correct: Whether the answer was correct.
         :param quality: SM-2 quality score (0-5).
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "INSERT INTO answer_history "
                 "(user_id, word_id, exercise_type, "
                 " correct, quality) "
                 "VALUES (%s, %s, %s, %s, %s)",
                 (
-                    user_id, word_id, exercise_type,
+                    user_id, word_id,
+                    exercise_type,
                     correct, quality,
                 ),
             )
-        self._conn.commit()
+        await self._conn.commit()
 
-    def get_answer_history(
+    async def get_answer_history(
         self,
         user_id: int,
         *,
@@ -908,8 +976,10 @@ class PostgresDatabase:
 
         :param user_id: The user's database id.
         :param limit: Maximum number of records to return.
-        :param since: Only return answers after this datetime.
-        :return: List of `AnswerHistory` records, newest first.
+        :param since: Only return answers after this
+            datetime.
+        :return: List of `AnswerHistory` records, newest
+            first.
         """
         sql = (
             "SELECT id, user_id, word_id, "
@@ -927,9 +997,9 @@ class PostgresDatabase:
             "LIMIT %s"
         )
         params.append(limit)
-        with self._conn.cursor() as cur:
-            cur.execute(sql, params)
-            rows = cur.fetchall()
+        async with self._conn.cursor() as cur:
+            await cur.execute(sql, params)
+            rows = await cur.fetchall()
         return [
             AnswerHistory(
                 id=r["id"],
@@ -943,7 +1013,7 @@ class PostgresDatabase:
             for r in rows
         ]
 
-    def daily_stats(
+    async def daily_stats(
         self,
         user_id: int,
         *,
@@ -956,25 +1026,28 @@ class PostgresDatabase:
         :return: List of `DailyStats`, most recent first.
         """
         cutoff = datetime.now() - timedelta(days=days)
-        with self._conn.cursor() as cur:
-            cur.execute(
-                _DAILY_STATS_SQL, (user_id, cutoff),
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                _DAILY_STATS_SQL,
+                (user_id, cutoff),
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         return [
             DailyStats(
                 date=str(r["day"]),
                 answers=r["answers"],
                 correct=r["correct"],
                 accuracy_pct=round(
-                    r["correct"] / r["answers"] * 100,
+                    r["correct"]
+                    / r["answers"]
+                    * 100,
                     1,
                 ),
             )
             for r in rows
         ]
 
-    def weak_words(
+    async def weak_words(
         self,
         user_id: int,
         language_from: str,
@@ -987,7 +1060,8 @@ class PostgresDatabase:
         """Find words the user consistently gets wrong.
 
         A word is "weak" when its error rate meets or exceeds
-        `threshold` and it has at least `min_attempts` answers.
+        `threshold` and it has at least `min_attempts`
+        answers.
 
         :param user_id: The user's database id.
         :param language_from: Source language code.
@@ -995,37 +1069,41 @@ class PostgresDatabase:
         :param threshold: Minimum error rate (0.0-1.0).
         :param min_attempts: Minimum answer count.
         :param limit: Maximum results to return.
-        :return: List of `WeakWord`, highest error rate first.
+        :return: List of `WeakWord`, highest error rate
+            first.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 _WEAK_WORDS_SQL,
                 (
-                    user_id, language_from, language_to,
-                    min_attempts, threshold, limit,
+                    user_id, language_from,
+                    language_to,
+                    min_attempts, threshold,
+                    limit,
                 ),
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         return [
             WeakWord(
                 word=_row_to_word(r),
                 attempts=r["attempts"],
                 errors=r["errors"],
                 error_rate=round(
-                    r["errors"] / r["attempts"], 2,
+                    r["errors"] / r["attempts"],
+                    2,
                 ),
                 last_attempt=r["last_attempt"],
             )
             for r in rows
         ]
 
-    def retention_rate(
+    async def retention_rate(
         self,
         user_id: int,
         *,
         days: int = 30,
     ) -> float:
-        """Calculate the overall retention rate from answer history.
+        """Calculate overall retention rate from history.
 
         :param user_id: The user's database id.
         :param days: Number of past days to include.
@@ -1033,23 +1111,23 @@ class PostgresDatabase:
             or 0.0 if no answers exist.
         """
         cutoff = datetime.now() - timedelta(days=days)
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT COUNT(*) AS total, "
-                "SUM(CASE WHEN correct THEN 1 ELSE 0 "
-                "END) AS correct "
+                "SUM(CASE WHEN correct THEN 1 "
+                "ELSE 0 END) AS correct "
                 "FROM answer_history "
                 "WHERE user_id = %s "
                 "AND answered_at >= %s",
                 (user_id, cutoff),
             )
-            row = cur.fetchone()
+            row = await cur.fetchone()
         total = row["total"]
         if not total:
             return 0.0
         return round(row["correct"] / total * 100, 1)
 
-    def forecast(
+    async def forecast(
         self,
         user_id: int,
         *,
@@ -1068,8 +1146,8 @@ class PostgresDatabase:
         """
         today = datetime.now().date()
         horizon = today + timedelta(days=days)
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT DATE(next_review) AS day, "
                 "COUNT(*) AS cnt "
                 "FROM progress "
@@ -1084,7 +1162,7 @@ class PostgresDatabase:
                     horizon,
                 ),
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         by_day: dict[str, int] = {}
         for r in rows:
             by_day[str(r["day"])] = r["cnt"]
@@ -1107,11 +1185,11 @@ class PostgresDatabase:
             )
         return result
 
-    # -- Lessons ------------------------------------------------------
+    # -- Lessons --------------------------------------------------
 
-    def _insert_lesson_words(
+    async def _insert_lesson_words(
         self,
-        cur: psycopg.Cursor,
+        cur: psycopg.AsyncCursor,
         lesson_id: int,
         word_ids: list[int],
     ) -> None:
@@ -1124,24 +1202,26 @@ class PostgresDatabase:
         :param word_ids: Ordered list of word ids to link.
         """
         for pos, wid in enumerate(word_ids):
-            cur.execute(
+            await cur.execute(
                 "INSERT INTO lesson_words "
                 "(lesson_id, word_id, position) "
                 "VALUES (%s, %s, %s)",
                 (lesson_id, wid, pos),
             )
 
-    def add_lesson(self, lesson: Lesson) -> Lesson:
+    async def add_lesson(
+        self, lesson: Lesson,
+    ) -> Lesson:
         """Insert a lesson and link its words.
 
-        :param lesson: The `Lesson` to insert. The `word_ids`
-            list links the lesson to existing words in the
-            database.
+        :param lesson: The `Lesson` to insert. The
+            `word_ids` list links the lesson to existing
+            words in the database.
         :return: The inserted `Lesson` with its assigned id.
         """
-        return self.add_lessons([lesson])[0]
+        return (await self.add_lessons([lesson]))[0]
 
-    def add_lessons(
+    async def add_lessons(
         self, lessons: list[Lesson],
     ) -> list[Lesson]:
         """Bulk-insert lessons in a single transaction.
@@ -1151,12 +1231,14 @@ class PostgresDatabase:
             assigned ids.
         """
         result: list[Lesson] = []
-        with self._conn.cursor() as cur:
+        async with self._conn.cursor() as cur:
             for lesson in lessons:
-                cur.execute(
+                await cur.execute(
                     "INSERT INTO lessons "
-                    "(title, description, language_from,"
-                    " language_to, cefr, tags, word_count)"
+                    "(title, description, "
+                    "language_from,"
+                    " language_to, cefr, tags, "
+                    "word_count)"
                     " VALUES "
                     "(%s, %s, %s, %s, %s, %s, %s) "
                     "RETURNING id",
@@ -1170,20 +1252,21 @@ class PostgresDatabase:
                         lesson.word_count,
                     ),
                 )
-                row = cur.fetchone()
+                row = await cur.fetchone()
                 lesson_id = row["id"]
-                self._insert_lesson_words(
-                    cur, lesson_id, lesson.word_ids,
+                await self._insert_lesson_words(
+                    cur, lesson_id,
+                    lesson.word_ids,
                 )
                 result.append(
                     lesson.model_copy(
                         update={"id": lesson_id},
                     )
                 )
-        self._conn.commit()
+        await self._conn.commit()
         return result
 
-    def get_lessons(
+    async def get_lessons(
         self,
         language_from: str,
         language_to: str,
@@ -1213,8 +1296,8 @@ class PostgresDatabase:
             clauses.append("tags @> %s::jsonb")
             params.append(json.dumps([tag]))
         where = " AND ".join(clauses)
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT id, title, description, "
                 "language_from, language_to, cefr, "
                 "tags, word_count "
@@ -1222,12 +1305,12 @@ class PostgresDatabase:
                 "ORDER BY id",
                 params,
             )
-            rows = cur.fetchall()
+            rows = await cur.fetchall()
         if not rows:
             return []
         lesson_ids = [r["id"] for r in rows]
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT lesson_id, word_id "
                 "FROM lesson_words "
                 "WHERE lesson_id "
@@ -1235,7 +1318,7 @@ class PostgresDatabase:
                 "ORDER BY position",
                 lesson_ids,
             )
-            lw_rows = cur.fetchall()
+            lw_rows = await cur.fetchall()
         word_map: dict[int, list[int]] = {}
         for lw in lw_rows:
             word_map.setdefault(
@@ -1255,37 +1338,42 @@ class PostgresDatabase:
                     else json.loads(r["tags"])
                 ),
                 word_count=r["word_count"],
-                word_ids=word_map.get(r["id"], []),
+                word_ids=word_map.get(
+                    r["id"], [],
+                ),
             )
             for r in rows
         ]
 
-    def get_lesson(self, lesson_id: int) -> Lesson | None:
+    async def get_lesson(
+        self, lesson_id: int,
+    ) -> Lesson | None:
         """Fetch a single lesson by id.
 
         :param lesson_id: The lesson identifier.
-        :return: `Lesson` with `word_ids` populated, or `None`
-            if not found.
+        :return: `Lesson` with `word_ids` populated, or
+            `None` if not found.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "SELECT id, title, description, "
                 "language_from, language_to, cefr, "
                 "tags, word_count "
                 "FROM lessons WHERE id = %s",
                 (lesson_id,),
             )
-            row = cur.fetchone()
+            row = await cur.fetchone()
         if row is None:
             return None
-        with self._conn.cursor() as cur:
-            cur.execute(
-                "SELECT word_id FROM lesson_words "
+        async with self._conn.cursor() as cur:
+            await cur.execute(
+                "SELECT word_id "
+                "FROM lesson_words "
                 "WHERE lesson_id = %s "
                 "ORDER BY position",
                 (lesson_id,),
             )
-            word_rows = cur.fetchall()
+            word_rows = await cur.fetchall()
         tags = row["tags"]
         if isinstance(tags, str):
             tags = json.loads(tags)
@@ -1298,27 +1386,33 @@ class PostgresDatabase:
             cefr=row["cefr"],
             tags=tags,
             word_count=row["word_count"],
-            word_ids=[r["word_id"] for r in word_rows],
+            word_ids=[
+                r["word_id"] for r in word_rows
+            ],
         )
 
-    def update_lesson(self, lesson: Lesson) -> Lesson:
+    async def update_lesson(
+        self, lesson: Lesson,
+    ) -> Lesson:
         """Update an existing lesson and its word links.
 
         :param lesson: The `Lesson` with updated fields. The
-            `id` must be set. The `word_ids` list replaces the
-            current word links entirely.
+            `id` must be set. The `word_ids` list replaces
+            the current word links entirely.
         :return: The updated `Lesson`.
-        :raises ValueError: If the lesson id is `None` or the
-            lesson does not exist.
+        :raises ValueError: If the lesson id is `None` or
+            the lesson does not exist.
         """
         if lesson.id is None:
             raise ValueError("Lesson id must be set")
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "UPDATE lessons SET "
                 "title = %s, description = %s, "
-                "language_from = %s, language_to = %s, "
-                "cefr = %s, tags = %s, word_count = %s "
+                "language_from = %s, "
+                "language_to = %s, "
+                "cefr = %s, tags = %s, "
+                "word_count = %s "
                 "WHERE id = %s",
                 (
                     lesson.title,
@@ -1335,45 +1429,50 @@ class PostgresDatabase:
                 raise ValueError(
                     f"Lesson not found: {lesson.id}"
                 )
-            cur.execute(
+            await cur.execute(
                 "DELETE FROM lesson_words "
                 "WHERE lesson_id = %s",
                 (lesson.id,),
             )
-            self._insert_lesson_words(
+            await self._insert_lesson_words(
                 cur, lesson.id, lesson.word_ids,
             )
-        self._conn.commit()
+        await self._conn.commit()
         return lesson
 
-    def delete_lesson(self, lesson_id: int) -> None:
+    async def delete_lesson(
+        self, lesson_id: int,
+    ) -> None:
         """Delete a lesson and its word links.
 
         :param lesson_id: The lesson identifier.
         :raises ValueError: If the lesson does not exist.
         """
-        with self._conn.cursor() as cur:
-            cur.execute(
+        async with self._conn.cursor() as cur:
+            await cur.execute(
                 "DELETE FROM lesson_words "
                 "WHERE lesson_id = %s",
                 (lesson_id,),
             )
-            cur.execute(
-                "DELETE FROM lessons WHERE id = %s",
+            await cur.execute(
+                "DELETE FROM lessons "
+                "WHERE id = %s",
                 (lesson_id,),
             )
             if cur.rowcount == 0:
                 raise ValueError(
                     f"Lesson not found: {lesson_id}"
                 )
-        self._conn.commit()
+        await self._conn.commit()
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close the database connection."""
-        self._conn.close()
+        await self._conn.close()
 
-    def __enter__(self) -> "PostgresDatabase":
+    async def __aenter__(self) -> "PostgresDatabase":
         return self
 
-    def __exit__(self, *exc: object) -> None:
-        self.close()
+    async def __aexit__(
+        self, *exc: object,
+    ) -> None:
+        await self.close()

@@ -53,3 +53,14 @@
 - [x] Add PostgreSQL database support with Docker Compose for production-ready persistence
 - [x] Add user IDs to the database — persist sessions, vocabulary, and progress per user
 - [ ] Add Telegram bot support — design the interaction model and integrate with the library
+
+
+### 2026.03.10 — Async & Telegram bot readiness (v3.0.0)
+
+- [x] Add async database layer — async versions of `Database` and `PostgresDatabase` using `aiosqlite` and `psycopg` async
+- [x] Make `Session` async — convert `next_exercise()`, `answer()`, `hint()`, `skip()`, `summary()` to async methods
+- [x] Make `select_words()` and `review()` async — they call DB methods internally
+- [x] Make utility functions async — `quick_session()`, `load_lessons()`, `lesson_progress()`, `import_words_csv()`
+- [ ] Add session state persistence — serialize/deserialize `Session` in-memory state (current exercise, hint count, streak, buried words) to DB so sessions survive bot restarts
+- [ ] Add conversation state machine — track user flow stage (choosing lesson, answering, viewing stats) to support multi-step bot interactions
+- [ ] Add exercise rendering helpers — format each `ExerciseType` as chat-friendly text (inline keyboard data for multiple-choice, plain text for flashcards, etc.)

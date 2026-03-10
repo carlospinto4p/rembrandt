@@ -363,7 +363,7 @@ def review(
     )
 
 
-def select_words(
+async def select_words(
     db: Database,
     user_id: int,
     language_from: str,
@@ -404,7 +404,9 @@ def select_words(
         `None` means no cap. In-steps cards are never capped.
     :return: List of `Word` objects to review.
     """
-    all_words = db.get_words(language_from, language_to)
+    all_words = await db.get_words(
+        language_from, language_to,
+    )
     if not all_words:
         return []
 
@@ -420,7 +422,9 @@ def select_words(
             return []
 
     ids = [w.id for w in all_words if w.id is not None]
-    progress_map = db.get_all_progress(user_id, ids)
+    progress_map = await db.get_all_progress(
+        user_id, ids,
+    )
 
     now = datetime.now()
     in_steps: list[Word] = []
@@ -444,7 +448,7 @@ def select_words(
             due.append(word)
 
     if prioritize_weak and due:
-        weak = db.weak_words(
+        weak = await db.weak_words(
             user_id, language_from, language_to,
         )
         weak_ids = {ww.word.id for ww in weak}

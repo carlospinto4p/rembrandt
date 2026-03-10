@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 MASTERY_REPETITIONS = 3
 
 
-def load_lessons(
+async def load_lessons(
     lessons_path: str | Path,
     vocab_path: str | Path,
     db: Database,
@@ -49,7 +49,7 @@ def load_lessons(
             entry["word"],
         )
 
-    db_words = db.get_words(language_from, language_to)
+    db_words = await db.get_words(language_from, language_to)
     key_to_id: dict[tuple[str, str], int] = {}
     for w in db_words:
         if w.id is not None:
@@ -87,10 +87,10 @@ def load_lessons(
             word_count=len(word_ids),
             word_ids=word_ids,
         ))
-    return db.add_lessons(lessons)
+    return await db.add_lessons(lessons)
 
 
-def lesson_progress(
+async def lesson_progress(
     db: Database,
     user_id: int,
     lesson: Lesson,
@@ -115,7 +115,7 @@ def lesson_progress(
             mastery_pct=0.0,
         )
 
-    progress_map = db.get_all_progress(
+    progress_map = await db.get_all_progress(
         user_id, lesson.word_ids,
     )
 
