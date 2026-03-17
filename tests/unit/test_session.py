@@ -329,29 +329,8 @@ async def test_definition_next_exercise_valid_type(
     assert ex is not None
     assert ex.exercise_type in (
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
-
-
-async def test_definition_reverse_flashcard_answer(
-    definition_db,
-):
-    session = Session(
-        definition_db, 1, "en", "en",
-    )
-    # Keep generating until we get a reverse flashcard
-    for _ in range(100):
-        ex = await session.next_exercise()
-        if (
-            ex is not None
-            and ex.exercise_type
-            == ExerciseType.REVERSE_FLASHCARD
-        ):
-            result = await session.answer(ex.word.word_from)
-            assert result.correct is True
-            return
-    pytest.skip("Did not get a reverse flashcard exercise")
 
 
 async def test_definition_self_graded_answer(definition_db):

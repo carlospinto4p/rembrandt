@@ -110,7 +110,7 @@ def test_generate_exercise_definition_mode_single_word(
 ):
     words = definition_words[:1]
     ex = generate_exercise(words[0], words)
-    assert ex.exercise_type == ExerciseType.REVERSE_FLASHCARD
+    assert ex.exercise_type == ExerciseType.SELF_GRADED
 
 
 def test_generate_exercise_definition_mode_returns_valid_type(
@@ -121,12 +121,11 @@ def test_generate_exercise_definition_mode_returns_valid_type(
     )
     assert ex.exercise_type in (
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
 
 
-def test_generate_exercise_definition_mode_never_flashcard(
+def test_generate_exercise_definition_mode_only_mc_and_sg(
     definition_words,
 ):
     types = set()
@@ -135,7 +134,10 @@ def test_generate_exercise_definition_mode_never_flashcard(
             definition_words[0], definition_words,
         )
         types.add(ex.exercise_type)
-    assert ExerciseType.FLASHCARD not in types
+    assert types == {
+        ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.SELF_GRADED,
+    }
 
 
 # --- Answer Evaluation Tests ---

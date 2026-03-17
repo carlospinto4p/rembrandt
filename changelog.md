@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v3.2.1 - 17th March 2026
+
+- Removed `REVERSE_FLASHCARD` from definition mode exercise
+  selection: synonyms made typing the exact word too difficult.
+  Definition mode now uses 50/50 multiple choice / self-graded.
+
+
 ### v3.2.0 - 10th March 2026
 
 - Added `ConversationStage` enum:
