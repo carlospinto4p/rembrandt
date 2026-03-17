@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v3.2.2 - 17th March 2026
+
+- Updated definition mode exercise distribution to 95% multiple
+  choice / 5% self-graded: self-graded is more word discovery
+  than a real memory exercise.
+
+
 ### v3.2.1 - 17th March 2026
 
 - Removed `REVERSE_FLASHCARD` from definition mode exercise

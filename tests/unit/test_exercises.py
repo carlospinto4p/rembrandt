@@ -129,7 +129,7 @@ def test_generate_exercise_definition_mode_only_mc_and_sg(
     definition_words,
 ):
     types = set()
-    for _ in range(200):
+    for _ in range(500):
         ex = generate_exercise(
             definition_words[0], definition_words,
         )

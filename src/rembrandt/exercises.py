@@ -25,7 +25,7 @@ from rembrandt.models import (
 
 
 # Definition-mode exercise distribution threshold
-_DEF_MC_THRESHOLD = 0.5
+_DEF_MC_THRESHOLD = 0.95
 
 # Maximum attempts to produce a non-identity shuffle
 _MAX_SHUFFLE_ATTEMPTS = 20
@@ -494,10 +494,11 @@ def generate_exercise(
     available (multiple choice needs distractors).
 
     **Definition mode** (`language_from == language_to`):
-    50% multiple choice, 50% self-graded. Falls back to
-    self-graded when fewer than 2 words are available.
-    Never uses flashcard or reverse flashcard (typing exact
-    definitions/words is bad UX due to synonyms).
+    95% multiple choice, 5% self-graded (word discovery).
+    Falls back to self-graded when fewer than 2 words are
+    available. Never uses flashcard or reverse flashcard
+    (typing exact definitions/words is bad UX due to
+    synonyms).
 
     :param word: The word to test.
     :param all_words: Pool of words for multiple-choice
