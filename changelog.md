@@ -1,6 +1,98 @@
 
 ## Changelog - Rembrandt
 
+### v4.0.0 - 18th March 2026
+
+- Transformed from a language-focused vocabulary tool into a
+  general-purpose spaced-repetition library for any subject.
+- Renamed `Word` to `Concept` with new fields:
+  - `front` (was `word_from`)
+  - `back` (was `word_to`)
+  - `context` (new, optional explanation/notes)
+- Removed `Word` fields:
+  - `language_from`
+  - `language_to`
+  - `gender`
+  - `conjugation_group`
+  - `cefr`
+- Renamed `Lesson` to `Topic` with new fields:
+  - `concept_count` (was `word_count`)
+  - `concept_ids` (was `word_ids`)
+- Removed `Topic` fields:
+  - `language_from`
+  - `language_to`
+  - `cefr`
+- Renamed `LessonProgress` to `TopicProgress` with:
+  - `concepts_total` (was `words_total`)
+  - `concepts_studied` (was `words_studied`)
+  - `concepts_mastered` (was `words_mastered`)
+- Renamed `WeakWord` to `WeakConcept`.
+- Renamed `Exercise.word` to `Exercise.concept`.
+- Renamed `AnswerResult.word` to `AnswerResult.concept`.
+- Renamed `UserProgress.word_id` to `concept_id`.
+- Renamed `AnswerHistory.word_id` to `concept_id`.
+- Renamed `ConversationStage.CHOOSING_LESSON` to
+  `CHOOSING_TOPIC`.
+- Renamed `Hint.example_sentence` to `context`.
+- Simplified `ExerciseType` to 4 values:
+  - `FLASHCARD`
+  - `MULTIPLE_CHOICE`
+  - `REVERSE_FLASHCARD`
+  - `SELF_GRADED`
+- Removed exercise types:
+  - `GENDER_MATCH`
+  - `CONJUGATION`
+  - `CLOZE`
+  - `TRANSLATION_CLOZE`
+  - `ADJECTIVE_AGREEMENT`
+  - `SENTENCE_ORDER`
+- Removed `LearningMode` enum and `learning_mode()` function.
+- Removed modules:
+  - `conjugation.py`
+  - `sentences.py`
+- Renamed `lessons.py` to `topics.py`:
+  - `load_lessons()` → `load_topics()`
+  - `lesson_progress()` → `topic_progress()`
+- Updated `SessionSnapshot`:
+  - Removed `language_from`, `language_to`
+  - Renamed `word_ids` → `concept_ids`
+  - Renamed `buried_word_ids` → `buried_concept_ids`
+  - Added `tags` field
+- Updated `Session`:
+  - Removed `language_from`, `language_to` parameters
+  - Added optional `tags` filter
+  - Added optional `concept_ids` filter
+- Updated `quick_session()`:
+  - Removed `language_from`, `language_to` parameters
+  - Added `front_key`, `back_key` parameters
+- Updated database schema:
+  - `words` table → `concepts` (front, back, context)
+  - `lessons` table → `topics`
+  - `lesson_words` table → `topic_concepts`
+  - All `word_id` columns → `concept_id`
+- Renamed database methods:
+  - `add_word()` → `add_concept()`
+  - `add_words()` → `add_concepts()`
+  - `get_words()` → `get_concepts()`
+  - `update_word()` → `update_concept()`
+  - `delete_word()` → `delete_concept()`
+  - `weak_words()` → `weak_concepts()`
+  - `add_lesson()` → `add_topic()`
+  - `add_lessons()` → `add_topics()`
+  - `get_lessons()` → `get_topics()`
+  - `get_lesson()` → `get_topic()`
+  - `update_lesson()` → `update_topic()`
+  - `delete_lesson()` → `delete_topic()`
+  - `import_words_csv()` → `import_concepts_csv()`
+- Renamed `select_words()` to `select_concepts()`.
+- Removed exports:
+  - `load_cloze_templates`
+  - `load_exercise_config`
+- Added `ExerciseType` to public exports.
+- Rewrote all examples for general-purpose use.
+- Rewrote `README.md` for general-purpose use.
+
+
 ### v3.2.2 - 17th March 2026
 
 - Updated definition mode exercise distribution to 95% multiple

@@ -1,18 +1,17 @@
 """Tests for rembrandt.db."""
 
-import sqlite3
 from datetime import datetime
 
 import pytest
 
-from rembrandt.db import Database, import_words_csv
+from rembrandt.db import Database, import_concepts_csv
 from rembrandt.models import (
     CardState,
+    Concept,
     ConversationStage,
     ConversationState,
-    Lesson,
+    Topic,
     UserProgress,
-    Word,
 )
 
 pytestmark = pytest.mark.asyncio
@@ -37,7 +36,9 @@ async def test_register_user_with_display_name(db):
 
 async def test_register_user_duplicate_raises(db):
     await db.register_user("alice", "pass1")
-    with pytest.raises(ValueError, match="already exists"):
+    with pytest.raises(
+        ValueError, match="already exists",
+    ):
         await db.register_user("alice", "pass2")
 
 
@@ -54,7 +55,9 @@ async def test_get_user_not_found(db):
 
 async def test_authenticate_user_valid(db):
     await db.register_user("alice", "s3cret")
-    user = await db.authenticate_user("alice", "s3cret")
+    user = await db.authenticate_user(
+        "alice", "s3cret",
+    )
     assert user is not None
     assert user.username == "alice"
 
@@ -80,7 +83,7 @@ async def test_create_session(db):
     session = await db.create_session(user.id)
     assert session.id is not None
     assert session.user_id == user.id
-    assert len(session.token) == 64  # 32 bytes hex
+    assert len(session.token) == 64
     assert session.expires_at > session.created_at
 
 
@@ -130,242 +133,180 @@ async def test_delete_user_sessions(db):
     assert await db.get_session(s2.token) is None
 
 
-# --- Word CRUD Tests ---
+# --- Concept CRUD Tests ---
 
 
-async def test_add_word(db):
-    word = await db.add_word(
-        "en", "es", "hello", "hola",
+async def test_add_concept(db):
+    concept = await db.add_concept(
+        "What is ML?", "Machine learning",
     )
-    assert word.id is not None
-    assert word.word_from == "hello"
-    assert word.word_to == "hola"
+    assert concept.id is not None
+    assert concept.front == "What is ML?"
+    assert concept.back == "Machine learning"
 
 
-async def test_add_words_bulk(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
+async def test_add_concepts_bulk(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+        Concept(front="house", back="casa"),
     ])
-    assert len(words) == 3
-    assert all(w.id is not None for w in words)
-    assert words[0].word_from == "cat"
-    assert words[2].word_to == "casa"
+    assert len(concepts) == 3
+    assert all(c.id is not None for c in concepts)
+    assert concepts[0].front == "cat"
+    assert concepts[2].back == "casa"
 
 
-async def test_get_words_empty(db):
-    result = await db.get_words("en", "es")
+async def test_get_concepts_empty(db):
+    result = await db.get_concepts()
     assert result == []
 
 
-async def test_get_words_filters_by_language(db):
-    await db.add_word("en", "es", "hello", "hola")
-    await db.add_word("en", "fr", "hello", "bonjour")
-
-    es_words = await db.get_words("en", "es")
-    assert len(es_words) == 1
-    assert es_words[0].word_to == "hola"
-
-    fr_words = await db.get_words("en", "fr")
-    assert len(fr_words) == 1
-    assert fr_words[0].word_to == "bonjour"
+async def test_get_concepts_returns_all(db):
+    await db.add_concept("cat", "gato")
+    await db.add_concept("dog", "perro")
+    result = await db.get_concepts()
+    assert len(result) == 2
 
 
-async def test_add_word_auto_increments_id(db):
-    w1 = await db.add_word("en", "es", "cat", "gato")
-    w2 = await db.add_word("en", "es", "dog", "perro")
-    assert w2.id == w1.id + 1
+async def test_add_concept_auto_increments_id(db):
+    c1 = await db.add_concept("cat", "gato")
+    c2 = await db.add_concept("dog", "perro")
+    assert c2.id == c1.id + 1
 
 
-async def test_add_word_with_gender(db):
-    word = await db.add_word(
-        "es", "en", "casa", "house", gender="f",
+async def test_add_concept_with_context(db):
+    concept = await db.add_concept(
+        "cat", "gato",
+        context="A common household pet",
     )
-    assert word.gender == "f"
-    loaded = await db.get_words("es", "en")
-    assert loaded[0].gender == "f"
-    assert loaded[0].conjugation_group is None
-
-
-async def test_add_word_with_conjugation_group(db):
-    word = await db.add_word(
-        "es", "en", "hablar", "to speak",
-        conjugation_group="ar",
+    assert concept.context == "A common household pet"
+    loaded = await db.get_concepts()
+    assert (
+        loaded[0].context == "A common household pet"
     )
-    assert word.conjugation_group == "ar"
-    loaded = await db.get_words("es", "en")
-    assert loaded[0].conjugation_group == "ar"
-    assert loaded[0].gender is None
 
 
-async def test_add_words_bulk_with_metadata(db):
-    words = await db.add_words([
-        Word(
-            language_from="es", language_to="en",
-            word_from="casa", word_to="house",
-            gender="f",
-        ),
-        Word(
-            language_from="es", language_to="en",
-            word_from="hablar", word_to="to speak",
-            conjugation_group="ar",
-        ),
-    ])
-    assert words[0].gender == "f"
-    assert words[1].conjugation_group == "ar"
-    loaded = await db.get_words("es", "en")
-    assert loaded[0].gender == "f"
-    assert loaded[1].conjugation_group == "ar"
-
-
-async def test_add_word_with_cefr(db):
-    word = await db.add_word(
-        "es", "en", "ser", "to be", cefr="A1",
+async def test_add_concept_with_owner(db):
+    u = await db.register_user("u1", "pass")
+    concept = await db.add_concept(
+        "cat", "gato", owner_id=u.id,
     )
-    assert word.cefr == "A1"
-    loaded = await db.get_words("es", "en")
-    assert loaded[0].cefr == "A1"
+    assert concept.owner_id == u.id
 
 
-async def test_cefr_default_none(db):
-    await db.add_word("en", "es", "cat", "gato")
-    loaded = await db.get_words("en", "es")
-    assert loaded[0].cefr is None
+async def test_get_concepts_filter_by_owner(db):
+    u = await db.register_user("u1", "pass")
+    await db.add_concept("cat", "gato")
+    await db.add_concept(
+        "dog", "perro", owner_id=u.id,
+    )
+    # Without owner filter, all returned
+    all_concepts = await db.get_concepts()
+    assert len(all_concepts) == 2
 
-
-async def test_cefr_bulk_roundtrip(db):
-    await db.add_words([
-        Word(
-            language_from="es", language_to="en",
-            word_from="ser", word_to="to be",
-            cefr="A1",
-        ),
-        Word(
-            language_from="es", language_to="en",
-            word_from="prescindir",
-            word_to="to do without",
-            cefr="C1",
-        ),
-        Word(
-            language_from="es", language_to="en",
-            word_from="casa", word_to="house",
-        ),
-    ])
-    loaded = await db.get_words("es", "en")
-    assert loaded[0].cefr == "A1"
-    assert loaded[1].cefr == "C1"
-    assert loaded[2].cefr is None
+    # With owner_id, shared + owned
+    owned = await db.get_concepts(owner_id=u.id)
+    assert len(owned) == 2
 
 
 async def test_tags_default_empty(db):
-    await db.add_word("en", "es", "cat", "gato")
-    loaded = await db.get_words("en", "es")
+    await db.add_concept("cat", "gato")
+    loaded = await db.get_concepts()
     assert loaded[0].tags == []
 
 
 async def test_tags_roundtrip(db):
-    await db.add_word(
-        "en", "es", "bread", "pan",
-        tags=["food"],
+    await db.add_concept(
+        "bread", "pan", tags=["food"],
     )
-    loaded = await db.get_words("en", "es")
+    loaded = await db.get_concepts()
     assert loaded[0].tags == ["food"]
 
 
 async def test_tags_bulk_roundtrip(db):
-    await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="bread", word_to="pan",
+    await db.add_concepts([
+        Concept(
+            front="bread", back="pan",
             tags=["food"],
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="mother", word_to="madre",
+        Concept(
+            front="mother", back="madre",
             tags=["family"],
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
+        Concept(front="cat", back="gato"),
     ])
-    loaded = await db.get_words("en", "es")
+    loaded = await db.get_concepts()
     assert loaded[0].tags == ["food"]
     assert loaded[1].tags == ["family"]
     assert loaded[2].tags == []
 
 
-# --- Word Update/Delete Tests ---
+async def test_get_concepts_filter_by_tag(db):
+    await db.add_concepts([
+        Concept(
+            front="bread", back="pan",
+            tags=["food"],
+        ),
+        Concept(
+            front="cat", back="gato",
+            tags=["animals"],
+        ),
+        Concept(
+            front="milk", back="leche",
+            tags=["food", "drinks"],
+        ),
+    ])
+    food = await db.get_concepts(tag="food")
+    assert len(food) == 2
+    fronts = {c.front for c in food}
+    assert fronts == {"bread", "milk"}
 
 
-async def test_update_word(db):
-    word = await db.add_word("en", "es", "cat", "gato")
-    updated = await db.update_word(
-        word.model_copy(update={"word_to": "gatito"}),
+# --- Concept Update/Delete Tests ---
+
+
+async def test_update_concept(db):
+    concept = await db.add_concept(
+        "cat", "gato",
     )
-    assert updated.word_to == "gatito"
-    loaded = await db.get_words("en", "es")
-    assert loaded[0].word_to == "gatito"
-
-
-async def test_update_word_all_fields(db):
-    word = await db.add_word(
-        "en", "es", "cat", "gato",
+    updated = await db.update_concept(
+        concept.model_copy(update={"back": "gatito"}),
     )
-    modified = word.model_copy(update={
-        "word_from": "kitten",
-        "word_to": "gatito",
-        "gender": "m",
-        "tags": ["animals"],
-        "cefr": "A1",
-    })
-    updated = await db.update_word(modified)
-    assert updated.word_from == "kitten"
-    assert updated.gender == "m"
-    assert updated.tags == ["animals"]
-    assert updated.cefr == "A1"
+    assert updated.back == "gatito"
+    loaded = await db.get_concepts()
+    assert loaded[0].back == "gatito"
 
 
-async def test_update_word_none_id_raises(db):
-    word = Word(
-        language_from="en", language_to="es",
-        word_from="cat", word_to="gato",
+async def test_update_concept_none_id_raises(db):
+    concept = Concept(front="cat", back="gato")
+    with pytest.raises(
+        ValueError, match="id must be set",
+    ):
+        await db.update_concept(concept)
+
+
+async def test_update_concept_not_found_raises(db):
+    concept = Concept(
+        id=999, front="cat", back="gato",
     )
-    with pytest.raises(ValueError, match="id must be set"):
-        await db.update_word(word)
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.update_concept(concept)
 
 
-async def test_update_word_not_found_raises(db):
-    word = Word(
-        id=999,
-        language_from="en", language_to="es",
-        word_from="cat", word_to="gato",
-    )
-    with pytest.raises(ValueError, match="not found"):
-        await db.update_word(word)
+async def test_delete_concept(db):
+    concept = await db.add_concept("cat", "gato")
+    await db.delete_concept(concept.id)
+    assert await db.get_concepts() == []
 
 
-async def test_delete_word(db):
-    word = await db.add_word(
-        "en", "es", "cat", "gato",
-    )
-    await db.delete_word(word.id)
-    assert await db.get_words("en", "es") == []
-
-
-async def test_delete_word_not_found_raises(db):
-    with pytest.raises(ValueError, match="not found"):
-        await db.delete_word(999)
+async def test_delete_concept_not_found_raises(db):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.delete_concept(999)
 
 
 # --- Progress CRUD Tests ---
@@ -381,7 +322,7 @@ async def test_upsert_progress_insert(db):
     u = await db.register_user("u1", "pass")
     progress = UserProgress(
         user_id=u.id,
-        word_id=1,
+        concept_id=1,
         easiness_factor=2.5,
         interval=1,
         repetitions=1,
@@ -403,7 +344,7 @@ async def test_upsert_progress_update(db):
     u = await db.register_user("u1", "pass")
     progress = UserProgress(
         user_id=u.id,
-        word_id=1,
+        concept_id=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
     await db.upsert_progress(progress)
@@ -425,7 +366,7 @@ async def test_progress_roundtrip_datetime(db):
     dt = datetime(2026, 6, 15, 10, 30, 0)
     progress = UserProgress(
         user_id=u.id,
-        word_id=1,
+        concept_id=1,
         next_review=dt,
     )
     await db.upsert_progress(progress)
@@ -439,13 +380,17 @@ async def test_get_all_progress(db):
     u = await db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1, next_review=dt,
+        user_id=u.id, concept_id=1,
+        next_review=dt,
     ))
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=3, next_review=dt,
+        user_id=u.id, concept_id=3,
+        next_review=dt,
     ))
 
-    result = await db.get_all_progress(u.id, [1, 2, 3])
+    result = await db.get_all_progress(
+        u.id, [1, 2, 3],
+    )
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
@@ -463,364 +408,258 @@ async def test_get_all_progress_empty(db):
 
 async def test_context_manager(tmp_path):
     async with await Database.connect(
-        tmp_path / "ctx.db"
+        tmp_path / "ctx.db",
     ) as db:
-        await db.add_word("en", "es", "cat", "gato")
-        words = await db.get_words("en", "es")
-        assert len(words) == 1
+        await db.add_concept("cat", "gato")
+        concepts = await db.get_concepts()
+        assert len(concepts) == 1
 
 
-# --- Lesson CRUD Tests ---
+# --- Topic CRUD Tests ---
 
 
-async def test_add_lesson(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
+async def test_add_topic(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
     ])
-    lesson = await db.add_lesson(Lesson(
-        title="A1 - Lesson 1",
-        description="First lesson",
-        language_from="en",
-        language_to="es",
-        cefr="A1",
-        word_count=2,
-        word_ids=[words[0].id, words[1].id],
+    topic = await db.add_topic(Topic(
+        title="Animals",
+        description="Animal concepts",
+        tags=["animals"],
+        concept_count=2,
+        concept_ids=[
+            concepts[0].id, concepts[1].id,
+        ],
     ))
-    assert lesson.id is not None
-    assert lesson.title == "A1 - Lesson 1"
-    assert lesson.word_count == 2
+    assert topic.id is not None
+    assert topic.title == "Animals"
+    assert topic.concept_count == 2
 
 
-async def test_add_lesson_word_order_preserved(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
+async def test_add_topic_concept_order_preserved(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+        Concept(front="house", back="casa"),
     ])
-    ids = [words[2].id, words[0].id, words[1].id]
-    lesson = await db.add_lesson(Lesson(
+    ids = [
+        concepts[2].id,
+        concepts[0].id,
+        concepts[1].id,
+    ]
+    topic = await db.add_topic(Topic(
         title="Reversed order",
-        language_from="en",
-        language_to="es",
-        word_count=3,
-        word_ids=ids,
+        concept_count=3,
+        concept_ids=ids,
     ))
-    loaded = await db.get_lesson(lesson.id)
+    loaded = await db.get_topic(topic.id)
     assert loaded is not None
-    assert loaded.word_ids == ids
+    assert loaded.concept_ids == ids
 
 
-async def test_add_lessons_bulk(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
+async def test_add_topics_bulk(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+    ])
+    topics = await db.add_topics([
+        Topic(
+            title="Topic 1",
+            concept_count=1,
+            concept_ids=[concepts[0].id],
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
+        Topic(
+            title="Topic 2",
+            concept_count=1,
+            concept_ids=[concepts[1].id],
         ),
     ])
-    lessons = await db.add_lessons([
-        Lesson(
-            title="Lesson 1",
-            language_from="en",
-            language_to="es",
-            cefr="A1",
-            word_count=1,
-            word_ids=[words[0].id],
-        ),
-        Lesson(
-            title="Lesson 2",
-            language_from="en",
-            language_to="es",
-            cefr="A1",
-            word_count=1,
-            word_ids=[words[1].id],
-        ),
+    assert len(topics) == 2
+    assert all(t.id is not None for t in topics)
+    assert topics[0].title == "Topic 1"
+    assert topics[1].title == "Topic 2"
+
+
+async def test_get_topics(db):
+    await db.add_topics([
+        Topic(title="Topic A"),
+        Topic(title="Topic B"),
     ])
-    assert len(lessons) == 2
-    assert all(ls.id is not None for ls in lessons)
-    assert lessons[0].title == "Lesson 1"
-    assert lessons[1].title == "Lesson 2"
+    topics = await db.get_topics()
+    assert len(topics) == 2
 
 
-async def test_get_lessons_by_language(db):
-    await db.add_lessons([
-        Lesson(
-            title="EN-ES Lesson",
-            language_from="en",
-            language_to="es",
-        ),
-        Lesson(
-            title="EN-FR Lesson",
-            language_from="en",
-            language_to="fr",
-        ),
-    ])
-    es = await db.get_lessons("en", "es")
-    assert len(es) == 1
-    assert es[0].title == "EN-ES Lesson"
-
-    fr = await db.get_lessons("en", "fr")
-    assert len(fr) == 1
-    assert fr[0].title == "EN-FR Lesson"
-
-
-async def test_get_lessons_filter_cefr(db):
-    await db.add_lessons([
-        Lesson(
-            title="A1 Lesson",
-            language_from="en",
-            language_to="es",
-            cefr="A1",
-        ),
-        Lesson(
-            title="B1 Lesson",
-            language_from="en",
-            language_to="es",
-            cefr="B1",
-        ),
-    ])
-    result = await db.get_lessons(
-        "en", "es", cefr="A1",
-    )
-    assert len(result) == 1
-    assert result[0].title == "A1 Lesson"
-
-
-async def test_get_lessons_filter_tag(db):
-    await db.add_lessons([
-        Lesson(
-            title="Food Lesson",
-            language_from="en",
-            language_to="es",
+async def test_get_topics_filter_tag(db):
+    await db.add_topics([
+        Topic(
+            title="Food Topic",
             tags=["food"],
         ),
-        Lesson(
-            title="Travel Lesson",
-            language_from="en",
-            language_to="es",
+        Topic(
+            title="Travel Topic",
             tags=["travel"],
         ),
-        Lesson(
+        Topic(
             title="Multi Tag",
-            language_from="en",
-            language_to="es",
             tags=["food", "travel"],
         ),
     ])
-    food = await db.get_lessons("en", "es", tag="food")
+    food = await db.get_topics(tag="food")
     assert len(food) == 2
-    titles = {ls.title for ls in food}
-    assert titles == {"Food Lesson", "Multi Tag"}
+    titles = {t.title for t in food}
+    assert titles == {"Food Topic", "Multi Tag"}
 
 
-async def test_get_lesson_by_id(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
+async def test_get_topic_by_id(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
     ])
-    lesson = await db.add_lesson(Lesson(
-        title="Test Lesson",
-        language_from="en",
-        language_to="es",
-        cefr="A1",
+    topic = await db.add_topic(Topic(
+        title="Test Topic",
         tags=["test"],
-        word_count=1,
-        word_ids=[words[0].id],
+        concept_count=1,
+        concept_ids=[concepts[0].id],
     ))
-    loaded = await db.get_lesson(lesson.id)
+    loaded = await db.get_topic(topic.id)
     assert loaded is not None
-    assert loaded.title == "Test Lesson"
-    assert loaded.cefr == "A1"
+    assert loaded.title == "Test Topic"
     assert loaded.tags == ["test"]
-    assert loaded.word_ids == [words[0].id]
+    assert loaded.concept_ids == [concepts[0].id]
 
 
-async def test_get_lesson_not_found(db):
-    assert await db.get_lesson(999) is None
+async def test_get_topic_not_found(db):
+    assert await db.get_topic(999) is None
 
 
-async def test_lesson_with_no_words(db):
-    lesson = await db.add_lesson(Lesson(
-        title="Empty Lesson",
-        language_from="en",
-        language_to="es",
+async def test_topic_with_no_concepts(db):
+    topic = await db.add_topic(Topic(
+        title="Empty Topic",
     ))
-    loaded = await db.get_lesson(lesson.id)
+    loaded = await db.get_topic(topic.id)
     assert loaded is not None
-    assert loaded.word_ids == []
-    assert loaded.word_count == 0
+    assert loaded.concept_ids == []
+    assert loaded.concept_count == 0
 
 
-async def test_get_lessons_populates_word_ids(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
+async def test_get_topics_populates_concept_ids(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+    ])
+    await db.add_topics([
+        Topic(
+            title="T1",
+            concept_count=1,
+            concept_ids=[concepts[0].id],
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
+        Topic(
+            title="T2",
+            concept_count=2,
+            concept_ids=[
+                concepts[1].id, concepts[0].id,
+            ],
         ),
     ])
-    await db.add_lessons([
-        Lesson(
-            title="L1",
-            language_from="en",
-            language_to="es",
-            word_count=1,
-            word_ids=[words[0].id],
-        ),
-        Lesson(
-            title="L2",
-            language_from="en",
-            language_to="es",
-            word_count=2,
-            word_ids=[words[1].id, words[0].id],
-        ),
-    ])
-    lessons = await db.get_lessons("en", "es")
-    assert lessons[0].word_ids == [words[0].id]
-    assert lessons[1].word_ids == [
-        words[1].id, words[0].id,
+    topics = await db.get_topics()
+    assert topics[0].concept_ids == [concepts[0].id]
+    assert topics[1].concept_ids == [
+        concepts[1].id, concepts[0].id,
     ]
 
 
-# --- Lesson Update/Delete Tests ---
+# --- Topic Update/Delete Tests ---
 
 
-async def test_update_lesson_metadata(db):
-    lesson = await db.add_lesson(Lesson(
+async def test_update_topic_metadata(db):
+    topic = await db.add_topic(Topic(
         title="Old Title",
-        language_from="en",
-        language_to="es",
     ))
-    updated = await db.update_lesson(
-        lesson.model_copy(update={
+    updated = await db.update_topic(
+        topic.model_copy(update={
             "title": "New Title",
             "description": "Updated",
-            "cefr": "B1",
             "tags": ["food"],
         }),
     )
     assert updated.title == "New Title"
-    loaded = await db.get_lesson(lesson.id)
+    loaded = await db.get_topic(topic.id)
     assert loaded.title == "New Title"
     assert loaded.description == "Updated"
-    assert loaded.cefr == "B1"
     assert loaded.tags == ["food"]
 
 
-async def test_update_lesson_replaces_word_ids(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
+async def test_update_topic_replaces_concept_ids(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+        Concept(front="house", back="casa"),
     ])
-    lesson = await db.add_lesson(Lesson(
+    topic = await db.add_topic(Topic(
         title="Test",
-        language_from="en",
-        language_to="es",
-        word_count=2,
-        word_ids=[words[0].id, words[1].id],
+        concept_count=2,
+        concept_ids=[
+            concepts[0].id, concepts[1].id,
+        ],
     ))
-    await db.update_lesson(
-        lesson.model_copy(update={
-            "word_count": 2,
-            "word_ids": [words[1].id, words[2].id],
+    await db.update_topic(
+        topic.model_copy(update={
+            "concept_count": 2,
+            "concept_ids": [
+                concepts[1].id, concepts[2].id,
+            ],
         }),
     )
-    loaded = await db.get_lesson(lesson.id)
-    assert loaded.word_ids == [
-        words[1].id, words[2].id,
+    loaded = await db.get_topic(topic.id)
+    assert loaded.concept_ids == [
+        concepts[1].id, concepts[2].id,
     ]
 
 
-async def test_update_lesson_none_id_raises(db):
-    lesson = Lesson(
-        title="Test",
-        language_from="en",
-        language_to="es",
-    )
+async def test_update_topic_none_id_raises(db):
+    topic = Topic(title="Test")
     with pytest.raises(
         ValueError, match="id must be set",
     ):
-        await db.update_lesson(lesson)
+        await db.update_topic(topic)
 
 
-async def test_update_lesson_not_found_raises(db):
-    lesson = Lesson(
-        id=999,
-        title="Test",
-        language_from="en",
-        language_to="es",
-    )
-    with pytest.raises(ValueError, match="not found"):
-        await db.update_lesson(lesson)
+async def test_update_topic_not_found_raises(db):
+    topic = Topic(id=999, title="Test")
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.update_topic(topic)
 
 
-async def test_delete_lesson(db):
-    lesson = await db.add_lesson(Lesson(
+async def test_delete_topic(db):
+    topic = await db.add_topic(Topic(
         title="Doomed",
-        language_from="en",
-        language_to="es",
     ))
-    await db.delete_lesson(lesson.id)
-    assert await db.get_lesson(lesson.id) is None
+    await db.delete_topic(topic.id)
+    assert await db.get_topic(topic.id) is None
 
 
-async def test_delete_lesson_removes_word_links(db):
-    words = await db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
+async def test_delete_topic_removes_concept_links(db):
+    concepts = await db.add_concepts([
+        Concept(front="cat", back="gato"),
     ])
-    lesson = await db.add_lesson(Lesson(
+    topic = await db.add_topic(Topic(
         title="Linked",
-        language_from="en",
-        language_to="es",
-        word_count=1,
-        word_ids=[words[0].id],
+        concept_count=1,
+        concept_ids=[concepts[0].id],
     ))
-    await db.delete_lesson(lesson.id)
-    assert await db.get_lesson(lesson.id) is None
-    # Word itself still exists
-    assert len(await db.get_words("en", "es")) == 1
+    await db.delete_topic(topic.id)
+    assert await db.get_topic(topic.id) is None
+    # Concept itself still exists
+    assert len(await db.get_concepts()) == 1
 
 
-async def test_delete_lesson_not_found_raises(db):
-    with pytest.raises(ValueError, match="not found"):
-        await db.delete_lesson(999)
+async def test_delete_topic_not_found_raises(db):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.delete_topic(999)
 
 
 # --- Progress Export/Import Tests ---
@@ -836,10 +675,11 @@ async def test_export_progress_returns_all(db):
     u = await db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1, next_review=dt,
+        user_id=u.id, concept_id=1,
+        next_review=dt,
     ))
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=2,
+        user_id=u.id, concept_id=2,
         easiness_factor=2.1, interval=6,
         repetitions=3, next_review=dt,
     ))
@@ -853,21 +693,26 @@ async def test_export_progress_filters_by_user(db):
     u2 = await db.register_user("u2", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u1.id, word_id=1, next_review=dt,
+        user_id=u1.id, concept_id=1,
+        next_review=dt,
     ))
     await db.upsert_progress(UserProgress(
-        user_id=u2.id, word_id=2, next_review=dt,
+        user_id=u2.id, concept_id=2,
+        next_review=dt,
     ))
     result = await db.export_progress(u1.id)
     assert len(result) == 1
     assert result[0]["user_id"] == u1.id
 
 
-async def test_export_progress_next_review_is_string(db):
+async def test_export_progress_next_review_is_string(
+    db,
+):
     u = await db.register_user("u1", "pass")
     dt = datetime(2026, 6, 15, 10, 30, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1, next_review=dt,
+        user_id=u.id, concept_id=1,
+        next_review=dt,
     ))
     result = await db.export_progress(u.id)
     assert (
@@ -880,7 +725,7 @@ async def test_import_progress_inserts(db):
     u = await db.register_user("u1", "pass")
     records = [
         {
-            "user_id": u.id, "word_id": 1,
+            "user_id": u.id, "concept_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
@@ -897,12 +742,12 @@ async def test_import_progress_upserts(db):
     u = await db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1,
+        user_id=u.id, concept_id=1,
         repetitions=1, next_review=dt,
     ))
     records = [
         {
-            "user_id": u.id, "word_id": 1,
+            "user_id": u.id, "concept_id": 1,
             "easiness_factor": 2.1, "interval": 6,
             "repetitions": 3,
             "next_review": "2026-04-01T12:00:00",
@@ -919,18 +764,17 @@ async def test_import_export_roundtrip(db):
     u = await db.register_user("u1", "pass")
     dt = datetime(2026, 3, 1, 12, 0, 0)
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1,
+        user_id=u.id, concept_id=1,
         easiness_factor=2.3, interval=6,
         repetitions=4, next_review=dt,
     ))
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=2,
+        user_id=u.id, concept_id=2,
         easiness_factor=1.8, interval=1,
         repetitions=0, next_review=dt,
     ))
     exported = await db.export_progress(u.id)
 
-    # Import into a fresh database
     db2 = await Database.connect(":memory:")
     await db2.register_user("u1", "pass")
     count = await db2.import_progress(exported)
@@ -944,7 +788,7 @@ async def test_import_export_roundtrip(db):
 async def test_export_progress_includes_state(db):
     u = await db.register_user("u1", "pass")
     await db.upsert_progress(UserProgress(
-        user_id=u.id, word_id=1,
+        user_id=u.id, concept_id=1,
         state=CardState.LEARNING, step_index=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     ))
@@ -957,7 +801,7 @@ async def test_import_progress_with_state(db):
     u = await db.register_user("u1", "pass")
     records = [
         {
-            "user_id": u.id, "word_id": 1,
+            "user_id": u.id, "concept_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
@@ -976,7 +820,7 @@ async def test_import_progress_without_state_defaults(
     u = await db.register_user("u1", "pass")
     records = [
         {
-            "user_id": u.id, "word_id": 1,
+            "user_id": u.id, "concept_id": 1,
             "easiness_factor": 2.5, "interval": 1,
             "repetitions": 1,
             "next_review": "2026-03-01T12:00:00",
@@ -991,60 +835,12 @@ async def test_import_progress_without_state_defaults(
 async def test_import_progress_missing_key_raises(db):
     records = [
         {
-            "user_id": 1, "word_id": 1,
+            "user_id": 1, "concept_id": 1,
             "easiness_factor": 2.5,
-            # missing interval, repetitions, next_review
         },
     ]
     with pytest.raises(KeyError, match="Missing keys"):
         await db.import_progress(records)
-
-
-# --- Migration Tests ---
-
-
-async def test_migrate_adds_state_columns(tmp_path):
-    db_path = tmp_path / "legacy.db"
-    conn = sqlite3.connect(str(db_path))
-    conn.executescript(
-        "CREATE TABLE IF NOT EXISTS users ("
-        "    id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "    username TEXT NOT NULL UNIQUE,"
-        "    display_name TEXT,"
-        "    password_hash TEXT NOT NULL,"
-        "    created_at TEXT NOT NULL"
-        "        DEFAULT (datetime('now'))"
-        ");"
-        "INSERT INTO users "
-        "(username, password_hash) "
-        "VALUES ('u1', 'x');"
-        "CREATE TABLE IF NOT EXISTS progress ("
-        "    user_id INTEGER NOT NULL,"
-        "    word_id INTEGER NOT NULL,"
-        "    easiness_factor REAL NOT NULL DEFAULT 2.5,"
-        "    interval INTEGER NOT NULL DEFAULT 0,"
-        "    repetitions INTEGER NOT NULL DEFAULT 0,"
-        "    next_review TEXT NOT NULL,"
-        "    PRIMARY KEY (user_id, word_id)"
-        ");"
-    )
-    conn.execute(
-        "INSERT INTO progress "
-        "(user_id, word_id, easiness_factor, interval, "
-        "repetitions, next_review) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (1, 1, 2.5, 6, 3, "2026-03-01T12:00:00"),
-    )
-    conn.commit()
-    conn.close()
-
-    db = await Database.connect(db_path)
-    loaded = await db.get_progress(1, 1)
-    assert loaded is not None
-    assert loaded.state == CardState.REVIEW
-    assert loaded.step_index == 0
-    assert loaded.repetitions == 3
-    await db.close()
 
 
 # --- Answer History Tests ---
@@ -1057,7 +853,7 @@ async def test_record_answer(db):
     )
     history = await db.get_answer_history(u.id)
     assert len(history) == 1
-    assert history[0].word_id == 1
+    assert history[0].concept_id == 1
     assert history[0].correct is True
     assert history[0].quality == 5
 
@@ -1091,8 +887,8 @@ async def test_get_answer_history_ordered_newest_first(
     )
     history = await db.get_answer_history(u.id)
     assert len(history) == 2
-    assert history[0].word_id == 2
-    assert history[1].word_id == 1
+    assert history[0].concept_id == 2
+    assert history[1].concept_id == 1
 
 
 async def test_get_answer_history_limit(db):
@@ -1111,7 +907,7 @@ async def test_get_answer_history_since(db):
     u = await db.register_user("u1", "pass")
     await db._conn.execute(
         "INSERT INTO answer_history "
-        "(user_id, word_id, exercise_type, "
+        "(user_id, concept_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (u.id, 1, "flashcard", 1, 5,
@@ -1119,7 +915,7 @@ async def test_get_answer_history_since(db):
     )
     await db._conn.execute(
         "INSERT INTO answer_history "
-        "(user_id, word_id, exercise_type, "
+        "(user_id, concept_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (u.id, 2, "flashcard", 1, 5,
@@ -1130,7 +926,7 @@ async def test_get_answer_history_since(db):
         u.id, since=datetime(2026, 3, 1),
     )
     assert len(history) == 1
-    assert history[0].word_id == 2
+    assert history[0].concept_id == 2
 
 
 async def test_get_answer_history_filters_by_user(db):
@@ -1157,7 +953,7 @@ async def test_daily_stats_aggregation(db):
     u = await db.register_user("u1", "pass")
     await db._conn.execute(
         "INSERT INTO answer_history "
-        "(user_id, word_id, exercise_type, "
+        "(user_id, concept_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (u.id, 1, "flashcard", 1, 5,
@@ -1165,7 +961,7 @@ async def test_daily_stats_aggregation(db):
     )
     await db._conn.execute(
         "INSERT INTO answer_history "
-        "(user_id, word_id, exercise_type, "
+        "(user_id, concept_id, exercise_type, "
         " correct, quality, answered_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (u.id, 2, "flashcard", 0, 1,
@@ -1182,14 +978,16 @@ async def test_daily_stats_aggregation(db):
 
 async def test_daily_stats_multiple_days(db):
     u = await db.register_user("u1", "pass")
-    for day, word_id in [("2026-02-26", 1),
-                         ("2026-02-27", 2)]:
+    for day, cid in [
+        ("2026-02-26", 1),
+        ("2026-02-27", 2),
+    ]:
         await db._conn.execute(
             "INSERT INTO answer_history "
-            "(user_id, word_id, exercise_type, "
+            "(user_id, concept_id, exercise_type, "
             " correct, quality, answered_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            (u.id, word_id, "flashcard", 1, 5,
+            (u.id, cid, "flashcard", 1, 5,
              f"{day}T10:00:00"),
         )
     await db._conn.commit()
@@ -1199,138 +997,136 @@ async def test_daily_stats_multiple_days(db):
     assert stats[1].date == "2026-02-26"
 
 
-# --- Weak Word Detection Tests ---
+# --- Weak Concept Detection Tests ---
 
 
-async def _add_history(db, user_id, word_id, correct, n):
+async def _add_history(db, user_id, cid, correct, n):
     """Helper to insert N answer_history rows."""
     for _ in range(n):
         await db._conn.execute(
             "INSERT INTO answer_history "
-            "(user_id, word_id, exercise_type, "
+            "(user_id, concept_id, exercise_type, "
             " correct, quality, answered_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
-            (user_id, word_id, "flashcard",
+            (user_id, cid, "flashcard",
              int(correct), 5 if correct else 1,
              "2026-02-27T10:00:00"),
         )
     await db._conn.commit()
 
 
-async def test_weak_words_empty(db):
+async def test_weak_concepts_empty(db):
     u = await db.register_user("u1", "pass")
-    result = await db.weak_words(u.id, "en", "es")
+    result = await db.weak_concepts(u.id)
     assert result == []
 
 
-async def test_weak_words_detects_weak(db):
+async def test_weak_concepts_detects_weak(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    # 1 correct + 3 incorrect = 75% error rate
-    await _add_history(db, u.id, w.id, True, 1)
-    await _add_history(db, u.id, w.id, False, 3)
-    result = await db.weak_words(u.id, "en", "es")
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, True, 1)
+    await _add_history(db, u.id, c.id, False, 3)
+    result = await db.weak_concepts(u.id)
     assert len(result) == 1
-    assert result[0].word.id == w.id
+    assert result[0].concept.id == c.id
     assert result[0].attempts == 4
     assert result[0].errors == 3
     assert result[0].error_rate == 0.75
 
 
-async def test_weak_words_excludes_strong(db):
+async def test_weak_concepts_excludes_strong(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    # 4 correct + 0 incorrect = 0% error rate
-    await _add_history(db, u.id, w.id, True, 4)
-    result = await db.weak_words(u.id, "en", "es")
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, True, 4)
+    result = await db.weak_concepts(u.id)
     assert result == []
 
 
-async def test_weak_words_min_attempts(db):
+async def test_weak_concepts_min_attempts(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    # Only 2 attempts (below default min_attempts=3)
-    await _add_history(db, u.id, w.id, False, 2)
-    result = await db.weak_words(u.id, "en", "es")
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, False, 2)
+    result = await db.weak_concepts(u.id)
     assert result == []
 
-    result = await db.weak_words(
-        u.id, "en", "es", min_attempts=2,
+    result = await db.weak_concepts(
+        u.id, min_attempts=2,
     )
     assert len(result) == 1
 
 
-async def test_weak_words_threshold(db):
+async def test_weak_concepts_threshold(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    # 2 correct + 1 incorrect = 33% error rate
-    await _add_history(db, u.id, w.id, True, 2)
-    await _add_history(db, u.id, w.id, False, 1)
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, True, 2)
+    await _add_history(db, u.id, c.id, False, 1)
 
-    # Default threshold 0.5 => not weak
-    result = await db.weak_words(u.id, "en", "es")
+    result = await db.weak_concepts(u.id)
     assert result == []
 
-    # Lower threshold => weak
-    result = await db.weak_words(
-        u.id, "en", "es", threshold=0.3,
+    result = await db.weak_concepts(
+        u.id, threshold=0.3,
     )
     assert len(result) == 1
 
 
-async def test_weak_words_ordered_by_error_rate(db):
+async def test_weak_concepts_ordered_by_error_rate(db):
     u = await db.register_user("u1", "pass")
-    w1 = await db.add_word("en", "es", "cat", "gato")
-    w2 = await db.add_word("en", "es", "dog", "perro")
-    # w1: 50% error rate
-    await _add_history(db, u.id, w1.id, True, 2)
-    await _add_history(db, u.id, w1.id, False, 2)
-    # w2: 75% error rate
-    await _add_history(db, u.id, w2.id, True, 1)
-    await _add_history(db, u.id, w2.id, False, 3)
+    c1 = await db.add_concept("cat", "gato")
+    c2 = await db.add_concept("dog", "perro")
+    await _add_history(db, u.id, c1.id, True, 2)
+    await _add_history(db, u.id, c1.id, False, 2)
+    await _add_history(db, u.id, c2.id, True, 1)
+    await _add_history(db, u.id, c2.id, False, 3)
 
-    result = await db.weak_words(u.id, "en", "es")
+    result = await db.weak_concepts(u.id)
     assert len(result) == 2
-    assert result[0].word.id == w2.id
-    assert result[1].word.id == w1.id
+    assert result[0].concept.id == c2.id
+    assert result[1].concept.id == c1.id
 
 
-async def test_weak_words_filters_by_language(db):
+async def test_weak_concepts_filters_by_tag(db):
     u = await db.register_user("u1", "pass")
-    w1 = await db.add_word("en", "es", "cat", "gato")
-    w2 = await db.add_word("en", "fr", "cat", "chat")
-    await _add_history(db, u.id, w1.id, False, 4)
-    await _add_history(db, u.id, w2.id, False, 4)
+    c1 = await db.add_concept(
+        "cat", "gato", tags=["animals"],
+    )
+    c2 = await db.add_concept(
+        "bread", "pan", tags=["food"],
+    )
+    await _add_history(db, u.id, c1.id, False, 4)
+    await _add_history(db, u.id, c2.id, False, 4)
 
-    result = await db.weak_words(u.id, "en", "es")
+    result = await db.weak_concepts(
+        u.id, tag="animals",
+    )
     assert len(result) == 1
-    assert result[0].word.id == w1.id
+    assert result[0].concept.id == c1.id
 
 
-async def test_weak_words_filters_by_user(db):
+async def test_weak_concepts_filters_by_user(db):
     u1 = await db.register_user("u1", "pass")
     u2 = await db.register_user("u2", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    await _add_history(db, u1.id, w.id, False, 4)
-    await _add_history(db, u2.id, w.id, False, 4)
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u1.id, c.id, False, 4)
+    await _add_history(db, u2.id, c.id, False, 4)
 
-    result = await db.weak_words(u1.id, "en", "es")
+    result = await db.weak_concepts(u1.id)
     assert len(result) == 1
 
-    result = await db.weak_words(u2.id, "en", "es")
+    result = await db.weak_concepts(u2.id)
     assert len(result) == 1
 
 
-async def test_weak_words_limit(db):
+async def test_weak_concepts_limit(db):
     u = await db.register_user("u1", "pass")
     for i in range(5):
-        w = await db.add_word(
-            "en", "es", f"word{i}", f"w{i}",
+        c = await db.add_concept(
+            f"concept{i}", f"back{i}",
         )
-        await _add_history(db, u.id, w.id, False, 4)
+        await _add_history(db, u.id, c.id, False, 4)
 
-    result = await db.weak_words(
-        u.id, "en", "es", limit=3,
+    result = await db.weak_concepts(
+        u.id, limit=3,
     )
     assert len(result) == 3
 
@@ -1345,16 +1141,16 @@ async def test_retention_rate_empty(db):
 
 async def test_retention_rate_all_correct(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    await _add_history(db, u.id, w.id, True, 10)
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, True, 10)
     assert await db.retention_rate(u.id) == 100.0
 
 
 async def test_retention_rate_mixed(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    await _add_history(db, u.id, w.id, True, 7)
-    await _add_history(db, u.id, w.id, False, 3)
+    c = await db.add_concept("cat", "gato")
+    await _add_history(db, u.id, c.id, True, 7)
+    await _add_history(db, u.id, c.id, False, 3)
     assert await db.retention_rate(u.id) == 70.0
 
 
@@ -1370,11 +1166,10 @@ async def test_forecast_empty(db):
 
 async def test_forecast_with_due_cards(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
-    # Schedule a review for today
+    c = await db.add_concept("cat", "gato")
     progress = UserProgress(
         user_id=u.id,
-        word_id=w.id,
+        concept_id=c.id,
         state=CardState.REVIEW,
         next_review=datetime.now(),
     )
@@ -1389,10 +1184,10 @@ async def test_forecast_with_due_cards(db):
 
 async def test_forecast_excludes_suspended(db):
     u = await db.register_user("u1", "pass")
-    w = await db.add_word("en", "es", "cat", "gato")
+    c = await db.add_concept("cat", "gato")
     progress = UserProgress(
         user_id=u.id,
-        word_id=w.id,
+        concept_id=c.id,
         state=CardState.SUSPENDED,
         next_review=datetime.now(),
     )
@@ -1404,73 +1199,74 @@ async def test_forecast_excludes_suspended(db):
 # --- CSV/TSV Import Tests ---
 
 
-async def test_import_words_csv_basic(db, tmp_path):
-    csv_file = tmp_path / "words.csv"
-    csv_file.write_text(
-        "word_from,word_to\ncat,gato\ndog,perro\n",
-        encoding="utf-8",
-    )
-    words = await import_words_csv(
-        db, csv_file, "en", "es",
-    )
-    assert len(words) == 2
-    assert words[0].word_from == "cat"
-    assert words[0].word_to == "gato"
-    assert words[0].id is not None
-
-
-async def test_import_words_csv_optional_columns(
+async def test_import_concepts_csv_basic(
     db, tmp_path,
 ):
-    csv_file = tmp_path / "words.csv"
+    csv_file = tmp_path / "concepts.csv"
     csv_file.write_text(
-        "word_from,word_to,gender,cefr,tags\n"
-        "libro,book,m,A1,\"education,objects\"\n",
+        "front,back\ncat,gato\ndog,perro\n",
         encoding="utf-8",
     )
-    words = await import_words_csv(
-        db, csv_file, "es", "en",
+    concepts = await import_concepts_csv(
+        db, csv_file,
     )
-    assert len(words) == 1
-    assert words[0].gender == "m"
-    assert words[0].cefr == "A1"
-    assert words[0].tags == ["education", "objects"]
+    assert len(concepts) == 2
+    assert concepts[0].front == "cat"
+    assert concepts[0].back == "gato"
+    assert concepts[0].id is not None
 
 
-async def test_import_words_tsv(db, tmp_path):
-    tsv_file = tmp_path / "words.tsv"
+async def test_import_concepts_csv_optional_columns(
+    db, tmp_path,
+):
+    csv_file = tmp_path / "concepts.csv"
+    csv_file.write_text(
+        "front,back,context,tags\n"
+        "cat,gato,A pet,\"animals,pets\"\n",
+        encoding="utf-8",
+    )
+    concepts = await import_concepts_csv(
+        db, csv_file,
+    )
+    assert len(concepts) == 1
+    assert concepts[0].context == "A pet"
+    assert concepts[0].tags == ["animals", "pets"]
+
+
+async def test_import_concepts_tsv(db, tmp_path):
+    tsv_file = tmp_path / "concepts.tsv"
     tsv_file.write_text(
-        "word_from\tword_to\ncat\tgato\n",
+        "front\tback\ncat\tgato\n",
         encoding="utf-8",
     )
-    words = await import_words_csv(
-        db, tsv_file, "en", "es",
+    concepts = await import_concepts_csv(
+        db, tsv_file,
     )
-    assert len(words) == 1
-    assert words[0].word_from == "cat"
+    assert len(concepts) == 1
+    assert concepts[0].front == "cat"
 
 
-async def test_import_words_csv_custom_columns(
+async def test_import_concepts_csv_custom_columns(
     db, tmp_path,
 ):
-    csv_file = tmp_path / "words.csv"
+    csv_file = tmp_path / "concepts.csv"
     csv_file.write_text(
-        "spanish,english\ngato,cat\n",
+        "question,answer\nWhat is ML?,Machine Learning\n",
         encoding="utf-8",
     )
-    words = await import_words_csv(
-        db, csv_file, "es", "en",
-        word_from_col="spanish",
-        word_to_col="english",
+    concepts = await import_concepts_csv(
+        db, csv_file,
+        front_col="question",
+        back_col="answer",
     )
-    assert words[0].word_from == "gato"
-    assert words[0].word_to == "cat"
+    assert concepts[0].front == "What is ML?"
+    assert concepts[0].back == "Machine Learning"
 
 
-async def test_import_words_csv_missing_column(
+async def test_import_concepts_csv_missing_column(
     db, tmp_path,
 ):
-    csv_file = tmp_path / "words.csv"
+    csv_file = tmp_path / "concepts.csv"
     csv_file.write_text(
         "word,meaning\ncat,gato\n",
         encoding="utf-8",
@@ -1478,24 +1274,22 @@ async def test_import_words_csv_missing_column(
     with pytest.raises(
         ValueError, match="Required column",
     ):
-        await import_words_csv(
-            db, csv_file, "en", "es",
-        )
+        await import_concepts_csv(db, csv_file)
 
 
-async def test_import_words_csv_with_owner(
+async def test_import_concepts_csv_with_owner(
     db, tmp_path,
 ):
     u = await db.register_user("u1", "pass")
-    csv_file = tmp_path / "words.csv"
+    csv_file = tmp_path / "concepts.csv"
     csv_file.write_text(
-        "word_from,word_to\ncat,gato\n",
+        "front,back\ncat,gato\n",
         encoding="utf-8",
     )
-    words = await import_words_csv(
-        db, csv_file, "en", "es", owner_id=u.id,
+    concepts = await import_concepts_csv(
+        db, csv_file, owner_id=u.id,
     )
-    assert words[0].owner_id == u.id
+    assert concepts[0].owner_id == u.id
 
 
 # --- Conversation State Tests ---
@@ -1513,7 +1307,10 @@ async def test_save_and_get_conversation_state(db):
     loaded = await db.get_conversation_state(u.id)
     assert loaded is not None
     assert loaded.user_id == u.id
-    assert loaded.stage == ConversationStage.AWAITING_ANSWER
+    assert (
+        loaded.stage
+        == ConversationStage.AWAITING_ANSWER
+    )
     assert loaded.data == {"exercise_id": 42}
 
 
@@ -1526,7 +1323,7 @@ async def test_save_conversation_state_overwrites(db):
     u = await db.register_user("u1", "pass")
     state1 = ConversationState(
         user_id=u.id,
-        stage=ConversationStage.CHOOSING_LESSON,
+        stage=ConversationStage.CHOOSING_TOPIC,
     )
     await db.save_conversation_state(state1)
 
@@ -1539,7 +1336,9 @@ async def test_save_conversation_state_overwrites(db):
 
     loaded = await db.get_conversation_state(u.id)
     assert loaded is not None
-    assert loaded.stage == ConversationStage.EXERCISING
+    assert (
+        loaded.stage == ConversationStage.EXERCISING
+    )
     assert loaded.data == {"session_key": "abc"}
 
 
@@ -1567,7 +1366,9 @@ async def test_conversation_state_with_key(db):
     assert r1 is not None
     assert r1.stage == ConversationStage.IDLE
     assert r2 is not None
-    assert r2.stage == ConversationStage.EXERCISING
+    assert (
+        r2.stage == ConversationStage.EXERCISING
+    )
 
 
 async def test_delete_conversation_state(db):
@@ -1578,10 +1379,14 @@ async def test_delete_conversation_state(db):
     )
     await db.save_conversation_state(state)
 
-    deleted = await db.delete_conversation_state(u.id)
+    deleted = await db.delete_conversation_state(
+        u.id,
+    )
     assert deleted is True
 
-    deleted2 = await db.delete_conversation_state(u.id)
+    deleted2 = await db.delete_conversation_state(
+        u.id,
+    )
     assert deleted2 is False
 
     loaded = await db.get_conversation_state(u.id)
@@ -1592,10 +1397,9 @@ async def test_conversation_state_preserves_data(db):
     u = await db.register_user("u1", "pass")
     state = ConversationState(
         user_id=u.id,
-        stage=ConversationStage.CHOOSING_LESSON,
+        stage=ConversationStage.CHOOSING_TOPIC,
         data={
             "page": 2,
-            "cefr": "A1",
             "tags": ["food", "travel"],
         },
     )
@@ -1604,5 +1408,6 @@ async def test_conversation_state_preserves_data(db):
     loaded = await db.get_conversation_state(u.id)
     assert loaded is not None
     assert loaded.data["page"] == 2
-    assert loaded.data["cefr"] == "A1"
-    assert loaded.data["tags"] == ["food", "travel"]
+    assert loaded.data["tags"] == [
+        "food", "travel",
+    ]

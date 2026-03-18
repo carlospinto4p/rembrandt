@@ -1,4 +1,4 @@
-"""SM-2 spaced-repetition algorithm and word selection."""
+"""SM-2 spaced-repetition algorithm and concept selection."""
 
 import random
 from datetime import datetime, timedelta
@@ -7,10 +7,10 @@ from typing import NamedTuple
 from rembrandt.db import Database
 from rembrandt.models import (
     CardState,
+    Concept,
     ReviewConfig,
     SessionMode,
     UserProgress,
-    Word,
 )
 
 _DEFAULT_CONFIG = ReviewConfig()
@@ -40,12 +40,8 @@ def _fuzz_interval(
 ) -> int:
     """Add random jitter to a day-based interval.
 
-    Intervals below 3 days are returned unchanged. When
-    `max_fuzz_factor` is 0 or negative, no fuzz is applied.
-
     :param interval: Base interval in days.
-    :param max_fuzz_factor: Maximum proportion of jitter
-        (e.g. `0.05` means +/-5%).
+    :param max_fuzz_factor: Maximum proportion of jitter.
     :return: Fuzzed interval (always >= 1).
     """
     if interval < 3 or max_fuzz_factor <= 0:
@@ -303,20 +299,7 @@ def review(
 ) -> UserProgress:
     """Apply spaced-repetition with Anki-style learning steps.
 
-    Routes cards through a state machine:
-
-    - `NEW` -> `LEARNING` (or `REVIEW` if no learning steps)
-    - `LEARNING` + pass -> advance step (or graduate to
-      `REVIEW`)
-    - `LEARNING` + fail -> reset to step 0
-    - `REVIEW` + pass -> normal SM-2 interval
-    - `REVIEW` + fail -> `RELEARNING` (or stay in `REVIEW`
-      if no relearning steps)
-    - `RELEARNING` + pass -> advance step (or return to
-      `REVIEW` with reduced interval)
-    - `RELEARNING` + fail -> reset to step 0
-
-    :param progress: Current progress for a user-word pair.
+    :param progress: Current progress for a user-concept pair.
     :param quality: Quality of recall, 0 (total blackout) to
         5 (perfect response).
     :param config: Learning/relearning configuration. Uses
@@ -352,7 +335,7 @@ def review(
 
     return UserProgress(
         user_id=progress.user_id,
-        word_id=progress.word_id,
+        concept_id=progress.concept_id,
         easiness_factor=round(ef, 2),
         interval=r.interval,
         repetitions=r.reps,
@@ -363,97 +346,88 @@ def review(
     )
 
 
-async def select_words(
+async def select_concepts(
     db: Database,
     user_id: int,
-    language_from: str,
-    language_to: str,
     count: int = 5,
     *,
     mode: SessionMode = SessionMode.MIXED,
-    word_ids: list[int] | None = None,
-    exclude_word_ids: set[int] | None = None,
+    tag: str | None = None,
+    concept_ids: list[int] | None = None,
+    exclude_concept_ids: set[int] | None = None,
     prioritize_weak: bool = False,
     max_new: int | None = None,
     max_review: int | None = None,
-) -> list[Word]:
-    """Pick words for review using spaced-repetition scheduling.
-
-    Words in `LEARNING` or `RELEARNING` state are returned
-    first (before regular due/new words) when their
-    `next_review` has passed.
+) -> list[Concept]:
+    """Pick concepts for review using spaced-repetition.
 
     :param db: The database instance.
     :param user_id: The user's database id.
-    :param language_from: Source language code.
-    :param language_to: Target language code.
-    :param count: Number of words to select.
-    :param mode: Session mode controlling which words are
-        returned. `MIXED` (default) returns due words first,
-        then fills with new. `LEARN_NEW` returns only new
-        words. `REVIEW_DUE` returns only due words.
-    :param word_ids: If provided, restrict selection to these
-        word ids (e.g. from a lesson).
-    :param exclude_word_ids: Word ids to exclude from
-        selection (e.g. sibling burying).
-    :param prioritize_weak: When `True`, sorts due words so
-        that weak words (high error rate) come first.
-    :param max_new: Cap on new words returned. `None` means
-        no cap (unlimited).
-    :param max_review: Cap on review (due) words returned.
-        `None` means no cap. In-steps cards are never capped.
-    :return: List of `Word` objects to review.
+    :param count: Number of concepts to select.
+    :param mode: Session mode controlling which concepts are
+        returned.
+    :param tag: Optional tag filter.
+    :param concept_ids: Restrict selection to these ids.
+    :param exclude_concept_ids: Concept ids to exclude.
+    :param prioritize_weak: Sort due concepts by error rate.
+    :param max_new: Cap on new concepts returned.
+    :param max_review: Cap on review concepts returned.
+    :return: List of `Concept` objects to review.
     """
-    all_words = await db.get_words(
-        language_from, language_to,
-    )
-    if not all_words:
+    all_concepts = await db.get_concepts(tag=tag)
+    if not all_concepts:
         return []
 
-    allowed = set(word_ids) if word_ids is not None else None
-    excluded = exclude_word_ids or set()
+    allowed = (
+        set(concept_ids)
+        if concept_ids is not None else None
+    )
+    excluded = exclude_concept_ids or set()
     if allowed is not None or excluded:
-        all_words = [
-            w for w in all_words
-            if (allowed is None or w.id in allowed)
-            and w.id not in excluded
+        all_concepts = [
+            c for c in all_concepts
+            if (allowed is None or c.id in allowed)
+            and c.id not in excluded
         ]
-        if not all_words:
+        if not all_concepts:
             return []
 
-    ids = [w.id for w in all_words if w.id is not None]
+    ids = [
+        c.id for c in all_concepts
+        if c.id is not None
+    ]
     progress_map = await db.get_all_progress(
         user_id, ids,
     )
 
     now = datetime.now()
-    in_steps: list[Word] = []
-    due: list[Word] = []
-    new: list[Word] = []
+    in_steps: list[Concept] = []
+    due: list[Concept] = []
+    new: list[Concept] = []
 
-    for word in all_words:
-        if word.id is None:
-            raise ValueError("Word id must be set")
-        progress = progress_map.get(word.id)
+    for concept in all_concepts:
+        if concept.id is None:
+            raise ValueError("Concept id must be set")
+        progress = progress_map.get(concept.id)
         if progress is None:
-            new.append(word)
+            new.append(concept)
         elif progress.state == CardState.SUSPENDED:
             continue
         elif progress.state in (
             CardState.LEARNING,
             CardState.RELEARNING,
         ) and progress.next_review <= now:
-            in_steps.append(word)
+            in_steps.append(concept)
         elif progress.next_review <= now:
-            due.append(word)
+            due.append(concept)
 
     if prioritize_weak and due:
-        weak = await db.weak_words(
-            user_id, language_from, language_to,
+        weak = await db.weak_concepts(
+            user_id, tag=tag,
         )
-        weak_ids = {ww.word.id for ww in weak}
+        weak_ids = {wc.concept.id for wc in weak}
         due.sort(
-            key=lambda w: w.id not in weak_ids,
+            key=lambda c: c.id not in weak_ids,
         )
 
     if max_new is not None:

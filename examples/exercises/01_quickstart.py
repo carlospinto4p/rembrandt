@@ -1,68 +1,76 @@
-"""Quick-start example for Rembrandt.
+"""Quickstart — study data science concepts."""
 
-Creates a session from an inline word list and runs a few exercises,
-printing the type, prompt, and auto-answer for each one.
-
-Usage::
-
-    uv run python examples/exercises/01_quickstart.py
-"""
-
-from pathlib import Path
-
+import asyncio
 from rembrandt import quick_session
-from rembrandt.models import ExerciseType
 
-_DB_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data"
-    / "quickstart.db"
-)
-
-_WORDS = [
-    {"word": "cat", "definition": "gato"},
-    {"word": "dog", "definition": "perro"},
-    {"word": "house", "definition": "casa"},
-    {"word": "book", "definition": "libro"},
-    {"word": "water", "definition": "agua"},
-    {"word": "sun", "definition": "sol"},
+CONCEPTS = [
+    {
+        "front": "What is a p-value?",
+        "back": (
+            "Probability of observing data at least "
+            "as extreme as the sample, assuming H0"
+        ),
+    },
+    {
+        "front": "What is overfitting?",
+        "back": (
+            "Model learns noise in training data "
+            "and performs poorly on unseen data"
+        ),
+    },
+    {
+        "front": "What is gradient descent?",
+        "back": (
+            "Optimization algorithm that iteratively "
+            "adjusts parameters to minimize loss"
+        ),
+    },
+    {
+        "front": "What is cross-validation?",
+        "back": (
+            "Evaluate model by partitioning data "
+            "into training and test subsets"
+        ),
+    },
+    {
+        "front": "What is regularization?",
+        "back": (
+            "Penalty term added to loss function "
+            "to prevent overfitting"
+        ),
+    },
 ]
 
 
-def main() -> None:
-    session = quick_session(
-        _WORDS,
-        db_path=_DB_PATH,
-        language_from="en",
-        language_to="es",
+async def main():
+    session = await quick_session(
+        CONCEPTS, db_path="quickstart.db",
     )
 
-    for i in range(4):
-        exercise = session.next_exercise()
-        if exercise is None:
+    for _ in range(3):
+        ex = await session.next_exercise()
+        if ex is None:
             break
+        print(f"\n{ex.exercise_type.value}")
+        print(f"  Q: {ex.concept.front}")
+        if ex.options:
+            for i, opt in enumerate(ex.options, 1):
+                print(f"  {i}. {opt}")
+        print(f"  A: {ex.concept.back}")
 
-        print(f"--- Exercise {i + 1} ---")
-        print(f"Type: {exercise.exercise_type.value}")
-        print(f"Translate: {exercise.word.word_from}")
-
-        if exercise.exercise_type == (
-            ExerciseType.MULTIPLE_CHOICE
-        ):
-            for idx, opt in enumerate(exercise.options, 1):
-                print(f"  {idx}. {opt}")
-
-        result = session.answer(exercise.word.word_to)
-        status = "Correct!" if result.correct else "Wrong"
-        print(f"Answer: {result.expected} -> {status}\n")
+        result = await session.answer(
+            ex.concept.back,
+        )
+        tag = "\u2713" if result.correct else "\u2717"
+        print(f"  {tag}")
 
     stats = session.summary()
     print(
-        f"Score: {stats.correct}/{stats.total} "
+        f"\nScore: {stats.correct}/{stats.total} "
         f"({stats.accuracy_pct}%)"
     )
-    session.db.close()
+    await session.db.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

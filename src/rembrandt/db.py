@@ -1,4 +1,4 @@
-"""Async SQLite database layer for words and user progress."""
+"""Async SQLite database layer for concepts and user progress."""
 
 import csv
 import hashlib
@@ -16,15 +16,15 @@ from rembrandt.models import (
     CardState,
     ConversationStage,
     ConversationState,
+    Concept,
     DailyStats,
-    Lesson,
     ReviewForecast,
     SessionSnapshot,
+    Topic,
     User,
     UserProgress,
     UserSession,
-    WeakWord,
-    Word,
+    WeakConcept,
 )
 
 _SCHEMA = """\
@@ -45,24 +45,20 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS words (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    language_from     TEXT NOT NULL,
-    language_to       TEXT NOT NULL,
-    word_from         TEXT NOT NULL,
-    word_to           TEXT NOT NULL,
-    gender            TEXT,
-    conjugation_group TEXT,
-    tags              TEXT NOT NULL DEFAULT '[]',
-    cefr              TEXT,
-    owner_id          INTEGER,
-    created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+CREATE TABLE IF NOT EXISTS concepts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    front      TEXT NOT NULL,
+    back       TEXT NOT NULL,
+    context    TEXT NOT NULL DEFAULT '',
+    tags       TEXT NOT NULL DEFAULT '[]',
+    owner_id   INTEGER,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS progress (
     user_id          INTEGER NOT NULL,
-    word_id          INTEGER NOT NULL,
+    concept_id       INTEGER NOT NULL,
     easiness_factor  REAL    NOT NULL DEFAULT 2.5,
     interval         INTEGER NOT NULL DEFAULT 0,
     repetitions      INTEGER NOT NULL DEFAULT 0,
@@ -72,41 +68,38 @@ CREATE TABLE IF NOT EXISTS progress (
     lapse_count      INTEGER NOT NULL DEFAULT 0,
     stability        REAL,
     difficulty       REAL,
-    PRIMARY KEY (user_id, word_id),
+    PRIMARY KEY (user_id, concept_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (word_id) REFERENCES words(id)
+    FOREIGN KEY (concept_id) REFERENCES concepts(id)
 );
 
-CREATE TABLE IF NOT EXISTS lessons (
+CREATE TABLE IF NOT EXISTS topics (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     title         TEXT NOT NULL,
     description   TEXT NOT NULL DEFAULT '',
-    language_from TEXT NOT NULL,
-    language_to   TEXT NOT NULL,
-    cefr          TEXT,
     tags          TEXT NOT NULL DEFAULT '[]',
-    word_count    INTEGER NOT NULL DEFAULT 0
+    concept_count INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS lesson_words (
-    lesson_id INTEGER NOT NULL,
-    word_id   INTEGER NOT NULL,
-    position  INTEGER NOT NULL DEFAULT 0,
-    PRIMARY KEY (lesson_id, word_id),
-    FOREIGN KEY (lesson_id) REFERENCES lessons(id),
-    FOREIGN KEY (word_id) REFERENCES words(id)
+CREATE TABLE IF NOT EXISTS topic_concepts (
+    topic_id   INTEGER NOT NULL,
+    concept_id INTEGER NOT NULL,
+    position   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (topic_id, concept_id),
+    FOREIGN KEY (topic_id) REFERENCES topics(id),
+    FOREIGN KEY (concept_id) REFERENCES concepts(id)
 );
 
 CREATE TABLE IF NOT EXISTS answer_history (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id       INTEGER NOT NULL,
-    word_id       INTEGER NOT NULL,
+    concept_id    INTEGER NOT NULL,
     exercise_type TEXT    NOT NULL,
     correct       INTEGER NOT NULL,
     quality       INTEGER NOT NULL,
     answered_at   TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (word_id) REFERENCES words(id)
+    FOREIGN KEY (concept_id) REFERENCES concepts(id)
 );
 
 CREATE TABLE IF NOT EXISTS session_snapshots (
@@ -127,6 +120,13 @@ CREATE TABLE IF NOT EXISTS conversation_states (
     PRIMARY KEY (user_id, key),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_concepts_tags
+    ON concepts(tags);
+CREATE INDEX IF NOT EXISTS idx_progress_user_state
+    ON progress(user_id, state);
+CREATE INDEX IF NOT EXISTS idx_answer_user_concept
+    ON answer_history(user_id, concept_id);
 """
 
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
@@ -142,21 +142,38 @@ _DAILY_STATS_SQL = (
     "ORDER BY day DESC"
 )
 
-_WEAK_WORDS_SQL = (
-    "SELECT w.id, w.language_from, "
-    "w.language_to, w.word_from, w.word_to, "
-    "w.gender, w.conjugation_group, "
-    "w.tags, w.cefr, w.owner_id, "
+_WEAK_CONCEPTS_SQL = (
+    "SELECT c.id, c.front, c.back, "
+    "c.context, c.tags, c.owner_id, "
     "COUNT(*) AS attempts, "
     "SUM(CASE WHEN ah.correct = 0 "
     "    THEN 1 ELSE 0 END) AS errors, "
     "MAX(ah.answered_at) AS last_attempt "
     "FROM answer_history ah "
-    "JOIN words w ON w.id = ah.word_id "
+    "JOIN concepts c ON c.id = ah.concept_id "
     "WHERE ah.user_id = ? "
-    "AND w.language_from = ? "
-    "AND w.language_to = ? "
-    "GROUP BY ah.word_id "
+    "GROUP BY ah.concept_id "
+    "HAVING attempts >= ? "
+    "AND CAST(errors AS REAL) "
+    "    / attempts >= ? "
+    "ORDER BY CAST(errors AS REAL) "
+    "    / attempts DESC "
+    "LIMIT ?"
+)
+
+_WEAK_CONCEPTS_TAGGED_SQL = (
+    "SELECT c.id, c.front, c.back, "
+    "c.context, c.tags, c.owner_id, "
+    "COUNT(*) AS attempts, "
+    "SUM(CASE WHEN ah.correct = 0 "
+    "    THEN 1 ELSE 0 END) AS errors, "
+    "MAX(ah.answered_at) AS last_attempt "
+    "FROM answer_history ah "
+    "JOIN concepts c ON c.id = ah.concept_id "
+    "WHERE ah.user_id = ? "
+    "AND EXISTS (SELECT 1 FROM json_each(c.tags) "
+    "    WHERE json_each.value = ?) "
+    "GROUP BY ah.concept_id "
     "HAVING attempts >= ? "
     "AND CAST(errors AS REAL) "
     "    / attempts >= ? "
@@ -224,18 +241,14 @@ def _row_to_user_session(
     )
 
 
-def _row_to_word(r: aiosqlite.Row) -> Word:
-    """Convert a SQLite row to a `Word` model."""
-    return Word(
+def _row_to_concept(r: aiosqlite.Row) -> Concept:
+    """Convert a SQLite row to a `Concept` model."""
+    return Concept(
         id=r["id"],
-        language_from=r["language_from"],
-        language_to=r["language_to"],
-        word_from=r["word_from"],
-        word_to=r["word_to"],
-        gender=r["gender"],
-        conjugation_group=r["conjugation_group"],
+        front=r["front"],
+        back=r["back"],
+        context=r["context"],
         tags=json.loads(r["tags"]),
-        cefr=r["cefr"],
         owner_id=r["owner_id"],
     )
 
@@ -244,7 +257,7 @@ def _row_to_progress(r: aiosqlite.Row) -> UserProgress:
     """Convert a SQLite row to a `UserProgress` model."""
     return UserProgress(
         user_id=r["user_id"],
-        word_id=r["word_id"],
+        concept_id=r["concept_id"],
         easiness_factor=r["easiness_factor"],
         interval=r["interval"],
         repetitions=r["repetitions"],
@@ -260,13 +273,13 @@ def _row_to_progress(r: aiosqlite.Row) -> UserProgress:
 
 
 class Database:
-    """Async SQLite backend for vocabulary words and progress.
+    """Async SQLite backend for concepts and progress.
 
     Use the async `connect` classmethod to create instances:
 
     .. code-block:: python
 
-        db = await Database.connect("vocab.db")
+        db = await Database.connect("study.db")
 
     :param path: Path to the SQLite database file.
         Use `":memory:"` for an in-memory database.
@@ -290,140 +303,7 @@ class Database:
         conn = await aiosqlite.connect(str(path))
         conn.row_factory = aiosqlite.Row
         await conn.executescript(_SCHEMA)
-        db = cls(conn)
-        await db._migrate()
-        return db
-
-    async def _migrate(self) -> None:
-        """Add columns introduced after the initial schema."""
-        cursor = await self._conn.execute(
-            "PRAGMA table_info(progress)"
-        )
-        rows = await cursor.fetchall()
-        cols = {row[1] for row in rows}
-        if "state" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN state TEXT "
-                "NOT NULL DEFAULT 'review'"
-            )
-        if "step_index" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN step_index INTEGER "
-                "NOT NULL DEFAULT 0"
-            )
-        if "lapse_count" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN lapse_count INTEGER "
-                "NOT NULL DEFAULT 0"
-            )
-        if "stability" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN stability REAL"
-            )
-        if "difficulty" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE progress "
-                "ADD COLUMN difficulty REAL"
-            )
-        await self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS "
-            "idx_words_langs "
-            "ON words(language_from, language_to)"
-        )
-        await self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS "
-            "idx_progress_user_state "
-            "ON progress(user_id, state)"
-        )
-        await self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS "
-            "idx_answer_user_word "
-            "ON answer_history(user_id, word_id)"
-        )
-        await self._conn.commit()
-        await self._migrate_words_owner_id()
-        await self._migrate_user_id_to_int()
-
-    async def _migrate_words_owner_id(self) -> None:
-        """Add owner_id column to words table."""
-        cursor = await self._conn.execute(
-            "PRAGMA table_info(words)"
-        )
-        rows = await cursor.fetchall()
-        cols = {row[1] for row in rows}
-        if "owner_id" not in cols:
-            await self._conn.execute(
-                "ALTER TABLE words "
-                "ADD COLUMN owner_id INTEGER "
-                "REFERENCES users(id)"
-            )
-            await self._conn.commit()
-
-    async def _migrate_user_id_to_int(self) -> None:
-        """Migrate user_id from TEXT to INTEGER."""
-        cursor = await self._conn.execute(
-            "PRAGMA table_info(progress)"
-        )
-        col_info = await cursor.fetchall()
-        col_types = {row[1]: row[2] for row in col_info}
-        if col_types.get("user_id", "").upper() != "TEXT":
-            return
-        await self._conn.executescript("""
-            CREATE TABLE progress_new (
-                user_id INTEGER NOT NULL,
-                word_id INTEGER NOT NULL,
-                easiness_factor REAL NOT NULL DEFAULT 2.5,
-                interval INTEGER NOT NULL DEFAULT 0,
-                repetitions INTEGER NOT NULL DEFAULT 0,
-                next_review TEXT NOT NULL,
-                state TEXT NOT NULL DEFAULT 'new',
-                step_index INTEGER NOT NULL DEFAULT 0,
-                lapse_count INTEGER NOT NULL DEFAULT 0,
-                PRIMARY KEY (user_id, word_id),
-                FOREIGN KEY (user_id)
-                    REFERENCES users(id),
-                FOREIGN KEY (word_id)
-                    REFERENCES words(id)
-            );
-            INSERT INTO progress_new
-                SELECT CAST(user_id AS INTEGER),
-                    word_id, easiness_factor,
-                    interval, repetitions,
-                    next_review, state,
-                    step_index, lapse_count
-                FROM progress;
-            DROP TABLE progress;
-            ALTER TABLE progress_new
-                RENAME TO progress;
-
-            CREATE TABLE answer_history_new (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                word_id INTEGER NOT NULL,
-                exercise_type TEXT NOT NULL,
-                correct INTEGER NOT NULL,
-                quality INTEGER NOT NULL,
-                answered_at TEXT NOT NULL
-                    DEFAULT (datetime('now')),
-                FOREIGN KEY (user_id)
-                    REFERENCES users(id),
-                FOREIGN KEY (word_id)
-                    REFERENCES words(id)
-            );
-            INSERT INTO answer_history_new
-                SELECT id,
-                    CAST(user_id AS INTEGER),
-                    word_id, exercise_type,
-                    correct, quality, answered_at
-                FROM answer_history;
-            DROP TABLE answer_history;
-            ALTER TABLE answer_history_new
-                RENAME TO answer_history;
-        """)
+        return cls(conn)
 
     # -- Users --------------------------------------------------------
 
@@ -587,195 +467,170 @@ class Database:
         )
         await self._conn.commit()
 
-    # -- Words --------------------------------------------------------
+    # -- Concepts -----------------------------------------------------
 
-    async def add_word(
+    async def add_concept(
         self,
-        language_from: str,
-        language_to: str,
-        word_from: str,
-        word_to: str,
+        front: str,
+        back: str,
         *,
-        gender: str | None = None,
-        conjugation_group: str | None = None,
+        context: str = "",
         tags: list[str] | None = None,
-        cefr: str | None = None,
         owner_id: int | None = None,
-    ) -> Word:
-        """Insert a single word and return it with its new id.
+    ) -> Concept:
+        """Insert a single concept and return it with its id.
 
-        :param language_from: Source language code.
-        :param language_to: Target language code.
-        :param word_from: Word in source language.
-        :param word_to: Translation in target language.
-        :param gender: Noun gender (`"m"` or `"f"`).
-        :param conjugation_group: Verb conjugation group
-            (`"ar"`, `"er"`, or `"ir"`).
-        :param tags: Topic tags.
-        :param cefr: CEFR level (`"A1"` through `"C2"`).
-        :param owner_id: User who owns this word. `None` for
-            shared words visible to all users.
-        :return: The inserted `Word` with its assigned id.
+        :param front: The prompt shown to the learner.
+        :param back: The expected answer.
+        :param context: Optional explanation or notes.
+        :param tags: Grouping tags.
+        :param owner_id: User who owns this concept. `None`
+            for shared concepts visible to all users.
+        :return: The inserted `Concept` with its assigned id.
         """
         tags = tags or []
         cursor = await self._conn.execute(
-            "INSERT INTO words "
-            "(language_from, language_to, word_from, "
-            "word_to, gender, conjugation_group, tags, "
-            "cefr, owner_id) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO concepts "
+            "(front, back, context, tags, owner_id) "
+            "VALUES (?, ?, ?, ?, ?)",
             (
-                language_from, language_to,
-                word_from, word_to,
-                gender, conjugation_group,
+                front, back, context,
                 json.dumps(tags),
-                cefr,
                 owner_id,
             ),
         )
         await self._conn.commit()
-        return Word(
+        return Concept(
             id=cursor.lastrowid,
-            language_from=language_from,
-            language_to=language_to,
-            word_from=word_from,
-            word_to=word_to,
-            gender=gender,
-            conjugation_group=conjugation_group,
+            front=front,
+            back=back,
+            context=context,
             tags=tags,
-            cefr=cefr,
             owner_id=owner_id,
         )
 
-    async def add_words(
+    async def add_concepts(
         self,
-        words: list[Word],
-    ) -> list[Word]:
-        """Bulk-insert words in a single transaction.
+        concepts: list[Concept],
+    ) -> list[Concept]:
+        """Bulk-insert concepts in a single transaction.
 
-        :param words: List of `Word` objects to insert (the
-            `id` field is ignored and assigned by the
+        :param concepts: List of `Concept` objects to insert
+            (the `id` field is ignored and assigned by the
             database).
-        :return: List of inserted `Word` objects with
+        :return: List of inserted `Concept` objects with
             assigned ids.
         """
-        result: list[Word] = []
-        for w in words:
+        result: list[Concept] = []
+        for c in concepts:
             cursor = await self._conn.execute(
-                "INSERT INTO words "
-                "(language_from, language_to, "
-                "word_from, word_to, "
-                "gender, conjugation_group, tags,"
-                " cefr, owner_id) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO concepts "
+                "(front, back, context, tags, owner_id) "
+                "VALUES (?, ?, ?, ?, ?)",
                 (
-                    w.language_from, w.language_to,
-                    w.word_from, w.word_to,
-                    w.gender, w.conjugation_group,
-                    json.dumps(w.tags),
-                    w.cefr,
-                    w.owner_id,
+                    c.front, c.back, c.context,
+                    json.dumps(c.tags),
+                    c.owner_id,
                 ),
             )
             result.append(
-                w.model_copy(
+                c.model_copy(
                     update={"id": cursor.lastrowid},
                 )
             )
         await self._conn.commit()
         return result
 
-    async def get_words(
+    async def get_concepts(
         self,
-        language_from: str,
-        language_to: str,
         *,
+        tag: str | None = None,
         owner_id: int | None = None,
-    ) -> list[Word]:
-        """Return words for a language pair.
+    ) -> list[Concept]:
+        """Return concepts, optionally filtered by tag.
 
-        When `owner_id` is provided, returns shared words
-        (``owner_id IS NULL``) plus words owned by that user.
-        When omitted, returns all words regardless of owner.
+        When `owner_id` is provided, returns shared concepts
+        (``owner_id IS NULL``) plus concepts owned by that
+        user. When omitted, returns all concepts regardless
+        of owner.
 
-        :param language_from: Source language code.
-        :param language_to: Target language code.
+        :param tag: Filter by tag. When `None`, returns all.
         :param owner_id: Filter to shared + this user's
-            words.
-        :return: List of matching `Word` objects.
+            concepts.
+        :return: List of matching `Concept` objects.
         """
-        sql = (
-            "SELECT id, language_from, language_to, "
-            "word_from, word_to, "
-            "gender, conjugation_group, tags, cefr, "
-            "owner_id "
-            "FROM words "
-            "WHERE language_from = ? AND language_to = ?"
-        )
-        params: list = [language_from, language_to]
+        clauses: list[str] = []
+        params: list = []
+        if tag is not None:
+            clauses.append(
+                "EXISTS (SELECT 1 FROM json_each(tags) "
+                "WHERE json_each.value = ?)"
+            )
+            params.append(tag)
         if owner_id is not None:
-            sql += (
-                " AND (owner_id IS NULL"
-                " OR owner_id = ?)"
+            clauses.append(
+                "(owner_id IS NULL OR owner_id = ?)"
             )
             params.append(owner_id)
-        cursor = await self._conn.execute(
-            sql, params,
+        sql = (
+            "SELECT id, front, back, context, "
+            "tags, owner_id FROM concepts"
         )
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        cursor = await self._conn.execute(sql, params)
         rows = await cursor.fetchall()
-        return [_row_to_word(r) for r in rows]
+        return [_row_to_concept(r) for r in rows]
 
-    async def update_word(self, word: Word) -> Word:
-        """Update an existing word.
+    async def update_concept(
+        self, concept: Concept,
+    ) -> Concept:
+        """Update an existing concept.
 
-        :param word: The `Word` with updated fields. The `id`
-            must be set.
-        :return: The updated `Word`.
-        :raises ValueError: If the word id is `None` or the
-            word does not exist.
+        :param concept: The `Concept` with updated fields.
+            The `id` must be set.
+        :return: The updated `Concept`.
+        :raises ValueError: If the concept id is `None` or
+            the concept does not exist.
         """
-        if word.id is None:
-            raise ValueError("Word id must be set")
+        if concept.id is None:
+            raise ValueError("Concept id must be set")
         cursor = await self._conn.execute(
-            "UPDATE words SET "
-            "language_from = ?, language_to = ?, "
-            "word_from = ?, word_to = ?, "
-            "gender = ?, conjugation_group = ?, "
-            "tags = ?, cefr = ?, owner_id = ? "
+            "UPDATE concepts SET "
+            "front = ?, back = ?, context = ?, "
+            "tags = ?, owner_id = ? "
             "WHERE id = ?",
             (
-                word.language_from,
-                word.language_to,
-                word.word_from,
-                word.word_to,
-                word.gender,
-                word.conjugation_group,
-                json.dumps(word.tags),
-                word.cefr,
-                word.owner_id,
-                word.id,
+                concept.front,
+                concept.back,
+                concept.context,
+                json.dumps(concept.tags),
+                concept.owner_id,
+                concept.id,
             ),
         )
         if cursor.rowcount == 0:
             raise ValueError(
-                f"Word not found: {word.id}"
+                f"Concept not found: {concept.id}"
             )
         await self._conn.commit()
-        return word
+        return concept
 
-    async def delete_word(self, word_id: int) -> None:
-        """Delete a word by id.
+    async def delete_concept(
+        self, concept_id: int,
+    ) -> None:
+        """Delete a concept by id.
 
-        :param word_id: The word identifier.
-        :raises ValueError: If the word does not exist.
+        :param concept_id: The concept identifier.
+        :raises ValueError: If the concept does not exist.
         """
         cursor = await self._conn.execute(
-            "DELETE FROM words WHERE id = ?",
-            (word_id,),
+            "DELETE FROM concepts WHERE id = ?",
+            (concept_id,),
         )
         if cursor.rowcount == 0:
             raise ValueError(
-                f"Word not found: {word_id}"
+                f"Concept not found: {concept_id}"
             )
         await self._conn.commit()
 
@@ -784,19 +639,19 @@ class Database:
     async def get_progress(
         self,
         user_id: int,
-        word_id: int,
+        concept_id: int,
     ) -> UserProgress | None:
-        """Fetch progress for a user-word pair.
+        """Fetch progress for a user-concept pair.
 
         :param user_id: The user's database id.
-        :param word_id: The word identifier.
+        :param concept_id: The concept identifier.
         :return: `UserProgress` or `None` if no record
             exists.
         """
         cursor = await self._conn.execute(
             "SELECT * FROM progress "
-            "WHERE user_id = ? AND word_id = ?",
-            (user_id, word_id),
+            "WHERE user_id = ? AND concept_id = ?",
+            (user_id, concept_id),
         )
         row = await cursor.fetchone()
         if row is None:
@@ -806,56 +661,58 @@ class Database:
     async def get_all_progress(
         self,
         user_id: int,
-        word_ids: list[int],
+        concept_ids: list[int],
     ) -> dict[int, UserProgress]:
-        """Fetch progress for multiple words in one query.
+        """Fetch progress for multiple concepts in one query.
 
         :param user_id: The user's database id.
-        :param word_ids: List of word identifiers.
-        :return: Dict mapping `word_id` to `UserProgress`
-            for words that have a progress record.
+        :param concept_ids: List of concept identifiers.
+        :return: Dict mapping `concept_id` to `UserProgress`
+            for concepts that have a progress record.
         """
-        if not word_ids:
+        if not concept_ids:
             return {}
         cursor = await self._conn.execute(
             "SELECT * FROM progress "
             "WHERE user_id = ? "
-            f"AND word_id IN ({_in_clause(word_ids)})",
-            [user_id, *word_ids],
+            "AND concept_id IN "
+            f"({_in_clause(concept_ids)})",
+            [user_id, *concept_ids],
         )
         rows = await cursor.fetchall()
         return {
-            row["word_id"]: _row_to_progress(row)
+            row["concept_id"]: _row_to_progress(row)
             for row in rows
         }
 
     async def upsert_progress(
         self, progress: UserProgress,
     ) -> None:
-        """Insert or update progress for a user-word pair.
+        """Insert or update progress for a user-concept pair.
 
         :param progress: The `UserProgress` to persist.
         """
         await self._conn.execute(
             "INSERT INTO progress "
-            "(user_id, word_id, easiness_factor, "
+            "(user_id, concept_id, easiness_factor, "
             " interval, repetitions, next_review, "
             " state, step_index, lapse_count, "
             " stability, difficulty) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT(user_id, word_id) DO UPDATE SET "
-            " easiness_factor = excluded.easiness_factor, "
-            " interval         = excluded.interval, "
-            " repetitions      = excluded.repetitions, "
-            " next_review      = excluded.next_review, "
-            " state            = excluded.state, "
-            " step_index       = excluded.step_index, "
-            " lapse_count      = excluded.lapse_count, "
-            " stability        = excluded.stability, "
-            " difficulty        = excluded.difficulty",
+            "ON CONFLICT(user_id, concept_id) "
+            "DO UPDATE SET "
+            " easiness_factor = excluded.easiness_factor,"
+            " interval       = excluded.interval, "
+            " repetitions    = excluded.repetitions, "
+            " next_review    = excluded.next_review, "
+            " state          = excluded.state, "
+            " step_index     = excluded.step_index, "
+            " lapse_count    = excluded.lapse_count, "
+            " stability      = excluded.stability, "
+            " difficulty     = excluded.difficulty",
             (
                 progress.user_id,
-                progress.word_id,
+                progress.concept_id,
                 progress.easiness_factor,
                 progress.interval,
                 progress.repetitions,
@@ -874,16 +731,12 @@ class Database:
     ) -> list[dict]:
         """Export all progress rows for a user as dicts.
 
-        Each dict contains `user_id`, `word_id`,
-        `easiness_factor`, `interval`, `repetitions`,
-        `next_review` (ISO 8601 string), `state`, and
-        `step_index`. The result is JSON-serializable.
-
         :param user_id: The user's database id.
         :return: List of progress dicts.
         """
         cursor = await self._conn.execute(
-            "SELECT user_id, word_id, easiness_factor, "
+            "SELECT user_id, concept_id, "
+            "easiness_factor, "
             "interval, repetitions, next_review, "
             "state, step_index, lapse_count, "
             "stability, difficulty "
@@ -894,7 +747,7 @@ class Database:
         return [
             {
                 "user_id": r["user_id"],
-                "word_id": r["word_id"],
+                "concept_id": r["concept_id"],
                 "easiness_factor": r["easiness_factor"],
                 "interval": r["interval"],
                 "repetitions": r["repetitions"],
@@ -913,18 +766,12 @@ class Database:
     ) -> int:
         """Import progress records, upserting each one.
 
-        Each dict must contain `user_id`, `word_id`,
-        `easiness_factor`, `interval`, `repetitions`, and
-        `next_review` (ISO 8601 string). The keys `state`
-        and `step_index` are optional and default to
-        `"review"` and `0` respectively.
-
         :param records: List of progress dicts.
         :return: Number of records imported.
         :raises KeyError: If a required key is missing.
         """
         required = {
-            "user_id", "word_id", "easiness_factor",
+            "user_id", "concept_id", "easiness_factor",
             "interval", "repetitions", "next_review",
         }
         for rec in records:
@@ -940,13 +787,13 @@ class Database:
             difficulty = rec.get("difficulty")
             await self._conn.execute(
                 "INSERT INTO progress "
-                "(user_id, word_id, easiness_factor,"
+                "(user_id, concept_id, easiness_factor,"
                 " interval, repetitions, next_review,"
                 " state, step_index, lapse_count,"
                 " stability, difficulty)"
                 " VALUES "
                 "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                " ON CONFLICT(user_id, word_id) "
+                " ON CONFLICT(user_id, concept_id) "
                 "DO UPDATE SET "
                 " easiness_factor "
                 "  = excluded.easiness_factor, "
@@ -966,7 +813,7 @@ class Database:
                 "  = excluded.difficulty",
                 (
                     rec["user_id"],
-                    rec["word_id"],
+                    rec["concept_id"],
                     rec["easiness_factor"],
                     rec["interval"],
                     rec["repetitions"],
@@ -986,7 +833,7 @@ class Database:
     async def record_answer(
         self,
         user_id: int,
-        word_id: int,
+        concept_id: int,
         exercise_type: str,
         correct: bool,
         quality: int,
@@ -994,18 +841,18 @@ class Database:
         """Record a single answer in the history log.
 
         :param user_id: The user's database id.
-        :param word_id: The word identifier.
+        :param concept_id: The concept identifier.
         :param exercise_type: The exercise type string.
         :param correct: Whether the answer was correct.
         :param quality: SM-2 quality score (0-5).
         """
         await self._conn.execute(
             "INSERT INTO answer_history "
-            "(user_id, word_id, exercise_type, "
+            "(user_id, concept_id, exercise_type, "
             " correct, quality) "
             "VALUES (?, ?, ?, ?, ?)",
             (
-                user_id, word_id, exercise_type,
+                user_id, concept_id, exercise_type,
                 int(correct), quality,
             ),
         )
@@ -1028,7 +875,7 @@ class Database:
             first.
         """
         sql = (
-            "SELECT id, user_id, word_id, "
+            "SELECT id, user_id, concept_id, "
             "exercise_type, correct, quality, "
             "answered_at "
             "FROM answer_history "
@@ -1051,7 +898,7 @@ class Database:
             AnswerHistory(
                 id=r["id"],
                 user_id=r["user_id"],
-                word_id=r["word_id"],
+                concept_id=r["concept_id"],
                 exercise_type=r["exercise_type"],
                 correct=bool(r["correct"]),
                 quality=r["quality"],
@@ -1094,53 +941,50 @@ class Database:
             for r in rows
         ]
 
-    async def weak_words(
+    async def weak_concepts(
         self,
         user_id: int,
-        language_from: str,
-        language_to: str,
         *,
+        tag: str | None = None,
         threshold: float = 0.5,
         min_attempts: int = 3,
         limit: int = 20,
-    ) -> list[WeakWord]:
-        """Find words the user consistently gets wrong.
-
-        A word is "weak" when its error rate meets or
-        exceeds `threshold` and it has at least
-        `min_attempts` answers.
+    ) -> list[WeakConcept]:
+        """Find concepts the user consistently gets wrong.
 
         :param user_id: The user's database id.
-        :param language_from: Source language code.
-        :param language_to: Target language code.
+        :param tag: Optional tag filter.
         :param threshold: Minimum error rate (0.0-1.0).
         :param min_attempts: Minimum answer count.
         :param limit: Maximum results to return.
-        :return: List of `WeakWord`, highest error rate
+        :return: List of `WeakConcept`, highest error rate
             first.
         """
-        cursor = await self._conn.execute(
-            _WEAK_WORDS_SQL,
-            (
-                user_id, language_from, language_to,
-                min_attempts, threshold, limit,
-            ),
-        )
+        if tag is not None:
+            cursor = await self._conn.execute(
+                _WEAK_CONCEPTS_TAGGED_SQL,
+                (
+                    user_id, tag,
+                    min_attempts, threshold, limit,
+                ),
+            )
+        else:
+            cursor = await self._conn.execute(
+                _WEAK_CONCEPTS_SQL,
+                (
+                    user_id,
+                    min_attempts, threshold, limit,
+                ),
+            )
         rows = await cursor.fetchall()
         return [
-            WeakWord(
-                word=Word(
+            WeakConcept(
+                concept=Concept(
                     id=r["id"],
-                    language_from=r["language_from"],
-                    language_to=r["language_to"],
-                    word_from=r["word_from"],
-                    word_to=r["word_to"],
-                    gender=r["gender"],
-                    conjugation_group=(
-                        r["conjugation_group"]
-                    ),
+                    front=r["front"],
+                    back=r["back"],
+                    context=r["context"],
                     tags=json.loads(r["tags"]),
-                    cefr=r["cefr"],
                     owner_id=r["owner_id"],
                 ),
                 attempts=r["attempts"],
@@ -1238,248 +1082,228 @@ class Database:
             )
         return result
 
-    # -- Lessons ------------------------------------------------------
+    # -- Topics -------------------------------------------------------
 
-    async def _insert_lesson_words(
+    async def _insert_topic_concepts(
         self,
-        lesson_id: int,
-        word_ids: list[int],
+        topic_id: int,
+        concept_ids: list[int],
     ) -> None:
-        """Insert word links for a lesson.
+        """Insert concept links for a topic.
 
-        :param lesson_id: The lesson identifier.
-        :param word_ids: Ordered list of word ids to link.
+        :param topic_id: The topic identifier.
+        :param concept_ids: Ordered list of concept ids.
         """
-        for pos, wid in enumerate(word_ids):
+        for pos, cid in enumerate(concept_ids):
             await self._conn.execute(
-                "INSERT INTO lesson_words "
-                "(lesson_id, word_id, position) "
+                "INSERT INTO topic_concepts "
+                "(topic_id, concept_id, position) "
                 "VALUES (?, ?, ?)",
-                (lesson_id, wid, pos),
+                (topic_id, cid, pos),
             )
 
-    async def add_lesson(
-        self, lesson: Lesson,
-    ) -> Lesson:
-        """Insert a lesson and link its words.
+    async def add_topic(
+        self, topic: Topic,
+    ) -> Topic:
+        """Insert a topic and link its concepts.
 
-        :param lesson: The `Lesson` to insert.
-        :return: The inserted `Lesson` with its assigned id.
+        :param topic: The `Topic` to insert.
+        :return: The inserted `Topic` with its assigned id.
         """
-        return (await self.add_lessons([lesson]))[0]
+        return (await self.add_topics([topic]))[0]
 
-    async def add_lessons(
-        self, lessons: list[Lesson],
-    ) -> list[Lesson]:
-        """Bulk-insert lessons in a single transaction.
+    async def add_topics(
+        self, topics: list[Topic],
+    ) -> list[Topic]:
+        """Bulk-insert topics in a single transaction.
 
-        :param lessons: List of `Lesson` objects to insert.
-        :return: List of inserted `Lesson` objects with
+        :param topics: List of `Topic` objects to insert.
+        :return: List of inserted `Topic` objects with
             assigned ids.
         """
-        result: list[Lesson] = []
-        for lesson in lessons:
+        result: list[Topic] = []
+        for topic in topics:
             cursor = await self._conn.execute(
-                "INSERT INTO lessons "
-                "(title, description, language_from,"
-                " language_to, cefr, tags, word_count) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO topics "
+                "(title, description, tags, "
+                " concept_count) "
+                "VALUES (?, ?, ?, ?)",
                 (
-                    lesson.title,
-                    lesson.description,
-                    lesson.language_from,
-                    lesson.language_to,
-                    lesson.cefr,
-                    json.dumps(lesson.tags),
-                    lesson.word_count,
+                    topic.title,
+                    topic.description,
+                    json.dumps(topic.tags),
+                    topic.concept_count,
                 ),
             )
-            lesson_id = cursor.lastrowid
-            await self._insert_lesson_words(
-                lesson_id, lesson.word_ids,
+            topic_id = cursor.lastrowid
+            await self._insert_topic_concepts(
+                topic_id, topic.concept_ids,
             )
             result.append(
-                lesson.model_copy(
-                    update={"id": lesson_id},
+                topic.model_copy(
+                    update={"id": topic_id},
                 )
             )
         await self._conn.commit()
         return result
 
-    async def get_lessons(
+    async def get_topics(
         self,
-        language_from: str,
-        language_to: str,
         *,
-        cefr: str | None = None,
         tag: str | None = None,
-    ) -> list[Lesson]:
-        """Return lessons for a language pair.
+    ) -> list[Topic]:
+        """Return topics, optionally filtered by tag.
 
-        :param language_from: Source language code.
-        :param language_to: Target language code.
-        :param cefr: Filter by CEFR level.
         :param tag: Filter by topic tag.
-        :return: List of matching `Lesson` objects with
-            `word_ids` populated.
+        :return: List of matching `Topic` objects with
+            `concept_ids` populated.
         """
-        clauses = [
-            "language_from = ?",
-            "language_to = ?",
-        ]
-        params: list[str] = [language_from, language_to]
-        if cefr is not None:
-            clauses.append("cefr = ?")
-            params.append(cefr)
+        clauses: list[str] = []
+        params: list[str] = []
         if tag is not None:
             clauses.append(
                 "EXISTS (SELECT 1 FROM json_each(tags) "
                 "WHERE json_each.value = ?)"
             )
             params.append(tag)
-        where = " AND ".join(clauses)
+        where = (
+            " WHERE " + " AND ".join(clauses)
+            if clauses else ""
+        )
         cursor = await self._conn.execute(
             "SELECT id, title, description, "
-            "language_from, language_to, cefr, "
-            "tags, word_count "
-            f"FROM lessons WHERE {where} "
+            "tags, concept_count "
+            f"FROM topics{where} "
             "ORDER BY id",
             params,
         )
         rows = await cursor.fetchall()
         if not rows:
             return []
-        lesson_ids = [r["id"] for r in rows]
+        topic_ids = [r["id"] for r in rows]
         cursor = await self._conn.execute(
-            "SELECT lesson_id, word_id "
-            "FROM lesson_words "
-            "WHERE lesson_id "
-            f"IN ({_in_clause(lesson_ids)}) "
+            "SELECT topic_id, concept_id "
+            "FROM topic_concepts "
+            "WHERE topic_id "
+            f"IN ({_in_clause(topic_ids)}) "
             "ORDER BY position",
-            lesson_ids,
+            topic_ids,
         )
-        lw_rows = await cursor.fetchall()
-        word_map: dict[int, list[int]] = {}
-        for lw in lw_rows:
-            word_map.setdefault(
-                lw["lesson_id"], []
-            ).append(lw["word_id"])
+        tc_rows = await cursor.fetchall()
+        concept_map: dict[int, list[int]] = {}
+        for tc in tc_rows:
+            concept_map.setdefault(
+                tc["topic_id"], []
+            ).append(tc["concept_id"])
         return [
-            Lesson(
+            Topic(
                 id=r["id"],
                 title=r["title"],
                 description=r["description"],
-                language_from=r["language_from"],
-                language_to=r["language_to"],
-                cefr=r["cefr"],
                 tags=json.loads(r["tags"]),
-                word_count=r["word_count"],
-                word_ids=word_map.get(r["id"], []),
+                concept_count=r["concept_count"],
+                concept_ids=concept_map.get(
+                    r["id"], [],
+                ),
             )
             for r in rows
         ]
 
-    async def get_lesson(
-        self, lesson_id: int,
-    ) -> Lesson | None:
-        """Fetch a single lesson by id.
+    async def get_topic(
+        self, topic_id: int,
+    ) -> Topic | None:
+        """Fetch a single topic by id.
 
-        :param lesson_id: The lesson identifier.
-        :return: `Lesson` with `word_ids` populated, or
+        :param topic_id: The topic identifier.
+        :return: `Topic` with `concept_ids` populated, or
             `None` if not found.
         """
         cursor = await self._conn.execute(
             "SELECT id, title, description, "
-            "language_from, language_to, cefr, "
-            "tags, word_count "
-            "FROM lessons WHERE id = ?",
-            (lesson_id,),
+            "tags, concept_count "
+            "FROM topics WHERE id = ?",
+            (topic_id,),
         )
         row = await cursor.fetchone()
         if row is None:
             return None
         cursor = await self._conn.execute(
-            "SELECT word_id FROM lesson_words "
-            "WHERE lesson_id = ? ORDER BY position",
-            (lesson_id,),
+            "SELECT concept_id FROM topic_concepts "
+            "WHERE topic_id = ? ORDER BY position",
+            (topic_id,),
         )
-        word_rows = await cursor.fetchall()
-        return Lesson(
+        concept_rows = await cursor.fetchall()
+        return Topic(
             id=row["id"],
             title=row["title"],
             description=row["description"],
-            language_from=row["language_from"],
-            language_to=row["language_to"],
-            cefr=row["cefr"],
             tags=json.loads(row["tags"]),
-            word_count=row["word_count"],
-            word_ids=[r["word_id"] for r in word_rows],
+            concept_count=row["concept_count"],
+            concept_ids=[
+                r["concept_id"] for r in concept_rows
+            ],
         )
 
-    async def update_lesson(
-        self, lesson: Lesson,
-    ) -> Lesson:
-        """Update an existing lesson and its word links.
+    async def update_topic(
+        self, topic: Topic,
+    ) -> Topic:
+        """Update an existing topic and its concept links.
 
-        :param lesson: The `Lesson` with updated fields.
-        :return: The updated `Lesson`.
-        :raises ValueError: If the lesson id is `None` or
-            the lesson does not exist.
+        :param topic: The `Topic` with updated fields.
+        :return: The updated `Topic`.
+        :raises ValueError: If the topic id is `None` or
+            the topic does not exist.
         """
-        if lesson.id is None:
-            raise ValueError("Lesson id must be set")
+        if topic.id is None:
+            raise ValueError("Topic id must be set")
         cursor = await self._conn.execute(
-            "UPDATE lessons SET "
+            "UPDATE topics SET "
             "title = ?, description = ?, "
-            "language_from = ?, language_to = ?, "
-            "cefr = ?, tags = ?, word_count = ? "
+            "tags = ?, concept_count = ? "
             "WHERE id = ?",
             (
-                lesson.title,
-                lesson.description,
-                lesson.language_from,
-                lesson.language_to,
-                lesson.cefr,
-                json.dumps(lesson.tags),
-                lesson.word_count,
-                lesson.id,
+                topic.title,
+                topic.description,
+                json.dumps(topic.tags),
+                topic.concept_count,
+                topic.id,
             ),
         )
         if cursor.rowcount == 0:
             raise ValueError(
-                f"Lesson not found: {lesson.id}"
+                f"Topic not found: {topic.id}"
             )
         await self._conn.execute(
-            "DELETE FROM lesson_words "
-            "WHERE lesson_id = ?",
-            (lesson.id,),
+            "DELETE FROM topic_concepts "
+            "WHERE topic_id = ?",
+            (topic.id,),
         )
-        await self._insert_lesson_words(
-            lesson.id, lesson.word_ids,
+        await self._insert_topic_concepts(
+            topic.id, topic.concept_ids,
         )
         await self._conn.commit()
-        return lesson
+        return topic
 
-    async def delete_lesson(
-        self, lesson_id: int,
+    async def delete_topic(
+        self, topic_id: int,
     ) -> None:
-        """Delete a lesson and its word links.
+        """Delete a topic and its concept links.
 
-        :param lesson_id: The lesson identifier.
-        :raises ValueError: If the lesson does not exist.
+        :param topic_id: The topic identifier.
+        :raises ValueError: If the topic does not exist.
         """
         await self._conn.execute(
-            "DELETE FROM lesson_words "
-            "WHERE lesson_id = ?",
-            (lesson_id,),
+            "DELETE FROM topic_concepts "
+            "WHERE topic_id = ?",
+            (topic_id,),
         )
         cursor = await self._conn.execute(
-            "DELETE FROM lessons WHERE id = ?",
-            (lesson_id,),
+            "DELETE FROM topics WHERE id = ?",
+            (topic_id,),
         )
         if cursor.rowcount == 0:
             raise ValueError(
-                f"Lesson not found: {lesson_id}"
+                f"Topic not found: {topic_id}"
             )
         await self._conn.commit()
 
@@ -1489,9 +1313,6 @@ class Database:
         key: str = "",
     ) -> None:
         """Persist a session snapshot.
-
-        Replaces any existing snapshot for the same
-        `(user_id, key)` pair.
 
         :param snapshot: The snapshot to save.
         :param key: Optional key to distinguish multiple
@@ -1561,9 +1382,6 @@ class Database:
         state: ConversationState,
     ) -> None:
         """Persist a conversation state.
-
-        Replaces any existing state for the same
-        `(user_id, key)` pair.
 
         :param state: The conversation state to save.
         """
@@ -1647,38 +1465,33 @@ class Database:
 _CSV_DELIMITERS = {".csv": ",", ".tsv": "\t"}
 
 
-async def import_words_csv(
+async def import_concepts_csv(
     db: "Database",
     path: str | Path,
-    language_from: str,
-    language_to: str,
     *,
-    word_from_col: str = "word_from",
-    word_to_col: str = "word_to",
+    front_col: str = "front",
+    back_col: str = "back",
     delimiter: str | None = None,
     owner_id: int | None = None,
-) -> list[Word]:
-    """Import words from a CSV or TSV file.
+) -> list[Concept]:
+    """Import concepts from a CSV or TSV file.
 
-    The file must have a header row. The `word_from_col` and
-    `word_to_col` columns are required. Optional columns
-    (`gender`, `conjugation_group`, `tags`, `cefr`) are read
-    when present.
+    The file must have a header row. The `front_col` and
+    `back_col` columns are required. Optional columns
+    (`context`, `tags`) are read when present.
 
     The `tags` column, if present, should contain a
-    comma-separated list of tags (e.g. `"food,travel"`).
+    comma-separated list of tags (e.g. `"math,calculus"`).
 
     :param db: The database to import into.
     :param path: Path to the CSV/TSV file.
-    :param language_from: Source language code.
-    :param language_to: Target language code.
-    :param word_from_col: Column name for the source word.
-    :param word_to_col: Column name for the translation.
+    :param front_col: Column name for the prompt.
+    :param back_col: Column name for the answer.
     :param delimiter: Field delimiter. When `None`,
         auto-detected from the file extension (`.tsv` → tab,
         `.csv` and others → comma).
-    :param owner_id: Owner id for imported words.
-    :return: List of inserted `Word` objects with assigned
+    :param owner_id: Owner id for imported concepts.
+    :return: List of inserted `Concept` objects with assigned
         ids.
     :raises FileNotFoundError: If the file does not exist.
     :raises ValueError: If required columns are missing.
@@ -1691,14 +1504,14 @@ async def import_words_csv(
     with open(path, encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh, delimiter=delimiter)
         fields = reader.fieldnames or []
-        for col in (word_from_col, word_to_col):
+        for col in (front_col, back_col):
             if col not in fields:
                 raise ValueError(
                     f"Required column {col!r} not found "
                     f"in {path.name}. "
                     f"Available: {fields}"
                 )
-        words: list[Word] = []
+        concepts: list[Concept] = []
         for row in reader:
             tags_raw = row.get("tags", "")
             tags = (
@@ -1706,17 +1519,11 @@ async def import_words_csv(
                  if t.strip()]
                 if tags_raw else []
             )
-            words.append(Word(
-                language_from=language_from,
-                language_to=language_to,
-                word_from=row[word_from_col],
-                word_to=row[word_to_col],
-                gender=row.get("gender") or None,
-                conjugation_group=(
-                    row.get("conjugation_group") or None
-                ),
+            concepts.append(Concept(
+                front=row[front_col],
+                back=row[back_col],
+                context=row.get("context", ""),
                 tags=tags,
-                cefr=row.get("cefr") or None,
                 owner_id=owner_id,
             ))
-    return await db.add_words(words)
+    return await db.add_concepts(concepts)

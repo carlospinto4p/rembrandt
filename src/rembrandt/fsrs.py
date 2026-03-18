@@ -182,7 +182,7 @@ def fsrs_review(
 ) -> UserProgress:
     """Update progress using the FSRS-5 algorithm.
 
-    :param progress: Current user-word progress.
+    :param progress: Current user-concept progress.
     :param quality: SM-2 quality score (0-5), mapped to FSRS
         grades internally (0-2 → Again, 3 → Hard, 4 → Good,
         5 → Easy).

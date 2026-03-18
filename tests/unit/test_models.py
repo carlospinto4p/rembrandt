@@ -7,20 +7,26 @@ import pytest
 from rembrandt.models import (
     AnswerHistory,
     AnswerResult,
+    CardState,
+    Concept,
+    ConversationStage,
+    ConversationState,
     DailyStats,
     Exercise,
     ExerciseType,
+    FSRSConfig,
     Hint,
-    LearningMode,
-    Lesson,
-    LessonProgress,
+    ReviewConfig,
+    ReviewForecast,
+    SessionMode,
+    SessionSnapshot,
     SessionStats,
+    Topic,
+    TopicProgress,
     User,
     UserProgress,
     UserSession,
-    WeakWord,
-    Word,
-    learning_mode,
+    WeakConcept,
 )
 
 
@@ -59,134 +65,66 @@ def test_user_session_creation():
     assert session.expires_at == expires
 
 
-# --- Word Tests ---
+# --- Concept Tests ---
 
 
-def test_word_creation():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="hello",
-        word_to="hola",
+def test_concept_creation():
+    concept = Concept(
+        front="What is a p-value?",
+        back="Probability under H0",
     )
-    assert word.word_from == "hello"
-    assert word.word_to == "hola"
-    assert word.id is None
+    assert concept.front == "What is a p-value?"
+    assert concept.back == "Probability under H0"
+    assert concept.id is None
 
 
-def test_word_with_id():
-    word = Word(
+def test_concept_with_id():
+    concept = Concept(
         id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+        front="What is overfitting?",
+        back="Model learns noise",
     )
-    assert word.id == 1
+    assert concept.id == 1
 
 
-def test_word_tags_default_empty():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+def test_concept_tags_default_empty():
+    concept = Concept(front="cat", back="gato")
+    assert concept.tags == []
+
+
+def test_concept_tags_explicit():
+    concept = Concept(
+        front="gradient descent",
+        back="optimization algorithm",
+        tags=["ml"],
     )
-    assert word.tags == []
+    assert concept.tags == ["ml"]
 
 
-def test_word_tags_explicit():
-    word = Word(
-        language_from="es",
-        language_to="en",
-        word_from="pan",
-        word_to="bread",
-        tags=["food"],
+def test_concept_context_default_empty():
+    concept = Concept(front="cat", back="gato")
+    assert concept.context == ""
+
+
+def test_concept_context_explicit():
+    concept = Concept(
+        front="cat",
+        back="gato",
+        context="A common household pet",
     )
-    assert word.tags == ["food"]
+    assert concept.context == "A common household pet"
 
 
-def test_word_cefr_default_none():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+def test_concept_owner_id_default_none():
+    concept = Concept(front="cat", back="gato")
+    assert concept.owner_id is None
+
+
+def test_concept_owner_id_explicit():
+    concept = Concept(
+        front="cat", back="gato", owner_id=42,
     )
-    assert word.cefr is None
-
-
-def test_word_cefr_explicit():
-    word = Word(
-        language_from="es",
-        language_to="en",
-        word_from="ser",
-        word_to="to be",
-        cefr="A1",
-    )
-    assert word.cefr == "A1"
-
-
-def test_word_gender_and_conjugation_defaults():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-    )
-    assert word.gender is None
-    assert word.conjugation_group is None
-
-
-def test_word_gender_and_conjugation_explicit():
-    word = Word(
-        language_from="es",
-        language_to="en",
-        word_from="casa",
-        word_to="house",
-        gender="f",
-        conjugation_group=None,
-    )
-    assert word.gender == "f"
-    assert word.conjugation_group is None
-
-    verb = Word(
-        language_from="es",
-        language_to="en",
-        word_from="hablar",
-        word_to="to speak",
-        conjugation_group="ar",
-    )
-    assert verb.conjugation_group == "ar"
-    assert verb.gender is None
-
-
-# --- LearningMode Tests ---
-
-
-def test_learning_mode_translation():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-    )
-    assert learning_mode(word) == LearningMode.TRANSLATION
-
-
-def test_learning_mode_definition():
-    word = Word(
-        language_from="en",
-        language_to="en",
-        word_from="ephemeral",
-        word_to="lasting for a very short time",
-    )
-    assert learning_mode(word) == LearningMode.DEFINITION
-
-
-def test_learning_mode_values():
-    assert LearningMode.TRANSLATION == "translation"
-    assert LearningMode.DEFINITION == "definition"
+    assert concept.owner_id == 42
 
 
 # --- ExerciseType Tests ---
@@ -194,39 +132,28 @@ def test_learning_mode_values():
 
 def test_exercise_type_values():
     assert ExerciseType.FLASHCARD == "flashcard"
-    assert ExerciseType.MULTIPLE_CHOICE == "multiple_choice"
-    assert ExerciseType.REVERSE_FLASHCARD == "reverse_flashcard"
+    assert (
+        ExerciseType.MULTIPLE_CHOICE
+        == "multiple_choice"
+    )
+    assert (
+        ExerciseType.REVERSE_FLASHCARD
+        == "reverse_flashcard"
+    )
     assert ExerciseType.SELF_GRADED == "self_graded"
 
 
-def test_exercise_type_gender_match():
-    assert ExerciseType.GENDER_MATCH == "gender_match"
-
-
-def test_exercise_type_conjugation():
-    assert ExerciseType.CONJUGATION == "conjugation"
-
-
-def test_exercise_type_cloze():
-    assert ExerciseType.CLOZE == "cloze"
-
-
-def test_exercise_type_translation_cloze():
-    assert ExerciseType.TRANSLATION_CLOZE == "translation_cloze"
+def test_exercise_type_only_four():
+    assert len(ExerciseType) == 4
 
 
 # --- Exercise Tests ---
 
 
 def test_exercise_flashcard():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="dog",
-        word_to="perro",
-    )
+    concept = Concept(front="cat", back="gato")
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.FLASHCARD,
     )
     assert ex.exercise_type == ExerciseType.FLASHCARD
@@ -234,107 +161,82 @@ def test_exercise_flashcard():
 
 
 def test_exercise_multiple_choice():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="dog",
-        word_to="perro",
-    )
+    concept = Concept(front="cat", back="gato")
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.MULTIPLE_CHOICE,
-        options=["perro", "gato", "casa", "libro"],
+        options=["gato", "perro", "casa", "libro"],
     )
     assert len(ex.options) == 4
-    assert "perro" in ex.options
+    assert "gato" in ex.options
 
 
 def test_exercise_prompt_and_expected_defaults():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-    )
+    concept = Concept(front="cat", back="gato")
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.FLASHCARD,
     )
     assert ex.prompt == ""
     assert ex.expected_answer == ""
 
 
-def test_exercise_prompt_and_expected_set():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="house",
-        word_to="casa",
-        gender="f",
-    )
-    ex = Exercise(
-        word=word,
-        exercise_type=ExerciseType.GENDER_MATCH,
-        options=["el", "la"],
-        prompt="___ casa",
-        expected_answer="la",
-    )
-    assert ex.prompt == "___ casa"
-    assert ex.expected_answer == "la"
-
-
 # --- AnswerResult Tests ---
 
 
 def test_answer_result_correct():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="dog",
-        word_to="perro",
-    )
+    concept = Concept(front="cat", back="gato")
     result = AnswerResult(
         correct=True,
-        expected="perro",
-        given="perro",
-        word=word,
+        expected="gato",
+        given="gato",
+        concept=concept,
     )
     assert result.correct is True
 
 
 def test_answer_result_incorrect():
-    word = Word(
-        language_from="en",
-        language_to="es",
-        word_from="dog",
-        word_to="perro",
-    )
+    concept = Concept(front="cat", back="gato")
     result = AnswerResult(
         correct=False,
-        expected="perro",
-        given="gato",
-        word=word,
+        expected="gato",
+        given="perro",
+        concept=concept,
     )
     assert result.correct is False
-    assert result.given == "gato"
+    assert result.given == "perro"
+
+
+def test_answer_result_near_miss_default():
+    concept = Concept(front="cat", back="gato")
+    result = AnswerResult(
+        correct=True,
+        expected="gato",
+        given="gato",
+        concept=concept,
+    )
+    assert result.near_miss is False
 
 
 # --- UserProgress Tests ---
 
 
 def test_user_progress_defaults():
-    progress = UserProgress(user_id=1, word_id=1)
+    progress = UserProgress(
+        user_id=1, concept_id=1,
+    )
     assert progress.easiness_factor == 2.5
     assert progress.interval == 0
     assert progress.repetitions == 0
     assert isinstance(progress.next_review, datetime)
+    assert progress.state == CardState.NEW
 
 
 def test_user_progress_custom_values():
     dt = datetime(2026, 3, 1, 12, 0, 0)
     progress = UserProgress(
         user_id=1,
-        word_id=1,
+        concept_id=1,
         easiness_factor=2.1,
         interval=6,
         repetitions=3,
@@ -349,67 +251,58 @@ def test_user_progress_validates_types():
     with pytest.raises(Exception):
         UserProgress(
             user_id=1,
-            word_id="not_an_int",  # type: ignore[arg-type]
+            concept_id="not_int",  # type: ignore[arg-type]
         )
 
 
-# --- Lesson Tests ---
+# --- Topic Tests ---
 
 
-def test_lesson_creation_defaults():
-    lesson = Lesson(
-        title="A1 - Lesson 1",
-        language_from="en",
-        language_to="es",
-    )
-    assert lesson.id is None
-    assert lesson.title == "A1 - Lesson 1"
-    assert lesson.description == ""
-    assert lesson.cefr is None
-    assert lesson.tags == []
-    assert lesson.word_count == 0
-    assert lesson.word_ids == []
+def test_topic_creation_defaults():
+    topic = Topic(title="Linear Algebra")
+    assert topic.id is None
+    assert topic.title == "Linear Algebra"
+    assert topic.description == ""
+    assert topic.tags == []
+    assert topic.concept_count == 0
+    assert topic.concept_ids == []
 
 
-def test_lesson_all_fields():
-    lesson = Lesson(
+def test_topic_all_fields():
+    topic = Topic(
         id=5,
-        title="A1 Food",
-        description="A1 words related to food",
-        language_from="en",
-        language_to="es",
-        cefr="A1",
-        tags=["food"],
-        word_count=10,
-        word_ids=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        title="Data Science Basics",
+        description="Intro to DS concepts",
+        tags=["data-science"],
+        concept_count=10,
+        concept_ids=list(range(1, 11)),
     )
-    assert lesson.id == 5
-    assert lesson.cefr == "A1"
-    assert lesson.tags == ["food"]
-    assert lesson.word_count == 10
-    assert len(lesson.word_ids) == 10
+    assert topic.id == 5
+    assert topic.tags == ["data-science"]
+    assert topic.concept_count == 10
+    assert len(topic.concept_ids) == 10
 
 
-# --- LessonProgress Tests ---
+# --- TopicProgress Tests ---
 
 
-def test_lesson_progress_creation():
-    lp = LessonProgress(
-        lesson_id=1,
+def test_topic_progress_creation():
+    tp = TopicProgress(
+        topic_id=1,
         user_id=1,
-        words_total=10,
-        words_studied=5,
-        words_mastered=2,
+        concepts_total=10,
+        concepts_studied=5,
+        concepts_mastered=2,
         completion_pct=50.0,
         mastery_pct=20.0,
     )
-    assert lp.lesson_id == 1
-    assert lp.user_id == 1
-    assert lp.words_total == 10
-    assert lp.words_studied == 5
-    assert lp.words_mastered == 2
-    assert lp.completion_pct == 50.0
-    assert lp.mastery_pct == 20.0
+    assert tp.topic_id == 1
+    assert tp.user_id == 1
+    assert tp.concepts_total == 10
+    assert tp.concepts_studied == 5
+    assert tp.concepts_mastered == 2
+    assert tp.completion_pct == 50.0
+    assert tp.mastery_pct == 20.0
 
 
 # --- Hint Tests ---
@@ -417,11 +310,32 @@ def test_lesson_progress_creation():
 
 def test_hint_creation():
     h = Hint(
-        first_letter="g", word_length=4, pattern="g___",
+        first_letter="g",
+        word_length=4,
+        pattern="g___",
     )
     assert h.first_letter == "g"
     assert h.word_length == 4
     assert h.pattern == "g___"
+
+
+def test_hint_context_default_empty():
+    h = Hint(
+        first_letter="g",
+        word_length=4,
+        pattern="g___",
+    )
+    assert h.context == ""
+
+
+def test_hint_context_explicit():
+    h = Hint(
+        first_letter="g",
+        word_length=4,
+        pattern="g___",
+        context="A small animal",
+    )
+    assert h.context == "A small animal"
 
 
 # --- SessionStats Tests ---
@@ -456,13 +370,14 @@ def test_session_stats_custom():
 def test_answer_history_creation():
     ah = AnswerHistory(
         user_id=1,
-        word_id=1,
+        concept_id=1,
         exercise_type="flashcard",
         correct=True,
         quality=5,
     )
     assert ah.id is None
     assert ah.user_id == 1
+    assert ah.concept_id == 1
     assert ah.correct is True
     assert ah.quality == 5
     assert isinstance(ah.answered_at, datetime)
@@ -484,25 +399,166 @@ def test_daily_stats_creation():
     assert ds.accuracy_pct == 70.0
 
 
-# --- WeakWord Tests ---
+# --- WeakConcept Tests ---
 
 
-def test_weak_word_creation():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+def test_weak_concept_creation():
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
-    ww = WeakWord(
-        word=word,
+    wc = WeakConcept(
+        concept=concept,
         attempts=10,
         errors=7,
         error_rate=0.7,
         last_attempt=datetime(2026, 2, 27, 10, 0, 0),
     )
-    assert ww.word.id == 1
-    assert ww.attempts == 10
-    assert ww.errors == 7
-    assert ww.error_rate == 0.7
+    assert wc.concept.id == 1
+    assert wc.attempts == 10
+    assert wc.errors == 7
+    assert wc.error_rate == 0.7
+
+
+# --- SessionSnapshot Tests ---
+
+
+def test_session_snapshot_defaults():
+    snap = SessionSnapshot(user_id=1)
+    assert snap.user_id == 1
+    assert snap.mode == SessionMode.MIXED
+    assert snap.tags is None
+    assert snap.concept_ids is None
+    assert snap.review_config is None
+    assert snap.fsrs_config is None
+    assert snap.current_exercise is None
+    assert snap.hint_count == 0
+    assert snap.buried_concept_ids == []
+    assert snap.correct == 0
+    assert snap.incorrect == 0
+    assert snap.streak == 0
+    assert snap.best_streak == 0
+    assert snap.new_served == 0
+    assert snap.review_served == 0
+    assert isinstance(snap.saved_at, datetime)
+
+
+def test_session_snapshot_with_data():
+    concept = Concept(
+        id=1, front="cat", back="gato",
+    )
+    ex = Exercise(
+        concept=concept,
+        exercise_type=ExerciseType.FLASHCARD,
+    )
+    snap = SessionSnapshot(
+        user_id=1,
+        mode=SessionMode.LEARN_NEW,
+        tags=["math"],
+        concept_ids=[1, 2, 3],
+        current_exercise=ex,
+        buried_concept_ids=[1],
+        correct=3,
+        incorrect=1,
+    )
+    assert snap.mode == SessionMode.LEARN_NEW
+    assert snap.tags == ["math"]
+    assert snap.concept_ids == [1, 2, 3]
+    assert snap.current_exercise is not None
+    assert snap.buried_concept_ids == [1]
+    assert snap.correct == 3
+
+
+# --- ReviewForecast Tests ---
+
+
+def test_review_forecast_creation():
+    rf = ReviewForecast(
+        date="2026-03-01", due_count=5,
+    )
+    assert rf.date == "2026-03-01"
+    assert rf.due_count == 5
+
+
+# --- ConversationStage Tests ---
+
+
+def test_conversation_stage_values():
+    assert (
+        ConversationStage.CHOOSING_TOPIC
+        == "choosing_topic"
+    )
+    assert ConversationStage.IDLE == "idle"
+    assert (
+        ConversationStage.EXERCISING == "exercising"
+    )
+    assert (
+        ConversationStage.AWAITING_ANSWER
+        == "awaiting_answer"
+    )
+    assert (
+        ConversationStage.AWAITING_SELF_GRADE
+        == "awaiting_self_grade"
+    )
+    assert (
+        ConversationStage.VIEWING_STATS
+        == "viewing_stats"
+    )
+
+
+# --- ConversationState Tests ---
+
+
+def test_conversation_state_defaults():
+    cs = ConversationState(user_id=1)
+    assert cs.user_id == 1
+    assert cs.key == ""
+    assert cs.stage == ConversationStage.IDLE
+    assert cs.data == {}
+    assert isinstance(cs.updated_at, datetime)
+
+
+# --- SessionMode Tests ---
+
+
+def test_session_mode_values():
+    assert SessionMode.LEARN_NEW == "learn_new"
+    assert SessionMode.REVIEW_DUE == "review_due"
+    assert SessionMode.MIXED == "mixed"
+
+
+# --- CardState Tests ---
+
+
+def test_card_state_values():
+    assert CardState.NEW == "new"
+    assert CardState.LEARNING == "learning"
+    assert CardState.REVIEW == "review"
+    assert CardState.RELEARNING == "relearning"
+    assert CardState.SUSPENDED == "suspended"
+
+
+# --- ReviewConfig Tests ---
+
+
+def test_review_config_defaults():
+    cfg = ReviewConfig()
+    assert cfg.learning_steps == [1, 10]
+    assert cfg.graduating_interval == 1
+    assert cfg.relearning_steps == [10]
+    assert cfg.lapse_new_interval_factor == 0.7
+    assert cfg.lapse_min_interval == 1
+    assert cfg.leech_threshold == 8
+    assert cfg.max_new_cards == 0
+    assert cfg.max_review_cards == 0
+
+
+# --- FSRSConfig Tests ---
+
+
+def test_fsrs_config_defaults():
+    cfg = FSRSConfig()
+    assert len(cfg.weights) == 19
+    assert cfg.desired_retention == 0.9
+    assert cfg.max_interval == 36500
+    assert cfg.learning_steps == [1, 10]
+    assert cfg.relearning_steps == [10]

@@ -25,7 +25,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 _DSN = (
-    "postgresql://rembrandt:rembrandt@localhost/rembrandt"
+    "postgresql://rembrandt:rembrandt"
+    "@localhost/rembrandt"
 )
 
 
@@ -46,6 +47,7 @@ pytestmark = [
         not _pg_available(),
         reason="PostgreSQL not available",
     ),
+    pytest.mark.asyncio,
 ]
 
 
@@ -53,453 +55,462 @@ pytestmark = [
 def pg_db():
     """Fresh PostgreSQL database for each test.
 
-    Drops and recreates all tables to ensure isolation.
+    Drops and recreates all tables to ensure
+    isolation.
     """
-    from rembrandt.db_postgres import PostgresDatabase
+    from rembrandt.db_postgres import (
+        PostgresDatabase,
+    )
 
     conn = psycopg.connect(_DSN, autocommit=True)
     with conn.cursor() as cur:
         cur.execute(
             "DROP TABLE IF EXISTS "
-            "answer_history, lesson_words, lessons, "
-            "progress, words, user_sessions, users "
+            "answer_history, topic_concepts, "
+            "topics, progress, concepts, "
+            "session_snapshots, "
+            "conversation_states, "
+            "user_sessions, users "
             "CASCADE"
         )
     conn.close()
 
-    db = PostgresDatabase(_DSN)
-    db.register_user("u1", "pass")
+    import asyncio
+    db = asyncio.get_event_loop().run_until_complete(
+        PostgresDatabase.connect(_DSN),
+    )
+    asyncio.get_event_loop().run_until_complete(
+        db.register_user("u1", "pass"),
+    )
     yield db
-    db.close()
+    asyncio.get_event_loop().run_until_complete(
+        db.close(),
+    )
 
 
-# --- Word CRUD Tests ---
+# --- Concept CRUD Tests ---
 
 
-def test_add_word(pg_db):
-    word = pg_db.add_word("en", "es", "hello", "hola")
-    assert word.id is not None
-    assert word.word_from == "hello"
-    assert word.word_to == "hola"
+async def test_add_concept(pg_db):
+    concept = await pg_db.add_concept(
+        "What is ML?", "Machine learning",
+    )
+    assert concept.id is not None
+    assert concept.front == "What is ML?"
+    assert concept.back == "Machine learning"
 
 
-def test_add_words_bulk(pg_db):
-    from rembrandt.models import Word
+async def test_add_concepts_bulk(pg_db):
+    from rembrandt.models import Concept
 
-    words = pg_db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
-        ),
+    concepts = await pg_db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
+        Concept(front="house", back="casa"),
     ])
-    assert len(words) == 3
-    assert all(w.id is not None for w in words)
-    assert words[0].word_from == "cat"
-    assert words[2].word_to == "casa"
+    assert len(concepts) == 3
+    assert all(c.id is not None for c in concepts)
+    assert concepts[0].front == "cat"
+    assert concepts[2].back == "casa"
 
 
-def test_get_words_empty(pg_db):
-    result = pg_db.get_words("en", "es")
+async def test_get_concepts_empty(pg_db):
+    result = await pg_db.get_concepts()
     assert result == []
 
 
-def test_get_words_filters_by_language(pg_db):
-    pg_db.add_word("en", "es", "hello", "hola")
-    pg_db.add_word("en", "fr", "hello", "bonjour")
-
-    es_words = pg_db.get_words("en", "es")
-    assert len(es_words) == 1
-    assert es_words[0].word_to == "hola"
-
-    fr_words = pg_db.get_words("en", "fr")
-    assert len(fr_words) == 1
-    assert fr_words[0].word_to == "bonjour"
-
-
-def test_add_word_with_tags(pg_db):
-    word = pg_db.add_word(
-        "en", "es", "bread", "pan",
-        tags=["food"],
+async def test_add_concept_with_tags(pg_db):
+    concept = await pg_db.add_concept(
+        "bread", "pan", tags=["food"],
     )
-    assert word.tags == ["food"]
-    loaded = pg_db.get_words("en", "es")
+    assert concept.tags == ["food"]
+    loaded = await pg_db.get_concepts()
     assert loaded[0].tags == ["food"]
 
 
-def test_tags_default_empty(pg_db):
-    pg_db.add_word("en", "es", "cat", "gato")
-    loaded = pg_db.get_words("en", "es")
+async def test_tags_default_empty(pg_db):
+    await pg_db.add_concept("cat", "gato")
+    loaded = await pg_db.get_concepts()
     assert loaded[0].tags == []
 
 
-def test_add_word_with_cefr(pg_db):
-    word = pg_db.add_word(
-        "es", "en", "ser", "to be", cefr="A1",
+async def test_update_concept(pg_db):
+    concept = await pg_db.add_concept(
+        "cat", "gato",
     )
-    assert word.cefr == "A1"
-    loaded = pg_db.get_words("es", "en")
-    assert loaded[0].cefr == "A1"
-
-
-def test_update_word(pg_db):
-    word = pg_db.add_word("en", "es", "cat", "gato")
-    updated = pg_db.update_word(
-        word.model_copy(update={"word_to": "gatito"}),
+    updated = await pg_db.update_concept(
+        concept.model_copy(
+            update={"back": "gatito"},
+        ),
     )
-    assert updated.word_to == "gatito"
-    loaded = pg_db.get_words("en", "es")
-    assert loaded[0].word_to == "gatito"
+    assert updated.back == "gatito"
+    loaded = await pg_db.get_concepts()
+    assert loaded[0].back == "gatito"
 
 
-def test_update_word_not_found_raises(pg_db):
-    from rembrandt.models import Word
+async def test_update_concept_not_found_raises(
+    pg_db,
+):
+    from rembrandt.models import Concept
 
-    word = Word(
-        id=999,
-        language_from="en", language_to="es",
-        word_from="cat", word_to="gato",
+    concept = Concept(
+        id=999, front="cat", back="gato",
     )
-    with pytest.raises(ValueError, match="not found"):
-        pg_db.update_word(word)
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await pg_db.update_concept(concept)
 
 
-def test_delete_word(pg_db):
-    word = pg_db.add_word("en", "es", "cat", "gato")
-    pg_db.delete_word(word.id)
-    assert pg_db.get_words("en", "es") == []
+async def test_delete_concept(pg_db):
+    concept = await pg_db.add_concept(
+        "cat", "gato",
+    )
+    await pg_db.delete_concept(concept.id)
+    assert await pg_db.get_concepts() == []
 
 
-def test_delete_word_not_found_raises(pg_db):
-    with pytest.raises(ValueError, match="not found"):
-        pg_db.delete_word(999)
+async def test_delete_concept_not_found_raises(
+    pg_db,
+):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await pg_db.delete_concept(999)
 
 
 # --- User CRUD Tests ---
 
 
-def test_register_user(pg_db):
-    user = pg_db.register_user("alice", "s3cret")
+async def test_register_user(pg_db):
+    user = await pg_db.register_user(
+        "alice", "s3cret",
+    )
     assert user.id is not None
     assert user.username == "alice"
 
 
-def test_register_user_duplicate_raises(pg_db):
-    pg_db.register_user("alice", "pass1")
+async def test_register_user_duplicate_raises(
+    pg_db,
+):
+    await pg_db.register_user("alice", "pass1")
     with pytest.raises(
         ValueError, match="already exists",
     ):
-        pg_db.register_user("alice", "pass2")
+        await pg_db.register_user("alice", "pass2")
 
 
-def test_authenticate_user_valid(pg_db):
-    pg_db.register_user("alice", "s3cret")
-    user = pg_db.authenticate_user("alice", "s3cret")
+async def test_authenticate_user_valid(pg_db):
+    await pg_db.register_user("alice", "s3cret")
+    user = await pg_db.authenticate_user(
+        "alice", "s3cret",
+    )
     assert user is not None
     assert user.username == "alice"
 
 
-def test_authenticate_user_wrong_password(pg_db):
-    pg_db.register_user("alice", "s3cret")
-    assert pg_db.authenticate_user(
-        "alice", "wrong",
+async def test_authenticate_user_wrong_password(
+    pg_db,
+):
+    await pg_db.register_user("alice", "s3cret")
+    assert (
+        await pg_db.authenticate_user(
+            "alice", "wrong",
+        )
     ) is None
 
 
 # --- User Session Tests ---
 
 
-def test_create_session(pg_db):
-    user = pg_db.register_user("alice", "pass")
-    session = pg_db.create_session(user.id)
+async def test_create_session(pg_db):
+    user = await pg_db.register_user(
+        "alice", "pass",
+    )
+    session = await pg_db.create_session(user.id)
     assert session.id is not None
     assert session.user_id == user.id
     assert len(session.token) == 64
 
 
-def test_get_session_valid(pg_db):
-    user = pg_db.register_user("alice", "pass")
-    session = pg_db.create_session(user.id)
-    loaded = pg_db.get_session(session.token)
+async def test_get_session_valid(pg_db):
+    user = await pg_db.register_user(
+        "alice", "pass",
+    )
+    session = await pg_db.create_session(user.id)
+    loaded = await pg_db.get_session(session.token)
     assert loaded is not None
     assert loaded.token == session.token
 
 
-def test_get_session_expired(pg_db):
-    user = pg_db.register_user("alice", "pass")
-    session = pg_db.create_session(
+async def test_get_session_expired(pg_db):
+    user = await pg_db.register_user(
+        "alice", "pass",
+    )
+    session = await pg_db.create_session(
         user.id, ttl_hours=0,
     )
-    assert pg_db.get_session(session.token) is None
+    assert (
+        await pg_db.get_session(session.token)
+    ) is None
 
 
-def test_delete_session(pg_db):
-    user = pg_db.register_user("alice", "pass")
-    session = pg_db.create_session(user.id)
-    pg_db.delete_session(session.token)
-    assert pg_db.get_session(session.token) is None
+async def test_delete_session(pg_db):
+    user = await pg_db.register_user(
+        "alice", "pass",
+    )
+    session = await pg_db.create_session(user.id)
+    await pg_db.delete_session(session.token)
+    assert (
+        await pg_db.get_session(session.token)
+    ) is None
 
 
 # --- Progress CRUD Tests ---
 
 
-def test_upsert_progress_insert(pg_db):
-    from rembrandt.models import CardState, UserProgress
+async def test_upsert_progress_insert(pg_db):
+    from rembrandt.models import (
+        CardState,
+        UserProgress,
+    )
 
     progress = UserProgress(
         user_id=1,
-        word_id=1,
+        concept_id=1,
         easiness_factor=2.5,
         interval=1,
         repetitions=1,
         state=CardState.REVIEW,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
-    pg_db.upsert_progress(progress)
-    loaded = pg_db.get_progress(1, 1)
+    await pg_db.upsert_progress(progress)
+    loaded = await pg_db.get_progress(1, 1)
     assert loaded is not None
     assert loaded.easiness_factor == 2.5
     assert loaded.state == CardState.REVIEW
 
 
-def test_upsert_progress_update(pg_db):
+async def test_upsert_progress_update(pg_db):
     from rembrandt.models import UserProgress
 
     progress = UserProgress(
         user_id=1,
-        word_id=1,
+        concept_id=1,
         next_review=datetime(2026, 3, 1, 12, 0, 0),
     )
-    pg_db.upsert_progress(progress)
+    await pg_db.upsert_progress(progress)
 
     progress.easiness_factor = 2.1
     progress.interval = 6
     progress.repetitions = 3
-    pg_db.upsert_progress(progress)
+    await pg_db.upsert_progress(progress)
 
-    loaded = pg_db.get_progress(1, 1)
+    loaded = await pg_db.get_progress(1, 1)
     assert loaded.easiness_factor == 2.1
     assert loaded.interval == 6
     assert loaded.repetitions == 3
 
 
-def test_get_all_progress(pg_db):
+async def test_get_all_progress(pg_db):
     from rembrandt.models import UserProgress
 
     dt = datetime(2026, 3, 1, 12, 0, 0)
-    pg_db.upsert_progress(UserProgress(
-        user_id=1, word_id=1, next_review=dt,
+    await pg_db.upsert_progress(UserProgress(
+        user_id=1, concept_id=1,
+        next_review=dt,
     ))
-    pg_db.upsert_progress(UserProgress(
-        user_id=1, word_id=3, next_review=dt,
+    await pg_db.upsert_progress(UserProgress(
+        user_id=1, concept_id=3,
+        next_review=dt,
     ))
-    result = pg_db.get_all_progress(1, [1, 2, 3])
+    result = await pg_db.get_all_progress(
+        1, [1, 2, 3],
+    )
     assert len(result) == 2
     assert 1 in result
     assert 3 in result
     assert 2 not in result
 
 
-def test_get_all_progress_empty(pg_db):
-    result = pg_db.get_all_progress(1, [])
+async def test_get_all_progress_empty(pg_db):
+    result = await pg_db.get_all_progress(1, [])
     assert result == {}
 
 
 # --- Progress Export/Import Tests ---
 
 
-def test_export_import_roundtrip(pg_db):
+async def test_export_import_roundtrip(pg_db):
     from rembrandt.models import UserProgress
 
     dt = datetime(2026, 3, 1, 12, 0, 0)
-    pg_db.upsert_progress(UserProgress(
-        user_id=1, word_id=1,
+    await pg_db.upsert_progress(UserProgress(
+        user_id=1, concept_id=1,
         easiness_factor=2.3, interval=6,
         repetitions=4, next_review=dt,
     ))
-    exported = pg_db.export_progress(1)
+    exported = await pg_db.export_progress(1)
     assert len(exported) == 1
     assert exported[0]["next_review"] == (
         "2026-03-01T12:00:00"
     )
 
 
-def test_import_progress_missing_key_raises(pg_db):
+async def test_import_progress_missing_key_raises(
+    pg_db,
+):
     records = [
         {
-            "user_id": 1, "word_id": 1,
+            "user_id": 1, "concept_id": 1,
             "easiness_factor": 2.5,
         },
     ]
-    with pytest.raises(KeyError, match="Missing keys"):
-        pg_db.import_progress(records)
+    with pytest.raises(
+        KeyError, match="Missing keys",
+    ):
+        await pg_db.import_progress(records)
 
 
 # --- Answer History Tests ---
 
 
-def test_record_answer(pg_db):
-    pg_db.record_answer(
+async def test_record_answer(pg_db):
+    await pg_db.record_answer(
         1, 1, "flashcard", True, 5,
     )
-    history = pg_db.get_answer_history(1)
+    history = await pg_db.get_answer_history(1)
     assert len(history) == 1
     assert history[0].correct is True
     assert history[0].quality == 5
 
 
-def test_get_answer_history_ordered(pg_db):
-    pg_db.record_answer(
+async def test_get_answer_history_ordered(pg_db):
+    await pg_db.record_answer(
         1, 1, "flashcard", True, 5,
     )
-    pg_db.record_answer(
+    await pg_db.record_answer(
         1, 2, "multiple_choice", False, 1,
     )
-    history = pg_db.get_answer_history(1)
+    history = await pg_db.get_answer_history(1)
     assert len(history) == 2
-    assert history[0].word_id == 2
-    assert history[1].word_id == 1
+    assert history[0].concept_id == 2
+    assert history[1].concept_id == 1
 
 
-def test_get_answer_history_limit(pg_db):
+async def test_get_answer_history_limit(pg_db):
     for i in range(5):
-        pg_db.record_answer(
+        await pg_db.record_answer(
             1, i, "flashcard", True, 5,
         )
-    history = pg_db.get_answer_history(1, limit=3)
+    history = await pg_db.get_answer_history(
+        1, limit=3,
+    )
     assert len(history) == 3
 
 
-# --- Lesson CRUD Tests ---
+# --- Topic CRUD Tests ---
 
 
-def test_add_lesson(pg_db):
-    from rembrandt.models import Lesson, Word
+async def test_add_topic(pg_db):
+    from rembrandt.models import Concept, Topic
 
-    words = pg_db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
-        ),
+    concepts = await pg_db.add_concepts([
+        Concept(front="cat", back="gato"),
+        Concept(front="dog", back="perro"),
     ])
-    lesson = pg_db.add_lesson(Lesson(
-        title="A1 - Lesson 1",
-        description="First lesson",
-        language_from="en",
-        language_to="es",
-        cefr="A1",
-        word_count=2,
-        word_ids=[words[0].id, words[1].id],
+    topic = await pg_db.add_topic(Topic(
+        title="Animals",
+        description="Animal concepts",
+        concept_count=2,
+        concept_ids=[
+            concepts[0].id, concepts[1].id,
+        ],
     ))
-    assert lesson.id is not None
-    assert lesson.title == "A1 - Lesson 1"
+    assert topic.id is not None
+    assert topic.title == "Animals"
 
 
-def test_get_lesson_by_id(pg_db):
-    from rembrandt.models import Lesson, Word
+async def test_get_topic_by_id(pg_db):
+    from rembrandt.models import Concept, Topic
 
-    words = pg_db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
-        ),
+    concepts = await pg_db.add_concepts([
+        Concept(front="cat", back="gato"),
     ])
-    lesson = pg_db.add_lesson(Lesson(
-        title="Test Lesson",
-        language_from="en",
-        language_to="es",
-        cefr="A1",
+    topic = await pg_db.add_topic(Topic(
+        title="Test Topic",
         tags=["test"],
-        word_count=1,
-        word_ids=[words[0].id],
+        concept_count=1,
+        concept_ids=[concepts[0].id],
     ))
-    loaded = pg_db.get_lesson(lesson.id)
+    loaded = await pg_db.get_topic(topic.id)
     assert loaded is not None
-    assert loaded.title == "Test Lesson"
+    assert loaded.title == "Test Topic"
     assert loaded.tags == ["test"]
-    assert loaded.word_ids == [words[0].id]
+    assert loaded.concept_ids == [concepts[0].id]
 
 
-def test_get_lessons_filter_tag(pg_db):
-    from rembrandt.models import Lesson
+async def test_get_topics_filter_tag(pg_db):
+    from rembrandt.models import Topic
 
-    pg_db.add_lessons([
-        Lesson(
-            title="Food Lesson",
-            language_from="en",
-            language_to="es",
+    await pg_db.add_topics([
+        Topic(
+            title="Food Topic",
             tags=["food"],
         ),
-        Lesson(
-            title="Travel Lesson",
-            language_from="en",
-            language_to="es",
+        Topic(
+            title="Travel Topic",
             tags=["travel"],
         ),
-        Lesson(
+        Topic(
             title="Multi Tag",
-            language_from="en",
-            language_to="es",
             tags=["food", "travel"],
         ),
     ])
-    food = pg_db.get_lessons("en", "es", tag="food")
+    food = await pg_db.get_topics(tag="food")
     assert len(food) == 2
-    titles = {ls.title for ls in food}
-    assert titles == {"Food Lesson", "Multi Tag"}
+    titles = {t.title for t in food}
+    assert titles == {"Food Topic", "Multi Tag"}
 
 
-def test_update_lesson(pg_db):
-    from rembrandt.models import Lesson
+async def test_update_topic(pg_db):
+    from rembrandt.models import Topic
 
-    lesson = pg_db.add_lesson(Lesson(
+    topic = await pg_db.add_topic(Topic(
         title="Old Title",
-        language_from="en",
-        language_to="es",
     ))
-    pg_db.update_lesson(
-        lesson.model_copy(update={
+    await pg_db.update_topic(
+        topic.model_copy(update={
             "title": "New Title",
-            "cefr": "B1",
         }),
     )
-    loaded = pg_db.get_lesson(lesson.id)
+    loaded = await pg_db.get_topic(topic.id)
     assert loaded.title == "New Title"
-    assert loaded.cefr == "B1"
 
 
-def test_delete_lesson(pg_db):
-    from rembrandt.models import Lesson
+async def test_delete_topic(pg_db):
+    from rembrandt.models import Topic
 
-    lesson = pg_db.add_lesson(Lesson(
+    topic = await pg_db.add_topic(Topic(
         title="Doomed",
-        language_from="en",
-        language_to="es",
     ))
-    pg_db.delete_lesson(lesson.id)
-    assert pg_db.get_lesson(lesson.id) is None
+    await pg_db.delete_topic(topic.id)
+    assert await pg_db.get_topic(topic.id) is None
 
 
-def test_delete_lesson_not_found_raises(pg_db):
-    with pytest.raises(ValueError, match="not found"):
-        pg_db.delete_lesson(999)
+async def test_delete_topic_not_found_raises(
+    pg_db,
+):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await pg_db.delete_topic(999)
 
 
 # --- Context Manager Tests ---
 
 
-def test_context_manager(pg_db):
-    pg_db.add_word("en", "es", "cat", "gato")
-    words = pg_db.get_words("en", "es")
-    assert len(words) == 1
+async def test_context_manager(pg_db):
+    await pg_db.add_concept("cat", "gato")
+    concepts = await pg_db.get_concepts()
+    assert len(concepts) == 1

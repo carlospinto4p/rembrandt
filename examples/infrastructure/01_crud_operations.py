@@ -1,108 +1,68 @@
-"""CRUD operations for words and lessons.
+"""CRUD operations for concepts and topics."""
 
-Shows how to create, update, and delete words and lessons
-using the `Database` API.
-
-Usage::
-
-    uv run python examples/infrastructure/01_crud_operations.py
-"""
-
-from pathlib import Path
-
-from rembrandt import Database, Lesson, Word
-
-_DB_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data"
-    / "crud_demo.db"
-)
+import asyncio
+from rembrandt import Concept, Database, Topic
 
 
-def main() -> None:
-    _DB_PATH.unlink(missing_ok=True)
-    db = Database(_DB_PATH)
+async def main():
+    db = await Database.connect(":memory:")
 
-    # --- Words: create, update, delete ---
-    print("=== Word CRUD ===\n")
-
-    word = db.add_word(
-        "en", "es", "cat", "gato", gender="m",
+    # --- Concepts ---
+    c1 = await db.add_concept(
+        "What is ML?",
+        "A subset of AI that learns from data",
+        tags=["data-science"],
     )
-    print(f"Created: {word.word_from} -> {word.word_to}")
+    print(f"Added concept #{c1.id}: {c1.front}")
 
-    word = word.model_copy(
-        update={"word_to": "gato/a", "gender": None},
-    )
-    word = db.update_word(word)
-    print(f"Updated: {word.word_from} -> {word.word_to}")
-
-    words = db.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
+    concepts = await db.add_concepts([
+        Concept(
+            front="What is SQL?",
+            back="Structured Query Language",
+            tags=["databases"],
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="bird", word_to="pájaro",
+        Concept(
+            front="What is REST?",
+            back="Representational State Transfer",
+            tags=["web"],
         ),
     ])
-    print(f"Bulk added: {[w.word_from for w in words]}")
+    print(f"Bulk added {len(concepts)} concepts")
 
-    db.delete_word(words[1].id)
-    print(f"Deleted: {words[1].word_from}")
+    all_concepts = await db.get_concepts()
+    print(f"Total: {len(all_concepts)}")
 
-    remaining = db.get_words("en", "es")
+    tagged = await db.get_concepts(
+        tag="data-science",
+    )
     print(
-        f"Remaining: "
-        f"{[w.word_from for w in remaining]}\n"
+        f"Data-science tagged: {len(tagged)}"
     )
 
-    # --- Lessons: create, update, delete ---
-    print("=== Lesson CRUD ===\n")
+    c1_updated = c1.model_copy(
+        update={"back": "AI that learns from data"},
+    )
+    await db.update_concept(c1_updated)
+    print(f"Updated concept #{c1.id}")
 
-    word_ids = [w.id for w in remaining]
-    lesson = db.add_lesson(Lesson(
-        title="Animals & Things",
-        description="A mixed lesson",
-        language_from="en",
-        language_to="es",
-        word_count=len(word_ids),
-        word_ids=word_ids,
+    # --- Topics ---
+    topic = await db.add_topic(Topic(
+        title="CS Fundamentals",
+        tags=["cs"],
+        concept_count=len(concepts),
+        concept_ids=[c.id for c in concepts],
     ))
+    print(f"Added topic #{topic.id}: {topic.title}")
+
+    topics = await db.get_topics()
+    print(f"Total topics: {len(topics)}")
     print(
-        f"Created lesson: '{lesson.title}' "
-        f"({lesson.word_count} words)"
+        f"  '{topics[0].title}' has "
+        f"{len(topics[0].concept_ids)} concepts"
     )
 
-    lesson = lesson.model_copy(
-        update={
-            "title": "Basics",
-            "word_ids": word_ids[:1],
-            "word_count": 1,
-        },
-    )
-    lesson = db.update_lesson(lesson)
-    print(
-        f"Updated lesson: '{lesson.title}' "
-        f"({lesson.word_count} word)"
-    )
-
-    fetched = db.get_lesson(lesson.id)
-    print(
-        f"Fetched: '{fetched.title}', "
-        f"word_ids={fetched.word_ids}"
-    )
-
-    db.delete_lesson(lesson.id)
-    print(f"Deleted lesson id={lesson.id}")
-
-    all_lessons = db.get_lessons("en", "es")
-    print(f"Remaining lessons: {len(all_lessons)}")
-
-    db.close()
-    print("\nDone!")
+    await db.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

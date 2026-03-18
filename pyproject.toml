@@ -1,7 +1,7 @@
 [project]
 name = "rembrandt"
-version = "3.2.2"
-description = "A library to do some mental exercises with the help of LLMs."
+version = "4.0.0"
+description = "A general-purpose spaced-repetition library for any subject."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.13"

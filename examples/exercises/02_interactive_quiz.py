@@ -1,144 +1,82 @@
-"""Interactive vocabulary quiz.
+"""Interactive quiz — math formulas."""
 
-Runs a CLI loop where you type translations for English words.
-Type 'q' or press Ctrl+C to quit. Uses `SessionMode.LEARN_NEW`
-to only show new (unreviewed) words.  Progress is persisted
-between runs — switch to `MIXED` or `REVIEW_DUE` on later runs.
-
-Usage::
-
-    uv run python examples/exercises/02_interactive_quiz.py
-"""
-
-from pathlib import Path
-
-from rembrandt import Database, Session, SessionMode, Word
-from rembrandt.models import ExerciseType
-
-_DB_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data"
-    / "interactive_quiz.db"
+import asyncio
+from rembrandt import (
+    ExerciseType, quick_session,
 )
 
-_WORDS = [
-    Word(
-        language_from="en", language_to="es",
-        word_from="cat", word_to="gato",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="dog", word_to="perro",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="house", word_to="casa",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="book", word_to="libro",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="water", word_to="agua",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="sun", word_to="sol",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="moon", word_to="luna",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="tree", word_to="arbol",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="fire", word_to="fuego",
-    ),
-    Word(
-        language_from="en", language_to="es",
-        word_from="sky", word_to="cielo",
-    ),
+FORMULAS = [
+    {
+        "front": "Area of a circle",
+        "back": "\u03c0r\u00b2",
+    },
+    {
+        "front": "Quadratic formula",
+        "back": "(-b \u00b1 \u221a(b\u00b2-4ac)) / 2a",
+    },
+    {
+        "front": "Pythagorean theorem",
+        "back": "a\u00b2 + b\u00b2 = c\u00b2",
+    },
+    {
+        "front": "Derivative of sin(x)",
+        "back": "cos(x)",
+    },
+    {
+        "front": "Integral of 1/x",
+        "back": "ln|x| + C",
+    },
 ]
 
 
-def main() -> None:
-    fresh = not _DB_PATH.exists()
+async def main():
+    session = await quick_session(
+        FORMULAS, db_path="math_quiz.db",
+    )
 
-    with Database(_DB_PATH) as db:
-        if fresh:
-            db.add_words(_WORDS)
+    while True:
+        ex = await session.next_exercise()
+        if ex is None:
+            print("No more concepts!")
+            break
 
-        user = db.get_user("player")
-        if user is None:
-            user = db.register_user("player", "player")
+        print(f"\n[{ex.exercise_type.value}]")
+        print(f"  {ex.concept.front}")
 
-        session = Session(
-            db=db,
-            user_id=user.id,
-            language_from="en",
-            language_to="es",
-            mode=SessionMode.LEARN_NEW,
-        )
+        if ex.options:
+            for i, opt in enumerate(ex.options, 1):
+                print(f"  {i}. {opt}")
 
-        print("=== Rembrandt Vocabulary Quiz ===")
-        print(
-            "Type the Spanish translation "
-            "(or 'q' to quit).\n"
-        )
-
-        try:
-            while True:
-                exercise = session.next_exercise()
-                if exercise is None:
-                    print("No more words available.")
-                    break
-
-                prompt = (
-                    f"Translate '{exercise.word.word_from}'"
-                )
-                if exercise.exercise_type == (
-                    ExerciseType.MULTIPLE_CHOICE
-                ):
-                    prompt += " (choose one)"
-                    for idx, opt in enumerate(
-                        exercise.options, 1
-                    ):
-                        print(f"  {idx}. {opt}")
-
-                answer = input(f"{prompt}: ").strip()
-                if answer.lower() == "q":
-                    break
-
-                result = session.answer(answer)
-
-                if result.correct:
-                    print("  Correct!\n")
-                else:
-                    print(
-                        f"  Wrong — expected "
-                        f"'{result.expected}'\n"
-                    )
-
-        except (KeyboardInterrupt, EOFError):
-            print()
-
-        stats = session.summary()
-        print("=== Results ===")
-        if stats.total:
-            print(
-                f"Score: {stats.correct}/{stats.total} "
-                f"({stats.accuracy_pct}%)"
-            )
-            print(
-                f"Best streak: {stats.best_streak}"
+        if (
+            ex.exercise_type
+            == ExerciseType.SELF_GRADED
+        ):
+            input("  Press Enter to reveal...")
+            print(f"  \u2192 {ex.concept.back}")
+            q = input("  Rate 0-5: ").strip()
+            result = await session.answer(
+                quality=int(q),
             )
         else:
-            print("No answers submitted.")
+            answer = input("  Your answer: ").strip()
+            if answer.lower() == "q":
+                break
+            result = await session.answer(answer)
+
+        if result.correct:
+            print("  Correct!")
+        else:
+            print(
+                f"  Wrong \u2014 expected: "
+                f"{result.expected}"
+            )
+
+    stats = session.summary()
+    print(
+        f"\nDone: {stats.correct}/{stats.total}"
+    )
+    await session.db.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

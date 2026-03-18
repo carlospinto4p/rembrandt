@@ -1,36 +1,29 @@
 """Tests for rembrandt.exercises."""
 
-import json
-
 import pytest
 
 from rembrandt.exercises import (
-    _ADJECTIVES,
     evaluate_answer,
-    extend_adjectives,
-    generate_adjective_agreement,
-    generate_cloze_exercise,
-    generate_conjugation,
     generate_exercise,
     generate_flashcard,
-    generate_gender_match,
     generate_multiple_choice,
-    generate_sentence_order,
-    generate_translation_cloze,
     generate_reverse_flashcard,
     generate_self_graded,
-    load_exercise_config,
 )
-from rembrandt.models import Exercise, ExerciseType, Word
+from rembrandt.models import (
+    Concept,
+    Exercise,
+    ExerciseType,
+)
 
 
 # --- Flashcard Tests ---
 
 
-def test_generate_flashcard(sample_words):
-    ex = generate_flashcard(sample_words[0])
+def test_generate_flashcard(short_concepts):
+    ex = generate_flashcard(short_concepts[0])
     assert ex.exercise_type == ExerciseType.FLASHCARD
-    assert ex.word.word_from == "cat"
+    assert ex.concept.front == "cat"
     assert ex.options == []
 
 
@@ -38,26 +31,34 @@ def test_generate_flashcard(sample_words):
 
 
 def test_generate_multiple_choice_has_correct_answer(
-    sample_words,
+    short_concepts,
 ):
     ex = generate_multiple_choice(
-        sample_words[0], sample_words,
+        short_concepts[0], short_concepts,
     )
     assert "gato" in ex.options
-    assert ex.exercise_type == ExerciseType.MULTIPLE_CHOICE
+    assert (
+        ex.exercise_type
+        == ExerciseType.MULTIPLE_CHOICE
+    )
 
 
-def test_generate_multiple_choice_option_count(sample_words):
+def test_generate_multiple_choice_option_count(
+    short_concepts,
+):
     ex = generate_multiple_choice(
-        sample_words[0], sample_words, num_options=4,
+        short_concepts[0], short_concepts,
+        num_options=4,
     )
     assert len(ex.options) == 4
 
 
-def test_generate_multiple_choice_fewer_words(sample_words):
-    words = sample_words[:2]
+def test_generate_multiple_choice_fewer_concepts(
+    short_concepts,
+):
+    concepts = short_concepts[:2]
     ex = generate_multiple_choice(
-        words[0], words, num_options=4
+        concepts[0], concepts, num_options=4,
     )
     assert len(ex.options) == 2
     assert "gato" in ex.options
@@ -66,76 +67,76 @@ def test_generate_multiple_choice_fewer_words(sample_words):
 # --- Reverse Flashcard Tests ---
 
 
-def test_generate_reverse_flashcard(definition_words):
-    ex = generate_reverse_flashcard(definition_words[0])
-    assert ex.exercise_type == ExerciseType.REVERSE_FLASHCARD
-    assert ex.word.word_from == "ephemeral"
+def test_generate_reverse_flashcard(sample_concepts):
+    ex = generate_reverse_flashcard(
+        sample_concepts[0],
+    )
+    assert (
+        ex.exercise_type
+        == ExerciseType.REVERSE_FLASHCARD
+    )
+    assert (
+        ex.concept.front == "What is a p-value?"
+    )
     assert ex.options == []
 
 
 # --- Self-Graded Tests ---
 
 
-def test_generate_self_graded(definition_words):
-    ex = generate_self_graded(definition_words[0])
-    assert ex.exercise_type == ExerciseType.SELF_GRADED
-    assert ex.word.word_from == "ephemeral"
+def test_generate_self_graded(sample_concepts):
+    ex = generate_self_graded(sample_concepts[0])
+    assert (
+        ex.exercise_type == ExerciseType.SELF_GRADED
+    )
+    assert (
+        ex.concept.front == "What is a p-value?"
+    )
     assert ex.options == []
 
 
-# --- Random Exercise Tests (Translation Mode) ---
+# --- Random Exercise Tests ---
 
 
-def test_generate_exercise_single_word(sample_words):
-    words = sample_words[:1]
-    ex = generate_exercise(words[0], words)
-    assert ex.exercise_type == ExerciseType.FLASHCARD
-
-
-def test_generate_exercise_returns_valid_type(sample_words):
-    ex = generate_exercise(sample_words[0], sample_words)
+def test_generate_exercise_single_concept(
+    short_concepts,
+):
+    concepts = short_concepts[:1]
+    ex = generate_exercise(concepts[0], concepts)
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
-        ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.CLOZE,
-        ExerciseType.TRANSLATION_CLOZE,
-    )
-
-
-# --- Random Exercise Tests (Definition Mode) ---
-
-
-def test_generate_exercise_definition_mode_single_word(
-    definition_words,
-):
-    words = definition_words[:1]
-    ex = generate_exercise(words[0], words)
-    assert ex.exercise_type == ExerciseType.SELF_GRADED
-
-
-def test_generate_exercise_definition_mode_returns_valid_type(
-    definition_words,
-):
-    ex = generate_exercise(
-        definition_words[0], definition_words,
-    )
-    assert ex.exercise_type in (
-        ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
 
 
-def test_generate_exercise_definition_mode_only_mc_and_sg(
-    definition_words,
+def test_generate_exercise_returns_valid_type(
+    short_concepts,
+):
+    ex = generate_exercise(
+        short_concepts[0], short_concepts,
+    )
+    assert ex.exercise_type in (
+        ExerciseType.FLASHCARD,
+        ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.REVERSE_FLASHCARD,
+        ExerciseType.SELF_GRADED,
+    )
+
+
+def test_generate_exercise_all_four_types(
+    short_concepts,
 ):
     types = set()
     for _ in range(500):
         ex = generate_exercise(
-            definition_words[0], definition_words,
+            short_concepts[0], short_concepts,
         )
         types.add(ex.exercise_type)
     assert types == {
+        ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     }
 
@@ -143,8 +144,8 @@ def test_generate_exercise_definition_mode_only_mc_and_sg(
 # --- Answer Evaluation Tests ---
 
 
-def test_evaluate_answer_correct(sample_words):
-    ex = generate_flashcard(sample_words[0])
+def test_evaluate_answer_correct(short_concepts):
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "gato")
     assert result.correct is True
     assert result.expected == "gato"
@@ -152,23 +153,23 @@ def test_evaluate_answer_correct(sample_words):
 
 
 def test_evaluate_answer_correct_case_insensitive(
-    sample_words,
+    short_concepts,
 ):
-    ex = generate_flashcard(sample_words[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "Gato")
     assert result.correct is True
 
 
 def test_evaluate_answer_correct_with_whitespace(
-    sample_words,
+    short_concepts,
 ):
-    ex = generate_flashcard(sample_words[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "  gato  ")
     assert result.correct is True
 
 
-def test_evaluate_answer_incorrect(sample_words):
-    ex = generate_flashcard(sample_words[0])
+def test_evaluate_answer_incorrect(short_concepts):
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "perro")
     assert result.correct is False
     assert result.expected == "gato"
@@ -178,68 +179,83 @@ def test_evaluate_answer_incorrect(sample_words):
 # --- Reverse Flashcard Evaluation Tests ---
 
 
-def test_evaluate_reverse_flashcard_correct(definition_words):
-    ex = generate_reverse_flashcard(definition_words[0])
-    result = evaluate_answer(ex, "ephemeral")
+def test_evaluate_reverse_flashcard_correct(
+    short_concepts,
+):
+    ex = generate_reverse_flashcard(
+        short_concepts[0],
+    )
+    result = evaluate_answer(ex, "cat")
     assert result.correct is True
-    assert result.expected == "ephemeral"
+    assert result.expected == "cat"
 
 
 def test_evaluate_reverse_flashcard_incorrect(
-    definition_words,
+    short_concepts,
 ):
-    ex = generate_reverse_flashcard(definition_words[0])
-    result = evaluate_answer(ex, "ubiquitous")
+    ex = generate_reverse_flashcard(
+        short_concepts[0],
+    )
+    result = evaluate_answer(ex, "dog")
     assert result.correct is False
-    assert result.expected == "ephemeral"
+    assert result.expected == "cat"
 
 
 def test_evaluate_reverse_flashcard_case_insensitive(
-    definition_words,
+    short_concepts,
 ):
-    ex = generate_reverse_flashcard(definition_words[0])
-    result = evaluate_answer(ex, "Ephemeral")
+    ex = generate_reverse_flashcard(
+        short_concepts[0],
+    )
+    result = evaluate_answer(ex, "Cat")
     assert result.correct is True
 
 
 # --- Self-Graded Evaluation Tests ---
 
 
-def test_evaluate_self_graded_quality_high(definition_words):
-    ex = generate_self_graded(definition_words[0])
+def test_evaluate_self_graded_quality_high(
+    sample_concepts,
+):
+    ex = generate_self_graded(sample_concepts[0])
     result = evaluate_answer(ex, quality=5)
     assert result.correct is True
-    assert result.expected == "lasting for a very short time"
     assert result.given == "5"
 
 
 def test_evaluate_self_graded_quality_threshold(
-    definition_words,
+    sample_concepts,
 ):
-    ex = generate_self_graded(definition_words[0])
+    ex = generate_self_graded(sample_concepts[0])
     result = evaluate_answer(ex, quality=3)
     assert result.correct is True
 
 
-def test_evaluate_self_graded_quality_low(definition_words):
-    ex = generate_self_graded(definition_words[0])
+def test_evaluate_self_graded_quality_low(
+    sample_concepts,
+):
+    ex = generate_self_graded(sample_concepts[0])
     result = evaluate_answer(ex, quality=2)
     assert result.correct is False
 
 
 def test_evaluate_self_graded_missing_quality(
-    definition_words,
+    sample_concepts,
 ):
-    ex = generate_self_graded(definition_words[0])
-    with pytest.raises(ValueError, match="quality is required"):
+    ex = generate_self_graded(sample_concepts[0])
+    with pytest.raises(
+        ValueError, match="quality is required",
+    ):
         evaluate_answer(ex, "anything")
 
 
 def test_evaluate_self_graded_invalid_quality(
-    definition_words,
+    sample_concepts,
 ):
-    ex = generate_self_graded(definition_words[0])
-    with pytest.raises(ValueError, match="quality must be 0-5"):
+    ex = generate_self_graded(sample_concepts[0])
+    with pytest.raises(
+        ValueError, match="quality must be 0-5",
+    ):
         evaluate_answer(ex, quality=6)
 
 
@@ -247,97 +263,83 @@ def test_evaluate_self_graded_invalid_quality(
 
 
 def test_evaluate_answer_strips_parenthetical():
-    word = Word(
+    concept = Concept(
         id=1,
-        language_from="es",
-        language_to="en",
-        word_from="ser",
-        word_to="to be (essentially or identified as)",
+        front="to be",
+        back="ser (essentially or identified as)",
     )
-    ex = generate_flashcard(word)
-    result = evaluate_answer(ex, "to be")
+    ex = generate_flashcard(concept)
+    result = evaluate_answer(ex, "ser")
     assert result.correct is True
 
 
 def test_evaluate_answer_strips_brackets():
-    word = Word(
+    concept = Concept(
         id=1,
-        language_from="es",
-        language_to="en",
-        word_from="haber",
-        word_to=(
+        front="have",
+        back=(
             "have; forms the perfect aspect "
             "[+masculine singular past participle]"
         ),
     )
-    ex = generate_flashcard(word)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "have")
     assert result.correct is True
 
 
 def test_evaluate_answer_semicolon_segment():
-    word = Word(
+    concept = Concept(
         id=1,
-        language_from="es",
-        language_to="en",
-        word_from="tener",
-        word_to="to have; to possess",
+        front="to have",
+        back="tener; poseer",
     )
-    ex = generate_flashcard(word)
-    result = evaluate_answer(ex, "to possess")
+    ex = generate_flashcard(concept)
+    result = evaluate_answer(ex, "poseer")
     assert result.correct is True
 
 
 def test_evaluate_answer_comma_segment():
-    word = Word(
+    concept = Concept(
         id=1,
-        language_from="es",
-        language_to="en",
-        word_from="decir",
-        word_to="to say, to tell",
+        front="to say",
+        back="decir, contar",
     )
-    ex = generate_flashcard(word)
-    assert evaluate_answer(ex, "to say").correct is True
-    assert evaluate_answer(ex, "to tell").correct is True
+    ex = generate_flashcard(concept)
     assert evaluate_answer(
-        ex, "to say, to tell"
+        ex, "decir",
+    ).correct is True
+    assert evaluate_answer(
+        ex, "contar",
+    ).correct is True
+    assert evaluate_answer(
+        ex, "decir, contar",
     ).correct is True
 
 
 def test_evaluate_answer_to_prefix():
-    word = Word(
-        id=1,
-        language_from="es",
-        language_to="en",
-        word_from="ser",
-        word_to="to be",
+    concept = Concept(
+        id=1, front="ser", back="to be",
     )
-    ex = generate_flashcard(word)
-    # "be" matches "to be"
-    assert evaluate_answer(ex, "be").correct is True
+    ex = generate_flashcard(concept)
+    assert evaluate_answer(
+        ex, "be",
+    ).correct is True
 
-    word2 = Word(
-        id=2,
-        language_from="es",
-        language_to="en",
-        word_from="tener",
-        word_to="have",
+    concept2 = Concept(
+        id=2, front="tener", back="have",
     )
-    ex2 = generate_flashcard(word2)
-    # "to have" matches "have"
-    assert evaluate_answer(ex2, "to have").correct is True
+    ex2 = generate_flashcard(concept2)
+    assert evaluate_answer(
+        ex2, "to have",
+    ).correct is True
 
 
 def test_evaluate_multiple_choice_by_number():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.MULTIPLE_CHOICE,
         options=["perro", "gato", "casa", "libro"],
     )
@@ -347,15 +349,11 @@ def test_evaluate_multiple_choice_by_number():
 
 
 def test_evaluate_multiple_choice_by_number_wrong():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.MULTIPLE_CHOICE,
         options=["perro", "gato", "casa", "libro"],
     )
@@ -365,15 +363,11 @@ def test_evaluate_multiple_choice_by_number_wrong():
 
 
 def test_evaluate_multiple_choice_out_of_range():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.MULTIPLE_CHOICE,
         options=["perro", "gato", "casa", "libro"],
     )
@@ -382,16 +376,12 @@ def test_evaluate_multiple_choice_out_of_range():
     assert result.given == "9"
 
 
-def test_evaluate_multiple_choice_by_text_still_works():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+def test_evaluate_multiple_choice_by_text():
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
     ex = Exercise(
-        word=word,
+        concept=concept,
         exercise_type=ExerciseType.MULTIPLE_CHOICE,
         options=["perro", "gato", "casa", "libro"],
     )
@@ -399,732 +389,68 @@ def test_evaluate_multiple_choice_by_text_still_works():
     assert result.correct is True
 
 
-# --- Gender Match Tests ---
-
-
-@pytest.fixture
-def masculine_word():
-    return Word(
-        id=10,
-        language_from="en",
-        language_to="es",
-        word_from="book",
-        word_to="libro",
-        gender="m",
-    )
-
-
-@pytest.fixture
-def feminine_word():
-    return Word(
-        id=11,
-        language_from="en",
-        language_to="es",
-        word_from="house",
-        word_to="casa",
-        gender="f",
-    )
-
-
-def test_generate_gender_match_masculine(masculine_word):
-    ex = generate_gender_match(masculine_word)
-    assert ex.exercise_type == ExerciseType.GENDER_MATCH
-    assert ex.expected_answer == "el"
-    assert ex.prompt == "___ libro"
-    assert ex.options == ["el", "la"]
-
-
-def test_generate_gender_match_feminine(feminine_word):
-    ex = generate_gender_match(feminine_word)
-    assert ex.exercise_type == ExerciseType.GENDER_MATCH
-    assert ex.expected_answer == "la"
-    assert ex.prompt == "___ casa"
-
-
-def test_generate_gender_match_no_gender_raises():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="speak",
-        word_to="hablar",
-    )
-    with pytest.raises(
-        ValueError, match="gender_match requires"
-    ):
-        generate_gender_match(word)
-
-
-def test_evaluate_gender_match_correct(feminine_word):
-    ex = generate_gender_match(feminine_word)
-    result = evaluate_answer(ex, "la")
-    assert result.correct is True
-    assert result.expected == "la"
-
-
-def test_evaluate_gender_match_incorrect(feminine_word):
-    ex = generate_gender_match(feminine_word)
-    result = evaluate_answer(ex, "el")
-    assert result.correct is False
-    assert result.expected == "la"
-
-
-def test_evaluate_gender_match_by_number(feminine_word):
-    ex = generate_gender_match(feminine_word)
-    # options are ["el", "la"], so "2" → "la"
-    result = evaluate_answer(ex, "2")
-    assert result.correct is True
-    assert result.given == "la"
-
-
 # --- Accent Tolerance Tests ---
 
 
 def test_evaluate_accent_tolerant():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="speak",
-        word_to="habló",
+    concept = Concept(
+        id=1, front="speak", back="habló",
     )
-    ex = generate_flashcard(word)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablo")
     assert result.correct is True
-
-
-# --- Pool-based Exercise Selection Tests ---
-
-
-def test_generate_exercise_includes_gender_match():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            gender=w[2],
-        )
-        for i, w in enumerate(
-            [
-                ("book", "libro", "m"),
-                ("house", "casa", "f"),
-                ("water", "agua", "f"),
-                ("cat", "gato", "m"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.GENDER_MATCH in types
-
-
-def test_generate_exercise_returns_valid_type_with_gender():
-    words = [
-        Word(
-            id=1,
-            language_from="en",
-            language_to="es",
-            word_from="book",
-            word_to="libro",
-            gender="m",
-        ),
-        Word(
-            id=2,
-            language_from="en",
-            language_to="es",
-            word_from="house",
-            word_to="casa",
-            gender="f",
-        ),
-    ]
-    ex = generate_exercise(words[0], words)
-    assert ex.exercise_type in (
-        ExerciseType.FLASHCARD,
-        ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.GENDER_MATCH,
-        ExerciseType.ADJECTIVE_AGREEMENT,
-        ExerciseType.CLOZE,
-        ExerciseType.TRANSLATION_CLOZE,
-        ExerciseType.SENTENCE_ORDER,
-    )
-
-
-# --- Conjugation Exercise Tests ---
-
-
-@pytest.fixture
-def verb_word():
-    return Word(
-        id=20,
-        language_from="en",
-        language_to="es",
-        word_from="to speak",
-        word_to="hablar",
-        conjugation_group="ar",
-    )
-
-
-def test_generate_conjugation(verb_word):
-    ex = generate_conjugation(verb_word)
-    assert ex.exercise_type == ExerciseType.CONJUGATION
-    assert "hablar" in ex.prompt
-    assert " — " in ex.prompt
-    assert ex.expected_answer != ""
-
-
-def test_generate_conjugation_no_group_raises():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="house",
-        word_to="casa",
-    )
-    with pytest.raises(
-        ValueError, match="conjugation requires"
-    ):
-        generate_conjugation(word)
-
-
-def test_evaluate_conjugation_correct(verb_word):
-    ex = generate_conjugation(verb_word)
-    result = evaluate_answer(ex, ex.expected_answer)
-    assert result.correct is True
-
-
-def test_evaluate_conjugation_incorrect(verb_word):
-    ex = generate_conjugation(verb_word)
-    result = evaluate_answer(ex, "wrong_answer")
-    assert result.correct is False
-
-
-def test_generate_exercise_includes_conjugation():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            conjugation_group=w[2],
-        )
-        for i, w in enumerate(
-            [
-                ("to speak", "hablar", "ar"),
-                ("to eat", "comer", "er"),
-                ("to live", "vivir", "ir"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.CONJUGATION in types
-
-
-# --- Cloze Exercise Tests ---
-
-
-def test_generate_cloze_exercise():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-        gender="m",
-    )
-    ex = generate_cloze_exercise(word)
-    assert ex.exercise_type == ExerciseType.CLOZE
-    assert "___" in ex.prompt
-    assert "(cat)" in ex.prompt
-    assert ex.expected_answer == "gato"
-
-
-def test_generate_cloze_exercise_verb():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="to speak",
-        word_to="hablar",
-        conjugation_group="ar",
-    )
-    ex = generate_cloze_exercise(word)
-    assert ex.exercise_type == ExerciseType.CLOZE
-    assert "___" in ex.prompt
-    assert "(to speak)" in ex.prompt
-    assert ex.expected_answer == "hablar"
-
-
-def test_evaluate_cloze_correct():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-        gender="m",
-    )
-    ex = generate_cloze_exercise(word)
-    result = evaluate_answer(ex, "gato")
-    assert result.correct is True
-
-
-def test_evaluate_cloze_incorrect():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
-        gender="m",
-    )
-    ex = generate_cloze_exercise(word)
-    result = evaluate_answer(ex, "perro")
-    assert result.correct is False
-
-
-def test_generate_exercise_includes_cloze():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            gender="m",
-        )
-        for i, w in enumerate(
-            [
-                ("cat", "gato"),
-                ("dog", "perro"),
-                ("house", "casa"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.CLOZE in types
-
-
-# --- Translation Cloze Exercise Tests ---
-
-
-def test_generate_translation_cloze():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="book",
-        word_to="libro",
-        gender="m",
-    )
-    ex = generate_translation_cloze(word)
-    assert ex.exercise_type == ExerciseType.TRANSLATION_CLOZE
-    assert "___" in ex.prompt
-    assert "(book)" in ex.prompt
-    assert ex.expected_answer == "libro"
-
-
-def test_generate_translation_cloze_verb():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="to speak",
-        word_to="hablar",
-        conjugation_group="ar",
-    )
-    ex = generate_translation_cloze(word)
-    assert ex.exercise_type == ExerciseType.TRANSLATION_CLOZE
-    assert "___" in ex.prompt
-    assert "(to speak)" in ex.prompt
-    assert ex.expected_answer == "hablar"
-
-
-def test_evaluate_translation_cloze_correct():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="book",
-        word_to="libro",
-        gender="m",
-    )
-    ex = generate_translation_cloze(word)
-    result = evaluate_answer(ex, "libro")
-    assert result.correct is True
-
-
-def test_evaluate_translation_cloze_incorrect():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="book",
-        word_to="libro",
-        gender="m",
-    )
-    ex = generate_translation_cloze(word)
-    result = evaluate_answer(ex, "casa")
-    assert result.correct is False
-
-
-def test_generate_exercise_includes_translation_cloze():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            gender="m",
-        )
-        for i, w in enumerate(
-            [
-                ("cat", "gato"),
-                ("dog", "perro"),
-                ("house", "casa"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.TRANSLATION_CLOZE in types
-
-
-# --- Adjective Agreement Tests ---
-
-
-def test_generate_adjective_agreement_masculine(
-    masculine_word,
-):
-    ex = generate_adjective_agreement(masculine_word)
-    assert (
-        ex.exercise_type
-        == ExerciseType.ADJECTIVE_AGREEMENT
-    )
-    assert "el libro ___" in ex.prompt
-    assert ex.expected_answer != ""
-    # Masculine adjective should end in -o
-    assert ex.expected_answer.endswith("o")
-
-
-def test_generate_adjective_agreement_feminine(
-    feminine_word,
-):
-    ex = generate_adjective_agreement(feminine_word)
-    assert (
-        ex.exercise_type
-        == ExerciseType.ADJECTIVE_AGREEMENT
-    )
-    assert "la casa ___" in ex.prompt
-    # Feminine adjective should end in -a
-    assert ex.expected_answer.endswith("a")
-
-
-def test_generate_adjective_agreement_no_gender_raises():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="speak",
-        word_to="hablar",
-    )
-    with pytest.raises(
-        ValueError, match="adjective_agreement requires"
-    ):
-        generate_adjective_agreement(word)
-
-
-def test_evaluate_adjective_agreement_correct(
-    masculine_word,
-):
-    ex = generate_adjective_agreement(masculine_word)
-    result = evaluate_answer(ex, ex.expected_answer)
-    assert result.correct is True
-
-
-def test_evaluate_adjective_agreement_incorrect(
-    feminine_word,
-):
-    ex = generate_adjective_agreement(feminine_word)
-    # Give the masculine form instead of feminine
-    result = evaluate_answer(ex, "blanco")
-    assert result.correct is False
-
-
-def test_generate_exercise_includes_adjective_agreement():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            gender=w[2],
-        )
-        for i, w in enumerate(
-            [
-                ("book", "libro", "m"),
-                ("house", "casa", "f"),
-                ("water", "agua", "f"),
-                ("cat", "gato", "m"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.ADJECTIVE_AGREEMENT in types
-
-
-# --- Sentence Order Tests ---
-
-
-def test_generate_sentence_order(masculine_word):
-    ex = generate_sentence_order(masculine_word)
-    assert ex.exercise_type == ExerciseType.SENTENCE_ORDER
-    assert " / " in ex.prompt
-    assert ex.expected_answer != ""
-    assert "libro" in ex.expected_answer
-
-
-def test_generate_sentence_order_verb():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="to speak",
-        word_to="hablar",
-        conjugation_group="ar",
-    )
-    ex = generate_sentence_order(word)
-    assert ex.exercise_type == ExerciseType.SENTENCE_ORDER
-    assert "hablar" in ex.expected_answer
-
-
-def test_generate_sentence_order_scrambled(masculine_word):
-    ex = generate_sentence_order(masculine_word)
-    prompt_words = sorted(ex.prompt.split(" / "))
-    answer_words = sorted(ex.expected_answer.split())
-    assert prompt_words == answer_words
-
-
-def test_evaluate_sentence_order_correct(masculine_word):
-    ex = generate_sentence_order(masculine_word)
-    result = evaluate_answer(ex, ex.expected_answer)
-    assert result.correct is True
-
-
-def test_evaluate_sentence_order_incorrect(
-    masculine_word,
-):
-    ex = generate_sentence_order(masculine_word)
-    result = evaluate_answer(ex, "wrong order words")
-    assert result.correct is False
-
-
-def test_generate_exercise_includes_sentence_order():
-    words = [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
-            gender=w[2],
-        )
-        for i, w in enumerate(
-            [
-                ("book", "libro", "m"),
-                ("house", "casa", "f"),
-                ("water", "agua", "f"),
-                ("cat", "gato", "m"),
-            ],
-            start=1,
-        )
-    ]
-    types = set()
-    for _ in range(200):
-        ex = generate_exercise(words[0], words)
-        types.add(ex.exercise_type)
-    assert ExerciseType.SENTENCE_ORDER in types
-
-
-# --- extend_adjectives Tests ---
-
-
-def test_extend_adjectives():
-    before = len(_ADJECTIVES)
-    count = extend_adjectives([
-        ["grande", "grande"],
-        ["azul", "azul"],
-    ])
-    assert count == 2
-    assert len(_ADJECTIVES) == before + 2
-    assert ("grande", "grande") in _ADJECTIVES
-    # Clean up
-    _ADJECTIVES.remove(("grande", "grande"))
-    _ADJECTIVES.remove(("azul", "azul"))
-
-
-def test_extend_adjectives_invalid_pair():
-    with pytest.raises(
-        ValueError, match="must have 2 elements"
-    ):
-        extend_adjectives([["only_one"]])
-
-
-# --- load_exercise_config Tests ---
-
-
-def test_load_exercise_config_templates_and_adjectives(
-    tmp_path,
-):
-    data = {
-        "templates": {
-            "verb": ["Deberías {word} más"],
-        },
-        "adjectives": [
-            ["oscuro", "oscura"],
-        ],
-    }
-    path = tmp_path / "config.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
-    before_adj = len(_ADJECTIVES)
-    result = load_exercise_config(path)
-    assert result["templates"] == 1
-    assert result["adjectives"] == 1
-    assert len(_ADJECTIVES) == before_adj + 1
-    # Clean up
-    _ADJECTIVES.remove(("oscuro", "oscura"))
-    from rembrandt.sentences import _VERB_TEMPLATES
-    _VERB_TEMPLATES.remove("Deberías {word} más")
-
-
-def test_load_exercise_config_templates_only(tmp_path):
-    data = {
-        "templates": {
-            "adjective": ["Es algo {word}"],
-        },
-    }
-    path = tmp_path / "config.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
-    result = load_exercise_config(path)
-    assert result["templates"] == 1
-    assert result["adjectives"] == 0
-    # Clean up
-    from rembrandt.sentences import _ADJECTIVE_TEMPLATES
-    _ADJECTIVE_TEMPLATES.remove("Es algo {word}")
-
-
-def test_load_exercise_config_adjectives_only(tmp_path):
-    data = {
-        "adjectives": [["claro", "clara"]],
-    }
-    path = tmp_path / "config.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
-    before = len(_ADJECTIVES)
-    result = load_exercise_config(path)
-    assert result["templates"] == 0
-    assert result["adjectives"] == 1
-    assert len(_ADJECTIVES) == before + 1
-    # Clean up
-    _ADJECTIVES.remove(("claro", "clara"))
-
-
-def test_load_exercise_config_file_not_found():
-    with pytest.raises(FileNotFoundError):
-        load_exercise_config("/nonexistent/config.json")
 
 
 # --- Fuzzy Answer Matching Tests ---
 
 
 def test_evaluate_answer_fuzzy_single_typo():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
-    ex = generate_flashcard(word)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gat")
     assert result.correct is True
     assert result.near_miss is True
 
 
 def test_evaluate_answer_fuzzy_long_word():
-    word = Word(
+    concept = Concept(
         id=1,
-        language_from="en",
-        language_to="es",
-        word_from="to understand",
-        word_to="comprender",
+        front="to understand",
+        back="comprender",
     )
-    ex = generate_flashcard(word)
-    # Two typos in a long word — still accepted
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "comprendr")
     assert result.correct is True
     assert result.near_miss is True
 
 
 def test_evaluate_answer_fuzzy_too_far():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
-    ex = generate_flashcard(word)
-    # Distance 2 on a short word — rejected
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "ga")
     assert result.correct is False
     assert result.near_miss is False
 
 
 def test_evaluate_answer_exact_not_near_miss():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="cat",
-        word_to="gato",
+    concept = Concept(
+        id=1, front="cat", back="gato",
     )
-    ex = generate_flashcard(word)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gato")
     assert result.correct is True
     assert result.near_miss is False
 
 
 def test_evaluate_answer_fuzzy_swapped_letters():
-    word = Word(
-        id=1,
-        language_from="en",
-        language_to="es",
-        word_from="to speak",
-        word_to="hablar",
+    concept = Concept(
+        id=1, front="to speak", back="hablar",
     )
-    ex = generate_flashcard(word)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablra")
     assert result.correct is True
     assert result.near_miss is True

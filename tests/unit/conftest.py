@@ -4,29 +4,72 @@ import pytest
 import pytest_asyncio
 
 from rembrandt.db import Database
-from rembrandt.models import Word
+from rembrandt.models import Concept
 
 
 @pytest_asyncio.fixture
 async def db(tmp_path):
-    """Empty database for tests that don't need pre-loaded words."""
+    """Empty database for tests."""
     database = await Database.connect(tmp_path / "test.db")
     yield database
     await database.close()
 
 
 @pytest.fixture
-def sample_words():
-    """English-Spanish word pairs for exercise tests."""
+def sample_concepts():
+    """Data-science concept pairs for exercise tests."""
     return [
-        Word(
+        Concept(
             id=i,
-            language_from="en",
-            language_to="es",
-            word_from=w[0],
-            word_to=w[1],
+            front=c[0],
+            back=c[1],
         )
-        for i, w in enumerate(
+        for i, c in enumerate(
+            [
+                (
+                    "What is a p-value?",
+                    "Probability of observing data at least"
+                    " as extreme as the sample,"
+                    " given H0 is true",
+                ),
+                (
+                    "What is overfitting?",
+                    "Model learns noise in training data,"
+                    " performs poorly on unseen data",
+                ),
+                (
+                    "What is gradient descent?",
+                    "Optimization algorithm that iteratively"
+                    " adjusts parameters to minimize"
+                    " a loss function",
+                ),
+                (
+                    "What is cross-validation?",
+                    "Technique to evaluate model performance"
+                    " by partitioning data into train"
+                    " and test sets",
+                ),
+                (
+                    "What is regularization?",
+                    "Adding a penalty term to the loss"
+                    " function to prevent overfitting",
+                ),
+            ],
+            start=1,
+        )
+    ]
+
+
+@pytest.fixture
+def short_concepts():
+    """Short front/back pairs for fuzzy matching tests."""
+    return [
+        Concept(
+            id=i,
+            front=c[0],
+            back=c[1],
+        )
+        for i, c in enumerate(
             [
                 ("cat", "gato"),
                 ("dog", "perro"),
@@ -39,104 +82,49 @@ def sample_words():
     ]
 
 
-@pytest.fixture
-def definition_words():
-    """English-English definition pairs for exercise tests."""
-    return [
-        Word(
-            id=i,
-            language_from="en",
-            language_to="en",
-            word_from=w[0],
-            word_to=w[1],
-        )
-        for i, w in enumerate(
-            [
-                (
-                    "ephemeral",
-                    "lasting for a very short time",
-                ),
-                ("ubiquitous", "present everywhere"),
-                (
-                    "candid",
-                    "truthful and straightforward",
-                ),
-                (
-                    "pragmatic",
-                    "dealing with things practically",
-                ),
-                (
-                    "verbose",
-                    "using more words than needed",
-                ),
-            ],
-            start=1,
-        )
-    ]
-
-
 @pytest_asyncio.fixture
-async def definition_db(tmp_path):
-    """Database pre-loaded with EN-EN definition pairs."""
-    database = await Database.connect(tmp_path / "def.db")
-    await database.register_user("u1", "pass")
-    await database.add_words([
-        Word(
-            language_from="en", language_to="en",
-            word_from="ephemeral",
-            word_to="lasting for a very short time",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="ubiquitous",
-            word_to="present everywhere",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="candid",
-            word_to="truthful and straightforward",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="pragmatic",
-            word_to="dealing with things practically",
-        ),
-        Word(
-            language_from="en", language_to="en",
-            word_from="verbose",
-            word_to="using more words than needed",
-        ),
-    ])
-    yield database
-    await database.close()
-
-
-@pytest_asyncio.fixture
-async def db_with_words(tmp_path):
-    """Database pre-loaded with EN-ES word pairs and a user."""
-    database = await Database.connect(tmp_path / "test.db")
+async def db_with_concepts(tmp_path):
+    """Database pre-loaded with concepts and users."""
+    database = await Database.connect(
+        tmp_path / "test.db",
+    )
     await database.register_user("u1", "pass")
     await database.register_user("u2", "pass")
-    await database.add_words([
-        Word(
-            language_from="en", language_to="es",
-            word_from="cat", word_to="gato",
+    await database.add_concepts([
+        Concept(
+            front="What is a p-value?",
+            back=(
+                "Probability of observing data"
+                " as extreme as sample given H0"
+            ),
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="dog", word_to="perro",
+        Concept(
+            front="What is overfitting?",
+            back=(
+                "Model learns noise,"
+                " poor generalization"
+            ),
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="house", word_to="casa",
+        Concept(
+            front="What is gradient descent?",
+            back=(
+                "Iterative optimization"
+                " to minimize loss"
+            ),
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="book", word_to="libro",
+        Concept(
+            front="What is cross-validation?",
+            back=(
+                "Evaluate model"
+                " by partitioning data"
+            ),
         ),
-        Word(
-            language_from="en", language_to="es",
-            word_from="water", word_to="agua",
+        Concept(
+            front="What is regularization?",
+            back=(
+                "Penalty term"
+                " to prevent overfitting"
+            ),
         ),
     ])
     yield database

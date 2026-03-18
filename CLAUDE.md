@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Rembrandt is a Python library for mental exercises with the help of LLMs.
+Rembrandt is a general-purpose spaced-repetition library for any subject (data science, math, history, vocabulary, etc.). The core unit is a **Concept** (front/back/context/tags) grouped into **Topics**.
 
 ## Common Commands
 

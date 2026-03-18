@@ -22,11 +22,11 @@ reviews. It was created by Piotr Wozniak in 1987 as part of the
 SuperMemo project and remains one of the most widely used
 spaced-repetition algorithms (Anki's scheduler is based on it).
 
-SM-2 tracks three variables for every user-word pair:
+SM-2 tracks three variables for every user-concept pair:
 
 | Variable            | What it means                          | Start |
 |---------------------|----------------------------------------|-------|
-| **Easiness Factor** | How easy this word is for you          |  2.5  |
+| **Easiness Factor** | How easy this concept is for you       |  2.5  |
 | **Interval**        | Days until the next review             |  0    |
 | **Repetitions**     | Consecutive successful recalls (q >= 3)|  0    |
 
@@ -41,8 +41,8 @@ grow. A higher EF means the algorithm trusts you with longer gaps.
 - A perfect recall (quality 5) raises it by 0.1.
 - A wrong answer (quality 1) drops it by 0.54.
 
-Think of it as a "confidence score" — the better you know a word,
-the higher it climbs.
+Think of it as a "confidence score" — the better you know a
+concept, the higher it climbs.
 
 
 ### Quality scores (0–5)
@@ -60,7 +60,7 @@ After each review you rate how well you remembered. SM-2 uses a
 |   5   | Perfect     | Instant, effortless recall               |
 
 The key threshold is **3**: scores of 3+ count as a pass
-(the interval grows), while 0–2 count as a fail (the word
+(the interval grows), while 0-2 count as a fail (the concept
 resets to square one).
 
 
@@ -86,9 +86,9 @@ Repetitions increases by 1.
 - Interval resets to **1 day**.
 - Repetitions resets to **0**.
 
-You start over, but your EF carries your history — a word you
-once knew well keeps a higher EF than one you always struggled
-with.
+You start over, but your EF carries your history — a concept
+you once knew well keeps a higher EF than one you always
+struggled with.
 
 ### Step 2 — Update the Easiness Factor
 
@@ -121,7 +121,6 @@ The corresponding code lives in `src/rembrandt/spaced_repetition.py`
 
 ## Worked example
 
-This mirrors the output of `examples/04_spaced_repetition_demo.py`.
 Starting state: **EF = 2.50, interval = 0, reps = 0**.
 
 | # | Quality       |   EF | Interval | Reps | What happened                   |
@@ -135,9 +134,10 @@ Starting state: **EF = 2.50, interval = 0, reps = 0**.
 | 7 | 4 (good)      | 2.58 |      15d |    3 | 6 × 2.58 = 15.48 → 15         |
 | 8 | 5 (perfect)   | 2.68 |      39d |    4 | 15 × 2.58 = 38.7 → 39         |
 
-After review 3, the word is comfortably spaced at 16 days. Then
-a single failure (review 4) resets the interval back to 1 day,
-but the EF stays at 2.38 — not as low as a word you've never known.
+After review 3, the concept is comfortably spaced at 16 days.
+Then a single failure (review 4) resets the interval back to
+1 day, but the EF stays at 2.38 — not as low as a concept
+you've never known.
 By review 8, consistent perfect scores have pushed the interval
 all the way to 39 days.
 
@@ -147,10 +147,11 @@ all the way to 39 days.
 The `Session` class (in `src/rembrandt/session.py`) provides a
 simple interface on top of SM-2:
 
-1. **`Session.next_exercise()`** calls `select_words()` which
-   picks words that are **due for review** first (their
-   `next_review` date is in the past), then fills remaining
-   slots with **new words** the user hasn't seen yet.
+1. **`Session.next_exercise()`** calls `select_concepts()`
+   which picks concepts that are **due for review** first
+   (their `next_review` date is in the past), then fills
+   remaining slots with **new concepts** the user hasn't
+   seen yet.
 
 2. **`Session.answer(text)`** evaluates the answer and maps the
    result to a quality score:
@@ -163,12 +164,7 @@ simple interface on top of SM-2:
 This binary mapping (5 or 1) is intentional — in an automated
 exercise session there's no way to measure *how hard* the recall
 was, so the algorithm uses the two extremes. Over many reviews,
-the EF still converges to the right value for each word.
+the EF still converges to the right value for each concept.
 
-For the full quality scale (0–5), you can call the `review()`
-function directly, as shown in `examples/04_spaced_repetition_demo.py`.
-
----
-
-See also: [Exercise Types](exercise-types.md) for how Rembrandt
-generates flashcard and multiple-choice exercises.
+For the full quality scale (0-5), you can call the `review()`
+function directly.

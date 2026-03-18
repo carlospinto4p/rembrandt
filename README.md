@@ -1,7 +1,11 @@
 
 # Rembrandt
 
-A library to do some mental exercises with the help of LLMs.
+A general-purpose spaced-repetition library for any subject.
+
+Study data science, math, history, vocabulary, or anything
+else — Rembrandt handles scheduling, exercise generation,
+and progress tracking.
 
 ## Installation
 
@@ -13,567 +17,307 @@ pip install rembrandt
 
 ```python
 import asyncio
-from rembrandt import Database, Session, Word
+from rembrandt import Database, Session, Concept
 
 async def main():
-    # Set up database and add vocabulary
-    async with await Database.connect("vocab.db") as db:
-        await db.add_words([
-            Word(language_from="en", language_to="es",
-                 word_from="cat", word_to="gato"),
-            Word(language_from="en", language_to="es",
-                 word_from="dog", word_to="perro"),
-            Word(language_from="en", language_to="es",
-                 word_from="house", word_to="casa"),
-            Word(language_from="en", language_to="es",
-                 word_from="book", word_to="libro"),
+    # Set up database and add concepts
+    async with await Database.connect("study.db") as db:
+        await db.register_user("default", "default")
+        await db.add_concepts([
+            Concept(
+                front="What is a p-value?",
+                back="Probability of observing data as extreme as the sample, given H0",
+            ),
+            Concept(
+                front="What is overfitting?",
+                back="Model learns noise, poor generalization",
+            ),
+            Concept(
+                front="What is gradient descent?",
+                back="Iterative optimization to minimize loss",
+            ),
         ])
 
-        # Register a user and start a session
-        user = await db.register_user("user1", "pass")
-        session = Session(db, user_id=user.id,
-                          language_from="en",
-                          language_to="es")
-
-        # Get an exercise
-        exercise = await session.next_exercise()
-        print(f"Translate: {exercise.word.word_from}")
-        print(f"Type: {exercise.exercise_type}")
-
-        if exercise.options:
-            print(f"Options: {exercise.options}")
-
-        # Submit an answer
-        result = await session.answer("gato")
-        print(f"Correct: {result.correct}")
-        print(f"Expected: {result.expected}")
-
-        # Typos are accepted with a warning
-        if result.near_miss:
-            print(f"Close! The exact answer was: "
-                  f"{result.expected}")
+        # Start a session and study
+        session = Session(db, user_id=1)
+        ex = await session.next_exercise()
+        if ex:
+            print(f"Q: {ex.concept.front}")
+            result = await session.answer(ex.concept.back)
+            print(f"Correct: {result.correct}")
 
 asyncio.run(main())
 ```
 
-The `Session` class handles spaced-repetition scheduling (SM-2 algorithm)
-automatically — words you get wrong come back sooner, words you know well
-are spaced further apart.
+## Quick Session
 
-### Session Statistics
+The fastest way to start studying:
 
-Call `summary()` at any time to get session stats:
+```python
+import asyncio
+from rembrandt import quick_session
+
+CONCEPTS = [
+    {"front": "Area of a circle", "back": "πr²"},
+    {"front": "Pythagorean theorem", "back": "a² + b² = c²"},
+    {"front": "Derivative of sin(x)", "back": "cos(x)"},
+]
+
+async def main():
+    session = await quick_session(
+        CONCEPTS, db_path="math.db",
+    )
+    ex = await session.next_exercise()
+    if ex:
+        print(f"Q: {ex.concept.front}")
+        result = await session.answer(ex.concept.back)
+        print(f"Correct: {result.correct}")
+    await session.db.close()
+
+asyncio.run(main())
+```
+
+Load from a JSON file:
+
+```python
+session = await quick_session("concepts.json")
+```
+
+Custom keys in JSON:
+
+```python
+session = await quick_session(
+    "vocab.json",
+    front_key="term",
+    back_key="definition",
+)
+```
+
+## Session Statistics
 
 ```python
 stats = session.summary()
-print(f"Score: {stats.correct}/{stats.total}"
-      f" ({stats.accuracy_pct}%)")
-print(f"Streak: {stats.streak}"
-      f" (best: {stats.best_streak})")
+print(f"Score: {stats.correct}/{stats.total}")
+print(f"Accuracy: {stats.accuracy_pct}%")
+print(f"Streak: {stats.streak}")
+print(f"Best streak: {stats.best_streak}")
 ```
 
-### Hints
+## Hints
 
-Request a hint before answering — each call progressively reveals one more
-letter. When the word has gender or conjugation data, an example sentence
-is included:
+Progressive letter reveal:
 
 ```python
-exercise = await session.next_exercise()
-h = session.hint()   # "g___ (4 letters)"
-h = session.hint()   # "ga__ (4 letters)"
-h = session.hint()   # "gat_ (4 letters)"
-
-if h.example_sentence:
-    print(h.example_sentence)  # "El ___ es muy importante"
+h = session.hint()    # "g___"
+h = session.hint()    # "ga__"
+h = session.hint()    # "gat_"
+print(h.pattern, h.context)
 ```
-
-### Quick Session
-
-For even faster setup, use `quick_session()` to handle database creation,
-word loading, and session setup in a single call:
-
-```python
-from rembrandt import quick_session
-
-session = await quick_session(
-    "vocab.json",              # JSON file with word/definition dicts
-    language_from="es",
-    language_to="en",
-    limit=500,
-)
-
-exercise = await session.next_exercise()
-```
-
-Words are loaded only on first run — subsequent calls reuse the existing
-database and spaced-repetition progress. You can also pass an inline list
-of dicts instead of a file path:
-
-```python
-session = await quick_session(
-    [{"word": "cat", "definition": "gato"}, ...],
-    db_path="vocab.db",
-    language_from="en",
-    language_to="es",
-)
-```
-
-## Definition Learning
-
-Rembrandt also supports monolingual definition-based learning — learn
-words through their definitions within the same language:
-
-```python
-from rembrandt import Database, Session, Word
-
-db = await Database.connect("vocab.db")
-await db.add_words([
-    Word(language_from="en", language_to="en",
-         word_from="ephemeral",
-         word_to="lasting for a very short time"),
-    Word(language_from="en", language_to="en",
-         word_from="ubiquitous",
-         word_to="present or found everywhere"),
-    Word(language_from="en", language_to="en",
-         word_from="candid",
-         word_to="truthful and straightforward"),
-])
-
-user = await db.register_user("user1", "pass")
-session = Session(db, user_id=user.id,
-                  language_from="en",
-                  language_to="en")
-exercise = await session.next_exercise()
-```
-
-When both languages are the same, Rembrandt automatically switches to
-definition mode with exercise types suited for learning definitions:
-multiple choice, reverse flashcard (definition shown, type the word),
-and self-graded (recall and rate yourself 0-5).
 
 ## Session Modes
 
-Control which words appear in a session using `SessionMode`:
-
 ```python
-from rembrandt import Database, Session, SessionMode
+from rembrandt import SessionMode
 
-async with await Database.connect("vocab.db") as db:
-    user = await db.register_user("user1", "pass")
+# Only new concepts
+session = Session(db, user_id=1, mode=SessionMode.LEARN_NEW)
 
-    # Only new (unreviewed) words
-    s = Session(db, user.id, "en", "es",
-                mode=SessionMode.LEARN_NEW)
+# Only due reviews
+session = Session(db, user_id=1, mode=SessionMode.REVIEW_DUE)
 
-    # Only words due for review
-    s = Session(db, user.id, "en", "es",
-                mode=SessionMode.REVIEW_DUE)
-
-    # Due first, then new (default)
-    s = Session(db, user.id, "en", "es",
-                mode=SessionMode.MIXED)
-```
-
-You can also restrict a session to a lesson's words:
-
-```python
-lesson = (await db.get_lessons("en", "es", cefr="A1"))[0]
-s = Session(db, user.id, "en", "es",
-            word_ids=lesson.word_ids)
+# Mixed (default): due first, then new
+session = Session(db, user_id=1, mode=SessionMode.MIXED)
 ```
 
 ## Session Persistence
 
-Save and restore sessions across process restarts (useful for bots):
+Save and restore sessions (e.g. for a Telegram bot):
 
 ```python
-# Save session state to the database
-await session.save()
-
-# Later, restore it
-session = await Session.restore(db, user_id=user.id)
-if session is not None:
-    exercise = session._current_exercise  # still there
-    stats = session.summary()             # counters preserved
-
-# Use a key to store multiple sessions per user
+# Save
 await session.save(key="chat_123")
-session = await Session.restore(
-    db, user.id, key="chat_123",
-)
 
-# Delete a snapshot when no longer needed
-await db.delete_session_snapshot(user.id, key="chat_123")
+# Restore
+session = await Session.restore(db, user_id=1, key="chat_123")
 ```
-
-All in-memory state is preserved: current exercise, hint count, streak,
-buried words, and daily limit counters.
 
 ## Conversation State
 
-Track where users are in a multi-step bot interaction:
+Track multi-step bot interactions:
 
 ```python
 from rembrandt import ConversationStage, ConversationState
 
-# Save the user's current stage
 state = ConversationState(
-    user_id=user.id,
-    key="chat_123",
-    stage=ConversationStage.AWAITING_ANSWER,
-    data={"lesson_id": 5, "page": 2},
+    user_id=1, key="chat_123",
+    stage=ConversationStage.CHOOSING_TOPIC,
+    data={"page": 1},
 )
 await db.save_conversation_state(state)
-
-# Later, retrieve it to decide what to do
-state = await db.get_conversation_state(
-    user.id, key="chat_123",
-)
-if state and state.stage == ConversationStage.AWAITING_ANSWER:
-    # process the user's answer...
-    pass
-
-# Clean up when done
-await db.delete_conversation_state(
-    user.id, key="chat_123",
-)
 ```
 
-Available stages: `IDLE`, `CHOOSING_LESSON`, `EXERCISING`,
-`AWAITING_ANSWER`, `AWAITING_SELF_GRADE`, `VIEWING_STATS`.
+## Learning Steps (Anki-style)
 
-## Learning Steps
-
-By default, new cards go through short-interval learning steps before
-entering the SM-2 review queue, and forgotten review cards go through
-relearning steps before returning. This follows the Anki-style approach
-for better retention:
+Cards progress through states:
+`NEW → LEARNING → REVIEW ↔ RELEARNING`
 
 ```python
-from rembrandt import ReviewConfig, Session
+from rembrandt import ReviewConfig
 
-# Default: learning_steps=[1, 10], relearning_steps=[10]
-session = Session(db, user.id, "en", "es")
-
-# Custom configuration
 config = ReviewConfig(
-    learning_steps=[1, 5, 15],     # minutes
-    graduating_interval=2,          # days after graduation
-    relearning_steps=[5, 20],       # minutes
-    lapse_new_interval_factor=0.7,  # 70% of old interval
-    lapse_min_interval=1,           # minimum 1 day
-    leech_threshold=8,              # suspend after 8 lapses (0=off)
-    max_new_cards=20,               # new cards per session (0=off)
-    max_review_cards=100,           # review cards per session (0=off)
+    learning_steps=[1, 10],      # minutes
+    graduating_interval=1,        # days
+    relearning_steps=[10],        # minutes
+    leech_threshold=8,            # suspends after 8 lapses
+    max_new_cards=20,
+    max_review_cards=100,
 )
-session = Session(db, user.id, "en", "es",
-                  review_config=config)
+session = Session(db, user_id=1, review_config=config)
 ```
-
-Cards progress through states: `NEW` -> `LEARNING` -> `REVIEW`.
-When a review card is forgotten it enters `RELEARNING` before returning
-to `REVIEW` with a reduced interval. Cards that lapse too many times
-(default 8) are flagged as leeches and moved to `SUSPENDED`, where they
-are excluded from review until manually unsuspended.
 
 ## FSRS Algorithm
 
-Rembrandt supports the [FSRS-5](https://github.com/open-spaced-repetition/fsrs4anki)
-algorithm as a modern alternative to SM-2. FSRS uses a power-law forgetting
-curve with 19 optimised parameters for more accurate scheduling:
+Use FSRS-5 instead of SM-2:
 
 ```python
-from rembrandt import Database, FSRSConfig, Session
+from rembrandt import FSRSConfig
 
-async with await Database.connect("vocab.db") as db:
-    user = await db.register_user("user1", "pass")
-
-    # Use FSRS instead of SM-2
-    session = Session(
-        db, user.id, "en", "es",
-        fsrs_config=FSRSConfig(),
-    )
-
-    exercise = await session.next_exercise()
-    result = await session.answer("gato")
-
-    # Custom FSRS parameters
-    config = FSRSConfig(
-        desired_retention=0.85,       # target 85% recall
-        max_interval=180,             # cap at 180 days
-        learning_steps=[1, 10, 30],   # minutes
-        relearning_steps=[5, 20],     # minutes
-    )
-    session = Session(
-        db, user.id, "en", "es",
-        fsrs_config=config,
-    )
-```
-
-Cards track `stability` (expected days at 90% recall) and `difficulty`
-(1-10 scale). The algorithm handles the same state machine as SM-2:
-`NEW` → `LEARNING` → `REVIEW`, with `RELEARNING` on lapses.
-
-## Lessons
-
-Rembrandt supports structured lessons — named sets of words grouped by
-CEFR level or topic. Pre-built Spanish lessons are included:
-
-```python
-from rembrandt import Database, Lesson, load_lessons
-
-async with await Database.connect("spanish.db") as db:
-    # Load vocabulary first (e.g. via quick_session or add_words)
-    # Then load pre-built lessons
-    lessons = await load_lessons(
-        "data/spanish_lessons.json",
-        "data/spanish_top10000.json",
-        db,
-        language_from="en",
-        language_to="es",
-    )
-
-    # Browse lessons by CEFR level
-    a1 = await db.get_lessons("en", "es", cefr="A1")
-    for lesson in a1:
-        print(f"{lesson.title}: {lesson.word_count} words")
-
-    # Filter by topic
-    food = await db.get_lessons("en", "es", tag="food")
-```
-
-The `data/spanish_lessons.json` file contains 467 pre-built lessons:
-400 frequency-ordered CEFR chunk lessons (~25 words each) and 67 topic
-lessons.
-
-### Lesson Progress
-
-Track how far a user has progressed in a lesson:
-
-```python
-from rembrandt import lesson_progress
-
-lp = await lesson_progress(db, user.id, lesson)
-print(f"Studied: {lp.words_studied}/{lp.words_total}"
-      f" ({lp.completion_pct}%)")
-print(f"Mastered: {lp.words_mastered}/{lp.words_total}"
-      f" ({lp.mastery_pct}%)")
-```
-
-A word is "studied" once it has any review history, and "mastered"
-when it is in `REVIEW` state with 3+ consecutive correct recalls.
-
-## Weak Word Detection
-
-Identify words the user consistently gets wrong and prioritize them in
-review sessions:
-
-```python
-# Find weak words (>= 50% error rate, >= 3 attempts)
-weak = await db.weak_words(user.id, "en", "es")
-for ww in weak:
-    print(f"{ww.word.word_from}: {ww.errors}/{ww.attempts}"
-          f" ({ww.error_rate:.0%} error rate)")
-
-# Prioritize weak words in a session
-from rembrandt.spaced_repetition import select_words
-
-words = await select_words(
-    db, user.id, "en", "es",
-    prioritize_weak=True,
+session = Session(
+    db, user_id=1,
+    fsrs_config=FSRSConfig(desired_retention=0.9),
 )
+```
+
+## Topics
+
+Group concepts into topics:
+
+```python
+from rembrandt import Topic
+
+topic = await db.add_topic(Topic(
+    title="Linear Algebra Basics",
+    tags=["math", "beginner"],
+    concept_count=3,
+    concept_ids=[1, 2, 3],
+))
+
+# Filter by tag
+topics = await db.get_topics(tag="math")
+```
+
+## Topic Progress
+
+```python
+from rembrandt import topic_progress
+
+progress = await topic_progress(db, user_id=1, topic=topic)
+print(f"Studied: {progress.concepts_studied}/{progress.concepts_total}")
+print(f"Mastered: {progress.concepts_mastered}")
+print(f"Completion: {progress.completion_pct}%")
+print(f"Mastery: {progress.mastery_pct}%")
+```
+
+## Filter by Tags
+
+```python
+# Concepts with a specific tag
+concepts = await db.get_concepts(tag="math")
+
+# Session filtered by tag
+session = Session(db, user_id=1, tags=["math"])
+
+# Session restricted to specific concept ids
+session = Session(
+    db, user_id=1, concept_ids=[1, 2, 3],
+)
+```
+
+## Weak Concepts
+
+```python
+weak = await db.weak_concepts(
+    user_id=1,
+    tag="math",          # optional filter
+    threshold=0.5,       # 50%+ error rate
+    min_attempts=3,
+)
+for wc in weak:
+    print(f"{wc.concept.front}: {wc.error_rate:.0%} errors")
 ```
 
 ## Historical Stats
 
-Every call to `session.answer()` automatically logs the result. Query
-the history for trends and daily summaries:
-
 ```python
-# Recent answer history
-history = await db.get_answer_history(user.id, limit=50)
-for h in history:
-    status = "correct" if h.correct else "wrong"
-    print(f"Word {h.word_id}: {status} (q={h.quality})")
+# Daily stats
+stats = await db.daily_stats(user_id=1, days=30)
+for day in stats:
+    print(f"{day.date}: {day.correct}/{day.answers}")
 
-# Daily statistics (last 30 days)
-for day in await db.daily_stats(user.id, days=30):
-    print(f"{day.date}: {day.correct}/{day.answers}"
-          f" ({day.accuracy_pct}%)")
-```
-
-### Retention & Forecast
-
-```python
-# Overall retention rate (last 30 days)
-rate = await db.retention_rate(user.id, days=30)
+# Retention rate
+rate = await db.retention_rate(user_id=1, days=30)
 print(f"Retention: {rate}%")
 
-# Upcoming review workload (next 7 days)
-for day in await db.forecast(user.id, days=7):
-    print(f"{day.date}: {day.due_count} cards due")
+# Review forecast
+forecast = await db.forecast(user_id=1, days=7)
+for day in forecast:
+    print(f"{day.date}: {day.due_count} due")
 ```
 
 ## CSV/TSV Import
 
-Bulk-load vocabulary from spreadsheets:
-
 ```python
-from rembrandt import Database, import_words_csv
+from rembrandt import import_concepts_csv
 
-db = await Database.connect("vocab.db")
-words = await import_words_csv(
-    db, "my_words.csv",
-    language_from="en", language_to="es",
-)
-print(f"Imported {len(words)} words")
-
-# TSV files are auto-detected; custom column names supported
-words = await import_words_csv(
-    db, "words.tsv",
-    language_from="en", language_to="es",
-    word_from_col="english",
-    word_to_col="spanish",
+concepts = await import_concepts_csv(
+    db, "flashcards.csv",
+    front_col="question",
+    back_col="answer",
 )
 ```
 
 ## Progress Export/Import
 
-Export a user's spaced-repetition progress as JSON-serializable dicts,
-and import them into another database:
-
 ```python
 # Export
-records = await db.export_progress(user.id)
+records = await db.export_progress(user_id=1)
 
-# Save to file
-import json
-with open("progress.json", "w") as f:
-    json.dump(records, f)
-
-# Import into another database
-with open("progress.json") as f:
-    records = json.load(f)
+# Import
 count = await db.import_progress(records)
-print(f"Imported {count} records")
 ```
-
-## Custom Exercise Config
-
-Extend the built-in cloze templates and adjective bank from a single
-JSON config file:
-
-```python
-from rembrandt import load_exercise_config
-
-result = load_exercise_config("my_config.json")
-print(f"Added {result['templates']} templates,"
-      f" {result['adjectives']} adjectives")
-```
-
-The JSON file supports two optional keys:
-
-```json
-{
-  "templates": {
-    "verb": ["Deberías {word} más"],
-    "noun_m": ["El {word} brilla"]
-  },
-  "adjectives": [
-    ["oscuro", "oscura"],
-    ["claro", "clara"]
-  ]
-}
-```
-
-Template keys: `verb`, `noun_m`, `noun_f`, `adjective`, `en_verb`,
-`en_noun`, `en_adjective`. Each template must contain `{word}`.
 
 ## PostgreSQL Backend
 
-For production use, Rembrandt supports PostgreSQL via the
-`PostgresDatabase` class, which has the same API as the SQLite
-`Database`:
-
-```bash
-# Start PostgreSQL with Docker Compose
-docker compose up -d
-```
-
 ```python
-from rembrandt import PostgresDatabase, Word
-from rembrandt.session import Session
+from rembrandt import PostgresDatabase
 
-dsn = "postgresql://rembrandt:rembrandt@localhost/rembrandt"
-
-async with await PostgresDatabase.connect(dsn) as db:
-    await db.add_words([
-        Word(language_from="en", language_to="es",
-             word_from="cat", word_to="gato"),
-    ])
-
-    user = await db.register_user("user1", "pass")
-    session = Session(db, user_id=user.id,
-                      language_from="en",
-                      language_to="es")
-    exercise = await session.next_exercise()
+db = await PostgresDatabase.connect(
+    "postgresql://user:pass@localhost/rembrandt"
+)
 ```
 
-All features (lessons, progress, answer history, weak words, etc.)
-work identically with both backends. Tags are stored as native
-`JSONB` and booleans as `BOOLEAN` in PostgreSQL.
+## Exercise Types
 
-## Documentation
+Rembrandt generates four exercise types:
 
-The `docs/` folder explains the theory behind the library:
-
-| Document | Topics |
-|----------|--------|
-| [Spaced Repetition](docs/spaced-repetition.md) | Forgetting curve, SM-2 algorithm, easiness factor, worked example |
-| [Exercise Types](docs/exercise-types.md) | Active recall, flashcard vs. multiple choice, answer evaluation |
+| Type | Description |
+|------|-------------|
+| `FLASHCARD` | Shows front, user types back |
+| `MULTIPLE_CHOICE` | Shows front with 4 options |
+| `REVERSE_FLASHCARD` | Shows back, user types front |
+| `SELF_GRADED` | User sees front, reveals back, self-rates 0-5 |
 
 ## Examples
 
-The `examples/` folder contains runnable scripts organised into two
-categories:
+See the `examples/` directory:
 
-### Exercises
+**Exercise examples** (`examples/exercises/`):
+- `01_quickstart.py` — Data science concepts
+- `02_interactive_quiz.py` — Math formulas
+- `03_exercise_types.py` — All 4 types, geography
+- `04_spanish_vocabulary.py` — Spanish definitions
 
-Core learning features — exercise types, spaced repetition, sessions,
-and progress tracking.
-
-| Script | Description |
-|--------|-------------|
-| `01_quickstart.py` | Minimal demo using `quick_session()` with an inline word list |
-| `02_interactive_quiz.py` | CLI quiz loop with `SessionMode` and `session.summary()` |
-| `03_exercise_types.py` | All exercise types: gender match, conjugation, cloze, etc. |
-| `04_definition_quiz.py` | Interactive monolingual definition-based quiz |
-| `05_spanish_translation_quiz.py` | Spanish-English translation quiz from pre-built JSON |
-| `06_spanish_vocabulary.py` | Monolingual Spanish vocabulary quiz (definition mode) |
-| `07_session_features.py` | Hints, skip, and session statistics |
-| `08_spaced_repetition_demo.py` | SM-2 algorithm internals visualised |
-| `09_review_config.py` | Customising `ReviewConfig` for Anki-style scheduling |
-| `10_card_states.py` | `CardState` lifecycle: NEW → LEARNING → REVIEW → RELEARNING → SUSPENDED |
-| `11_word_selection.py` | Advanced `select_words()`: modes, caps, weak priority, filtering |
-| `12_lessons_and_progress.py` | Lesson loading, progress tracking, and lesson-scoped sessions |
-| `13_answer_history.py` | Answer history, daily stats, weak word detection |
-| `14_progress_export_import.py` | Export and import spaced-repetition progress between databases |
-| `15_custom_templates.py` | Load custom cloze templates and adjectives from JSON |
-| `16_tags_and_cefr.py` | Organising vocabulary by tags and CEFR levels |
-
-### Infrastructure
-
-Database backends, CRUD operations, and user authentication.
-
-| Script | Description |
-|--------|-------------|
-| `01_crud_operations.py` | Word and lesson create/update/delete |
-| `02_user_auth.py` | User registration, authentication, and session tokens |
-| `03_postgres.py` | PostgreSQL backend with Docker Compose |
-
-Run any example with:
-
-```bash
-uv run python examples/exercises/01_quickstart.py
-```
+**Infrastructure examples** (`examples/infrastructure/`):
+- `01_crud_operations.py` — Concept and topic CRUD
+- `02_user_auth.py` — User registration and sessions
+- `03_postgres.py` — PostgreSQL backend

@@ -1,4 +1,4 @@
-"""Pydantic models for vocabulary exercises."""
+"""Pydantic models for spaced-repetition exercises."""
 
 from datetime import datetime
 from enum import Enum
@@ -7,62 +7,47 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
-class Word(BaseModel):
-    """A vocabulary word with its translation.
+class Concept(BaseModel):
+    """A study concept with a prompt and answer.
 
     :param id: Unique identifier (assigned by the database).
-    :param language_from: Source language code (e.g. `"en"`).
-    :param language_to: Target language code (e.g. `"es"`).
-    :param word_from: Word in the source language.
-    :param word_to: Translation in the target language.
-    :param gender: Noun gender (`"m"` or `"f"`), `None` for
-        non-nouns.
-    :param conjugation_group: Verb conjugation group
-        (`"ar"`, `"er"`, or `"ir"`), `None` for non-verbs.
-    :param tags: Topic tags (e.g. `["food", "travel"]`).
-    :param cefr: CEFR level (`"A1"` through `"C2"`), `None`
-        when not assigned.
-    :param owner_id: User who created this word. `None` means
-        the word is shared (visible to all users).
+    :param front: The prompt shown to the learner (e.g. a
+        question, term, or formula).
+    :param back: The expected answer or definition.
+    :param context: Optional explanation or notes shown after
+        answering.
+    :param tags: Arbitrary grouping tags (e.g.
+        `["math", "calculus"]`).
+    :param owner_id: User who created this concept. `None`
+        means the concept is shared (visible to all users).
     """
 
     id: int | None = None
-    language_from: str
-    language_to: str
-    word_from: str
-    word_to: str
-    gender: str | None = None
-    conjugation_group: str | None = None
+    front: str
+    back: str
+    context: str = ""
     tags: list[str] = Field(default_factory=list)
-    cefr: str | None = None
     owner_id: int | None = None
 
 
-class Lesson(BaseModel):
-    """A named set of words with a learning goal.
+class Topic(BaseModel):
+    """A named set of concepts.
 
     :param id: Unique identifier (assigned by the database).
-    :param title: Lesson title (e.g. `"A1 - Lesson 1"`).
-    :param description: Brief description of the lesson content.
-    :param language_from: Source language code (e.g. `"en"`).
-    :param language_to: Target language code (e.g. `"es"`).
-    :param cefr: CEFR level (`"A1"` through `"C2"`), `None`
-        when not assigned.
-    :param tags: Topic tags (e.g. `["food", "travel"]`).
-    :param word_count: Number of words in the lesson.
-    :param word_ids: List of word database ids (populated after
-        loading into a database).
+    :param title: Topic title (e.g. `"Linear Algebra Basics"`).
+    :param description: Brief description of the topic.
+    :param tags: Grouping tags (e.g. `["math", "beginner"]`).
+    :param concept_count: Number of concepts in the topic.
+    :param concept_ids: List of concept database ids (populated
+        after loading into a database).
     """
 
     id: int | None = None
     title: str
     description: str = ""
-    language_from: str
-    language_to: str
-    cefr: str | None = None
     tags: list[str] = Field(default_factory=list)
-    word_count: int = 0
-    word_ids: list[int] = Field(default_factory=list)
+    concept_count: int = 0
+    concept_ids: list[int] = Field(default_factory=list)
 
 
 class User(BaseModel):
@@ -100,46 +85,36 @@ class UserSession(BaseModel):
     expires_at: datetime
 
 
-class LessonProgress(BaseModel):
-    """Progress statistics for a user within a lesson.
+class TopicProgress(BaseModel):
+    """Progress statistics for a user within a topic.
 
-    :param lesson_id: Lesson identifier.
+    :param topic_id: Topic identifier.
     :param user_id: The user's database id.
-    :param words_total: Total words in the lesson.
-    :param words_studied: Words with at least one review.
-    :param words_mastered: Words with `repetitions >= 3`.
-    :param completion_pct: `words_studied / words_total * 100`.
-    :param mastery_pct: `words_mastered / words_total * 100`.
+    :param concepts_total: Total concepts in the topic.
+    :param concepts_studied: Concepts with at least one review.
+    :param concepts_mastered: Concepts with
+        `repetitions >= 3`.
+    :param completion_pct: `concepts_studied / concepts_total
+        * 100`.
+    :param mastery_pct: `concepts_mastered / concepts_total
+        * 100`.
     """
 
-    lesson_id: int
+    topic_id: int
     user_id: int
-    words_total: int
-    words_studied: int
-    words_mastered: int
+    concepts_total: int
+    concepts_studied: int
+    concepts_mastered: int
     completion_pct: float
     mastery_pct: float
 
 
-class LearningMode(str, Enum):
-    """How a word is being learned.
-
-    :cvar TRANSLATION: Bilingual — source and target languages
-        differ (e.g. EN -> ES).
-    :cvar DEFINITION: Monolingual — same language, word paired
-        with its definition (e.g. EN -> EN).
-    """
-
-    TRANSLATION = "translation"
-    DEFINITION = "definition"
-
-
 class SessionMode(str, Enum):
-    """How a session selects words.
+    """How a session selects concepts.
 
-    :cvar LEARN_NEW: Only present new (unreviewed) words.
-    :cvar REVIEW_DUE: Only present words due for review.
-    :cvar MIXED: Due words first, then new words to fill.
+    :cvar LEARN_NEW: Only present new (unreviewed) concepts.
+    :cvar REVIEW_DUE: Only present concepts due for review.
+    :cvar MIXED: Due concepts first, then new concepts to fill.
     """
 
     LEARN_NEW = "learn_new"
@@ -211,32 +186,26 @@ class ReviewConfig(BaseModel):
 
 
 class ExerciseType(str, Enum):
-    """Type of vocabulary exercise."""
+    """Type of exercise."""
 
     FLASHCARD = "flashcard"
     MULTIPLE_CHOICE = "multiple_choice"
     REVERSE_FLASHCARD = "reverse_flashcard"
     SELF_GRADED = "self_graded"
-    GENDER_MATCH = "gender_match"
-    CONJUGATION = "conjugation"
-    CLOZE = "cloze"
-    TRANSLATION_CLOZE = "translation_cloze"
-    ADJECTIVE_AGREEMENT = "adjective_agreement"
-    SENTENCE_ORDER = "sentence_order"
 
 
 class Exercise(BaseModel):
-    """A generated exercise for a word.
+    """A generated exercise for a concept.
 
-    :param word: The word being tested.
+    :param concept: The concept being tested.
     :param exercise_type: The type of exercise.
     :param options: Answer options (for multiple choice).
-    :param prompt: Display text (sentence, tense/person label).
+    :param prompt: Display text.
     :param expected_answer: Correct answer when not derivable
-        from the `Word` fields.
+        from the `Concept` fields.
     """
 
-    word: Word
+    concept: Concept
     exercise_type: ExerciseType
     options: list[str] = Field(default_factory=list)
     prompt: str = ""
@@ -249,7 +218,7 @@ class AnswerResult(BaseModel):
     :param correct: Whether the answer was correct.
     :param expected: The expected answer.
     :param given: The answer the user gave.
-    :param word: The word that was tested.
+    :param concept: The concept that was tested.
     :param near_miss: ``True`` when the answer was accepted
         via fuzzy matching (small typo). Consumers can use
         this to show a "close enough" warning.
@@ -258,7 +227,7 @@ class AnswerResult(BaseModel):
     correct: bool
     expected: str
     given: str
-    word: Word
+    concept: Concept
     near_miss: bool = False
 
 
@@ -275,20 +244,19 @@ class Hint(BaseModel):
     :param pattern: A masked pattern revealing `reveal_count`
         letters from the start (e.g. `"ga__"`).
     :param reveal_count: Number of letters currently revealed.
-    :param example_sentence: An example sentence using the
-        word (blank replaced with `___`), or empty string when
-        no sentence is available.
+    :param context: The concept's context field, or empty
+        string when not available.
     """
 
     first_letter: str
     word_length: int
     pattern: str
     reveal_count: int = 1
-    example_sentence: str = ""
+    context: str = ""
 
 
 class SessionStats(BaseModel):
-    """Statistics for a vocabulary exercise session.
+    """Statistics for an exercise session.
 
     :param total: Total number of answers given.
     :param correct: Number of correct answers.
@@ -350,16 +318,15 @@ class SessionSnapshot(BaseModel):
     restarts (e.g. for a Telegram bot).
 
     :param user_id: The user's database id.
-    :param language_from: Source language code.
-    :param language_to: Target language code.
     :param mode: Session mode.
-    :param word_ids: Restricted word ids, or `None`.
+    :param tags: Tag filter, or `None`.
+    :param concept_ids: Restricted concept ids, or `None`.
     :param review_config: SM-2 configuration, or `None`.
     :param fsrs_config: FSRS configuration, or `None`.
     :param current_exercise: The active exercise, or `None`.
     :param hint_count: Number of hints given for the current
         exercise.
-    :param buried_word_ids: Word ids already shown this
+    :param buried_concept_ids: Concept ids already shown this
         session.
     :param correct: Number of correct answers.
     :param incorrect: Number of incorrect answers.
@@ -371,15 +338,14 @@ class SessionSnapshot(BaseModel):
     """
 
     user_id: int
-    language_from: str
-    language_to: str
     mode: SessionMode = SessionMode.MIXED
-    word_ids: list[int] | None = None
+    tags: list[str] | None = None
+    concept_ids: list[int] | None = None
     review_config: ReviewConfig | None = None
     fsrs_config: FSRSConfig | None = None
     current_exercise: Exercise | None = None
     hint_count: int = 0
-    buried_word_ids: list[int] = Field(
+    buried_concept_ids: list[int] = Field(
         default_factory=list,
     )
     correct: int = 0
@@ -394,10 +360,10 @@ class SessionSnapshot(BaseModel):
 
 
 class UserProgress(BaseModel):
-    """Spaced-repetition progress for a user-word pair.
+    """Spaced-repetition progress for a user-concept pair.
 
     :param user_id: The user's database id.
-    :param word_id: Identifier for the word.
+    :param concept_id: Identifier for the concept.
     :param easiness_factor: SM-2 easiness factor (>= 1.3).
     :param interval: Days until next review.
     :param repetitions: Number of consecutive correct reviews.
@@ -415,7 +381,7 @@ class UserProgress(BaseModel):
     """
 
     user_id: int
-    word_id: int
+    concept_id: int
     easiness_factor: float = 2.5
     interval: int = 0
     repetitions: int = 0
@@ -429,17 +395,17 @@ class UserProgress(BaseModel):
     difficulty: float | None = None
 
 
-class WeakWord(BaseModel):
-    """A word the user consistently gets wrong.
+class WeakConcept(BaseModel):
+    """A concept the user consistently gets wrong.
 
-    :param word: The vocabulary word.
+    :param concept: The study concept.
     :param attempts: Total number of attempts.
     :param errors: Number of incorrect attempts.
     :param error_rate: `errors / attempts`.
     :param last_attempt: Timestamp of the most recent attempt.
     """
 
-    word: Word
+    concept: Concept
     attempts: int
     errors: int
     error_rate: float
@@ -451,7 +417,7 @@ class AnswerHistory(BaseModel):
 
     :param id: Unique identifier (assigned by the database).
     :param user_id: The user's database id.
-    :param word_id: Identifier for the word.
+    :param concept_id: Identifier for the concept.
     :param exercise_type: The exercise type used.
     :param correct: Whether the answer was correct.
     :param quality: SM-2 quality score (0-5).
@@ -460,7 +426,7 @@ class AnswerHistory(BaseModel):
 
     id: int | None = None
     user_id: int
-    word_id: int
+    concept_id: int
     exercise_type: str
     correct: bool
     quality: int
@@ -499,7 +465,7 @@ class ConversationStage(str, Enum):
     """Stage in a multi-step bot conversation.
 
     :cvar IDLE: No active interaction.
-    :cvar CHOOSING_LESSON: Browsing or selecting a lesson.
+    :cvar CHOOSING_TOPIC: Browsing or selecting a topic.
     :cvar EXERCISING: Session active, ready for next exercise.
     :cvar AWAITING_ANSWER: Exercise displayed, waiting for the
         user's answer.
@@ -510,7 +476,7 @@ class ConversationStage(str, Enum):
     """
 
     IDLE = "idle"
-    CHOOSING_LESSON = "choosing_lesson"
+    CHOOSING_TOPIC = "choosing_topic"
     EXERCISING = "exercising"
     AWAITING_ANSWER = "awaiting_answer"
     AWAITING_SELF_GRADE = "awaiting_self_grade"
@@ -522,7 +488,7 @@ class ConversationState(BaseModel):
 
     Tracks which stage the user is in and carries arbitrary
     context data needed by that stage (e.g. the current page
-    of lessons, the session snapshot key).
+    of topics, the session snapshot key).
 
     :param user_id: The user's database id.
     :param key: Conversation key (e.g. a chat id) to
@@ -539,16 +505,3 @@ class ConversationState(BaseModel):
     updated_at: datetime = Field(
         default_factory=datetime.now,
     )
-
-
-def learning_mode(word: Word) -> LearningMode:
-    """Derive the learning mode from a word's language pair.
-
-    :param word: The word to check.
-    :return: `LearningMode.DEFINITION` when source and target
-        languages are the same, `LearningMode.TRANSLATION`
-        otherwise.
-    """
-    if word.language_from == word.language_to:
-        return LearningMode.DEFINITION
-    return LearningMode.TRANSLATION

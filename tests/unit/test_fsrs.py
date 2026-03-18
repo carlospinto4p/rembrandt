@@ -2,6 +2,7 @@
 
 from datetime import datetime, timedelta
 
+import pytest
 
 from rembrandt.fsrs import (
     AGAIN,
@@ -21,6 +22,8 @@ from rembrandt.models import (
     FSRSConfig,
     UserProgress,
 )
+
+pytestmark = pytest.mark.asyncio
 
 
 # --- Retrievability Tests ---
@@ -138,7 +141,7 @@ def test_quality_to_grade_mapping():
 
 def test_fsrs_review_new_good():
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.NEW,
     )
     updated = fsrs_review(p, 4)
@@ -151,7 +154,7 @@ def test_fsrs_review_new_good():
 def test_fsrs_review_new_again_enters_learning():
     cfg = FSRSConfig(learning_steps=[1, 10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.NEW,
     )
     updated = fsrs_review(p, 1, config=cfg)
@@ -161,7 +164,7 @@ def test_fsrs_review_new_again_enters_learning():
 
 def test_fsrs_review_new_easy_graduates():
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.NEW,
     )
     updated = fsrs_review(p, 5)
@@ -172,7 +175,7 @@ def test_fsrs_review_new_easy_graduates():
 def test_fsrs_review_new_no_steps_graduates():
     cfg = FSRSConfig(learning_steps=[])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.NEW,
     )
     updated = fsrs_review(p, 4, config=cfg)
@@ -184,12 +187,14 @@ def test_fsrs_review_new_no_steps_graduates():
 
 def test_fsrs_review_review_good():
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.REVIEW,
         stability=5.0,
         difficulty=5.0,
         interval=5,
-        next_review=datetime.now() - timedelta(days=5),
+        next_review=(
+            datetime.now() - timedelta(days=5)
+        ),
     )
     updated = fsrs_review(p, 4)
     assert updated.state == CardState.REVIEW
@@ -197,15 +202,17 @@ def test_fsrs_review_review_good():
     assert updated.interval >= 1
 
 
-def test_fsrs_review_review_again_enters_relearning():
+def test_fsrs_review_review_again_relearning():
     cfg = FSRSConfig(relearning_steps=[10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.REVIEW,
         stability=10.0,
         difficulty=5.0,
         interval=10,
-        next_review=datetime.now() - timedelta(days=10),
+        next_review=(
+            datetime.now() - timedelta(days=10)
+        ),
     )
     updated = fsrs_review(p, 1, config=cfg)
     assert updated.state == CardState.RELEARNING
@@ -215,12 +222,14 @@ def test_fsrs_review_review_again_enters_relearning():
 
 def test_fsrs_review_review_easy_bonus():
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.REVIEW,
         stability=5.0,
         difficulty=5.0,
         interval=5,
-        next_review=datetime.now() - timedelta(days=5),
+        next_review=(
+            datetime.now() - timedelta(days=5)
+        ),
     )
     good = fsrs_review(p, 4)
     easy = fsrs_review(p, 5)
@@ -233,7 +242,7 @@ def test_fsrs_review_review_easy_bonus():
 def test_fsrs_review_learning_good_advances():
     cfg = FSRSConfig(learning_steps=[1, 10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.LEARNING,
         step_index=0,
         stability=1.0,
@@ -244,10 +253,10 @@ def test_fsrs_review_learning_good_advances():
     assert updated.state == CardState.LEARNING
 
 
-def test_fsrs_review_learning_good_last_step_graduates():
+def test_fsrs_review_learning_last_step_graduates():
     cfg = FSRSConfig(learning_steps=[1, 10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.LEARNING,
         step_index=1,
         stability=3.0,
@@ -257,10 +266,10 @@ def test_fsrs_review_learning_good_last_step_graduates():
     assert updated.state == CardState.REVIEW
 
 
-def test_fsrs_review_learning_easy_graduates_immediately():
+def test_fsrs_review_learning_easy_graduates():
     cfg = FSRSConfig(learning_steps=[1, 10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.LEARNING,
         step_index=0,
         stability=3.0,
@@ -273,7 +282,7 @@ def test_fsrs_review_learning_easy_graduates_immediately():
 def test_fsrs_review_learning_again_resets_step():
     cfg = FSRSConfig(learning_steps=[1, 10])
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.LEARNING,
         step_index=1,
         stability=1.0,
@@ -289,7 +298,7 @@ def test_fsrs_review_learning_again_resets_step():
 
 def test_fsrs_review_suspended_unchanged():
     p = UserProgress(
-        user_id=1, word_id=1,
+        user_id=1, concept_id=1,
         state=CardState.SUSPENDED,
         stability=5.0,
         difficulty=5.0,
@@ -301,22 +310,29 @@ def test_fsrs_review_suspended_unchanged():
 # --- Session Integration Tests ---
 
 
-async def test_session_with_fsrs(db_with_words):
+async def test_session_with_fsrs(db_with_concepts):
+    from rembrandt.models import ExerciseType
     from rembrandt.session import Session
 
     s = Session(
-        db_with_words, user_id=1,
-        language_from="en", language_to="es",
+        db_with_concepts, user_id=1,
         fsrs_config=FSRSConfig(),
     )
     ex = await s.next_exercise()
     assert ex is not None
-    result = await s.answer(ex.word.word_to)
+    if ex.exercise_type == ExerciseType.SELF_GRADED:
+        result = await s.answer(quality=5)
+    elif (
+        ex.exercise_type
+        == ExerciseType.REVERSE_FLASHCARD
+    ):
+        result = await s.answer(ex.concept.front)
+    else:
+        result = await s.answer(ex.concept.back)
     assert result.correct is True
 
-    # Verify FSRS state was persisted
-    progress = await db_with_words.get_progress(
-        1, ex.word.id,
+    progress = await db_with_concepts.get_progress(
+        1, ex.concept.id,
     )
     assert progress is not None
     assert progress.stability is not None

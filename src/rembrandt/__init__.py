@@ -1,32 +1,32 @@
-"""rembrandt - Mental exercises with the help of LLMs."""
+"""rembrandt - A general-purpose spaced-repetition library."""
 
 from importlib.metadata import version
 
-from rembrandt.db import Database, import_words_csv
+from rembrandt.db import Database, import_concepts_csv
 from rembrandt.db_postgres import PostgresDatabase
-from rembrandt.lessons import lesson_progress, load_lessons
+from rembrandt.topics import load_topics, topic_progress
 from rembrandt.fsrs import fsrs_review
 from rembrandt.models import (
     AnswerHistory,
     CardState,
+    Concept,
     ConversationStage,
     ConversationState,
     DailyStats,
+    ExerciseType,
     FSRSConfig,
     Hint,
-    Lesson,
     ReviewConfig,
     ReviewForecast,
     SessionMode,
     SessionSnapshot,
     SessionStats,
+    Topic,
+    TopicProgress,
     User,
     UserSession,
-    WeakWord,
-    Word,
+    WeakConcept,
 )
-from rembrandt.exercises import load_exercise_config
-from rembrandt.sentences import load_cloze_templates
 from rembrandt.session import Session, quick_session
 
 __version__ = version("rembrandt")
@@ -34,29 +34,29 @@ __version__ = version("rembrandt")
 __all__ = [
     "AnswerHistory",
     "CardState",
+    "Concept",
     "ConversationStage",
     "ConversationState",
     "DailyStats",
     "Database",
+    "ExerciseType",
     "FSRSConfig",
     "Hint",
-    "fsrs_review",
     "PostgresDatabase",
-    "Lesson",
     "ReviewConfig",
     "ReviewForecast",
     "Session",
     "SessionMode",
     "SessionSnapshot",
     "SessionStats",
+    "Topic",
+    "TopicProgress",
     "User",
     "UserSession",
-    "WeakWord",
-    "Word",
-    "import_words_csv",
-    "lesson_progress",
-    "load_cloze_templates",
-    "load_exercise_config",
-    "load_lessons",
+    "WeakConcept",
+    "fsrs_review",
+    "import_concepts_csv",
+    "load_topics",
     "quick_session",
+    "topic_progress",
 ]

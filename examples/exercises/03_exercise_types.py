@@ -1,149 +1,73 @@
-"""Exercise types showcase.
+"""Demonstrate all four exercise types."""
 
-Demonstrates the full range of exercise types available in
-translation mode: flashcard, multiple choice, gender match,
-conjugation, cloze, translation cloze, adjective agreement,
-and sentence ordering.  Uses words with `gender` and
-`conjugation_group` metadata to unlock all types.
-
-Usage::
-
-    uv run python examples/exercises/03_exercise_types.py
-"""
-
-from pathlib import Path
-
-from rembrandt import Database, Session, Word
-from rembrandt.models import ExerciseType
-
-_DB_PATH = (
-    Path(__file__).resolve().parent.parent.parent
-    / "data"
-    / "exercise_types.db"
+import asyncio
+from rembrandt import Concept, Database
+from rembrandt.exercises import (
+    evaluate_answer,
+    generate_flashcard,
+    generate_multiple_choice,
+    generate_reverse_flashcard,
+    generate_self_graded,
 )
 
+CONCEPTS = [
+    Concept(
+        front="Capital of France", back="Paris",
+        tags=["geography"],
+    ),
+    Concept(
+        front="Capital of Japan", back="Tokyo",
+        tags=["geography"],
+    ),
+    Concept(
+        front="Capital of Brazil",
+        back="Bras\u00edlia",
+        tags=["geography"],
+    ),
+    Concept(
+        front="Capital of Australia",
+        back="Canberra",
+        tags=["geography"],
+    ),
+]
 
-def main() -> None:
-    _DB_PATH.unlink(missing_ok=True)
 
-    with Database(_DB_PATH) as db:
-        db.add_words([
-            # Nouns with gender (enables GENDER_MATCH)
-            Word(
-                language_from="en", language_to="es",
-                word_from="cat", word_to="gato",
-                gender="m", tags=["animals"],
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="house", word_to="casa",
-                gender="f", tags=["home"],
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="book", word_to="libro",
-                gender="m", tags=["education"],
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="table", word_to="mesa",
-                gender="f", tags=["home"],
-            ),
-            # Verbs with conjugation_group
-            # (enables CONJUGATION)
-            Word(
-                language_from="en", language_to="es",
-                word_from="to speak", word_to="hablar",
-                conjugation_group="ar",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="to eat", word_to="comer",
-                conjugation_group="er",
-            ),
-            Word(
-                language_from="en", language_to="es",
-                word_from="to live", word_to="vivir",
-                conjugation_group="ir",
-            ),
-            # Plain word (only FLASHCARD, MC, CLOZE,
-            # TRANSLATION_CLOZE)
-            Word(
-                language_from="en", language_to="es",
-                word_from="water", word_to="agua",
-            ),
-        ])
+async def main():
+    db = await Database.connect(":memory:")
+    stored = await db.add_concepts(CONCEPTS)
 
-        user = db.register_user("demo", "demo")
+    print("=== Flashcard ===")
+    ex = generate_flashcard(stored[0])
+    print(f"  Q: {ex.concept.front}")
+    print(f"  A: {ex.concept.back}")
+    r = evaluate_answer(ex, "Paris")
+    print(f"  Correct: {r.correct}")
 
-        session = Session(
-            db=db,
-            user_id=user.id,
-            language_from="en",
-            language_to="es",
-        )
+    print("\n=== Multiple Choice ===")
+    ex = generate_multiple_choice(
+        stored[1], stored,
+    )
+    print(f"  Q: {ex.concept.front}")
+    for i, opt in enumerate(ex.options, 1):
+        print(f"  {i}. {opt}")
+    r = evaluate_answer(ex, "Tokyo")
+    print(f"  Correct: {r.correct}")
 
-        print("=== Exercise Types Showcase ===\n")
+    print("\n=== Reverse Flashcard ===")
+    ex = generate_reverse_flashcard(stored[2])
+    print(f"  Definition: {ex.concept.back}")
+    r = evaluate_answer(ex, "Capital of Brazil")
+    print(f"  Correct: {r.correct}")
 
-        for i in range(10):
-            exercise = session.next_exercise()
-            if exercise is None:
-                break
+    print("\n=== Self-Graded ===")
+    ex = generate_self_graded(stored[3])
+    print(f"  Q: {ex.concept.front}")
+    print(f"  (reveal) A: {ex.concept.back}")
+    r = evaluate_answer(ex, quality=5)
+    print(f"  Correct: {r.correct}")
 
-            etype = exercise.exercise_type
-            w = exercise.word
-            print(f"--- Exercise {i + 1}: {etype.value} ---")
-
-            if etype == ExerciseType.FLASHCARD:
-                print(f"  Translate: {w.word_from}")
-                answer = w.word_to
-
-            elif etype == ExerciseType.MULTIPLE_CHOICE:
-                print(f"  Translate: {w.word_from}")
-                for idx, opt in enumerate(
-                    exercise.options, 1
-                ):
-                    print(f"    {idx}. {opt}")
-                answer = w.word_to
-
-            elif etype == ExerciseType.GENDER_MATCH:
-                print(f"  Pick the article: {exercise.prompt}")
-                print(f"    Options: {exercise.options}")
-                answer = exercise.expected_answer
-
-            elif etype == ExerciseType.CONJUGATION:
-                print(f"  Conjugate: {exercise.prompt}")
-                answer = exercise.expected_answer
-
-            elif etype == ExerciseType.CLOZE:
-                print(f"  Fill the blank: {exercise.prompt}")
-                answer = exercise.expected_answer
-
-            elif etype == ExerciseType.TRANSLATION_CLOZE:
-                print(f"  Translate: {exercise.prompt}")
-                answer = exercise.expected_answer
-
-            elif etype == ExerciseType.ADJECTIVE_AGREEMENT:
-                print(f"  Agree adjective: {exercise.prompt}")
-                answer = exercise.expected_answer
-
-            elif etype == ExerciseType.SENTENCE_ORDER:
-                print(f"  Reorder: {exercise.prompt}")
-                answer = exercise.expected_answer
-
-            else:
-                answer = w.word_to
-
-            result = session.answer(answer)
-            tag = "Correct!" if result.correct else "Wrong"
-            print(f"  Answer: {answer} -> {tag}\n")
-
-        stats = session.summary()
-        print(
-            f"Done — {stats.correct}/{stats.total} correct "
-            f"({stats.accuracy_pct}%)"
-        )
+    await db.close()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
