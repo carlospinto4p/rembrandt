@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v5.0.2 - 19th March 2026
+
+- Removed `data/` directory with legacy Spanish vocabulary files:
+  - `spanish_top10000.json`
+  - `spanish_monolingual_10000.json`
+  - `spanish_lessons.json`
+
+
 ### v5.0.1 - 19th March 2026
 
 - Added `examples/infrastructure/03_seed_data_science.py`: seeds a
