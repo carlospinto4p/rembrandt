@@ -14,7 +14,6 @@ from rembrandt.models import (
     CardState,
     Concept,
     Exercise,
-    ExerciseType,
     FSRSConfig,
     Hint,
     ReviewConfig,
@@ -259,11 +258,6 @@ class Session:
         ex = self._current_exercise
         if ex.expected_answer:
             answer = ex.expected_answer
-        elif (
-            ex.exercise_type
-            == ExerciseType.REVERSE_FLASHCARD
-        ):
-            answer = ex.concept.front
         else:
             answer = ex.concept.back
 

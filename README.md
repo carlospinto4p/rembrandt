@@ -294,7 +294,6 @@ Rembrandt generates four exercise types:
 |------|-------------|
 | `FLASHCARD` | Shows front, user types back |
 | `MULTIPLE_CHOICE` | Shows front with 4 options |
-| `REVERSE_FLASHCARD` | Shows back, user types front |
 | `SELF_GRADED` | User sees front, reveals back, self-rates 0-5 |
 
 ## Examples

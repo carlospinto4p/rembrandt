@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v6.0.0 - 19th March 2026
+
+- Removed `REVERSE_FLASHCARD` exercise type — exercises should not
+  require typing answers without extra hints beyond a definition.
+- Removed `generate_reverse_flashcard()` from `exercises`.
+- Updated `evaluate_answer()`: removed reverse-flashcard branch.
+- Updated `Session.hint()`: simplified answer resolution.
+
+
 ### v5.0.2 - 19th March 2026
 
 - Removed `data/` directory with legacy Spanish vocabulary files:

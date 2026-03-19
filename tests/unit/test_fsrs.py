@@ -322,11 +322,6 @@ async def test_session_with_fsrs(db_with_concepts):
     assert ex is not None
     if ex.exercise_type == ExerciseType.SELF_GRADED:
         result = await s.answer(quality=5)
-    elif (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    ):
-        result = await s.answer(ex.concept.front)
     else:
         result = await s.answer(ex.concept.back)
     assert result.correct is True

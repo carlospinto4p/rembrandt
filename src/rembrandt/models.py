@@ -190,7 +190,6 @@ class ExerciseType(str, Enum):
 
     FLASHCARD = "flashcard"
     MULTIPLE_CHOICE = "multiple_choice"
-    REVERSE_FLASHCARD = "reverse_flashcard"
     SELF_GRADED = "self_graded"
 
 

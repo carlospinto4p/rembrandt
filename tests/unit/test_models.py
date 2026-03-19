@@ -136,15 +136,11 @@ def test_exercise_type_values():
         ExerciseType.MULTIPLE_CHOICE
         == "multiple_choice"
     )
-    assert (
-        ExerciseType.REVERSE_FLASHCARD
-        == "reverse_flashcard"
-    )
     assert ExerciseType.SELF_GRADED == "self_graded"
 
 
-def test_exercise_type_only_four():
-    assert len(ExerciseType) == 4
+def test_exercise_type_count():
+    assert len(ExerciseType) == 3
 
 
 # --- Exercise Tests ---

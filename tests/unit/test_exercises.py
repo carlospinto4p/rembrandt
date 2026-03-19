@@ -7,7 +7,6 @@ from rembrandt.exercises import (
     generate_exercise,
     generate_flashcard,
     generate_multiple_choice,
-    generate_reverse_flashcard,
     generate_self_graded,
 )
 from rembrandt.models import (
@@ -64,23 +63,6 @@ def test_generate_multiple_choice_fewer_concepts(
     assert "gato" in ex.options
 
 
-# --- Reverse Flashcard Tests ---
-
-
-def test_generate_reverse_flashcard(sample_concepts):
-    ex = generate_reverse_flashcard(
-        sample_concepts[0],
-    )
-    assert (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    )
-    assert (
-        ex.concept.front == "What is a p-value?"
-    )
-    assert ex.options == []
-
-
 # --- Self-Graded Tests ---
 
 
@@ -105,7 +87,6 @@ def test_generate_exercise_single_concept(
     ex = generate_exercise(concepts[0], concepts)
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
 
@@ -119,12 +100,11 @@ def test_generate_exercise_returns_valid_type(
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
 
 
-def test_generate_exercise_all_four_types(
+def test_generate_exercise_all_types(
     short_concepts,
 ):
     types = set()
@@ -136,7 +116,6 @@ def test_generate_exercise_all_four_types(
     assert types == {
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     }
 
@@ -174,41 +153,6 @@ def test_evaluate_answer_incorrect(short_concepts):
     assert result.correct is False
     assert result.expected == "gato"
     assert result.given == "perro"
-
-
-# --- Reverse Flashcard Evaluation Tests ---
-
-
-def test_evaluate_reverse_flashcard_correct(
-    short_concepts,
-):
-    ex = generate_reverse_flashcard(
-        short_concepts[0],
-    )
-    result = evaluate_answer(ex, "cat")
-    assert result.correct is True
-    assert result.expected == "cat"
-
-
-def test_evaluate_reverse_flashcard_incorrect(
-    short_concepts,
-):
-    ex = generate_reverse_flashcard(
-        short_concepts[0],
-    )
-    result = evaluate_answer(ex, "dog")
-    assert result.correct is False
-    assert result.expected == "cat"
-
-
-def test_evaluate_reverse_flashcard_case_insensitive(
-    short_concepts,
-):
-    ex = generate_reverse_flashcard(
-        short_concepts[0],
-    )
-    result = evaluate_answer(ex, "Cat")
-    assert result.correct is True
 
 
 # --- Self-Graded Evaluation Tests ---

@@ -28,11 +28,6 @@ def _correct_answer(ex: Exercise) -> dict:
     """
     if ex.exercise_type == ExerciseType.SELF_GRADED:
         return {"quality": 5}
-    if (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    ):
-        return {"text": ex.concept.front}
     if ex.expected_answer:
         return {"text": ex.expected_answer}
     return {"text": ex.concept.back}
@@ -61,7 +56,6 @@ async def test_next_exercise_returns_exercise(session):
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.REVERSE_FLASHCARD,
         ExerciseType.SELF_GRADED,
     )
 
@@ -200,11 +194,6 @@ async def test_hint_returns_first_letter_and_length(
     expected = ex.concept.back
     if ex.expected_answer:
         expected = ex.expected_answer
-    elif (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    ):
-        expected = ex.concept.front
     assert h.first_letter == expected[0]
     assert h.word_length == len(expected)
 
@@ -227,11 +216,6 @@ async def test_hint_progressive_reveal(session):
     expected = ex.concept.back
     if ex.expected_answer:
         expected = ex.expected_answer
-    elif (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    ):
-        expected = ex.concept.front
     h1 = session.hint()
     assert h1.reveal_count == 1
     assert h1.pattern == (
@@ -251,11 +235,6 @@ async def test_hint_reveal_caps_at_length(session):
     expected = ex.concept.back
     if ex.expected_answer:
         expected = ex.expected_answer
-    elif (
-        ex.exercise_type
-        == ExerciseType.REVERSE_FLASHCARD
-    ):
-        expected = ex.concept.front
     for _ in range(len(expected) + 5):
         h = session.hint()
     assert h.reveal_count == len(expected)

@@ -118,23 +118,6 @@ def generate_multiple_choice(
     )
 
 
-def generate_reverse_flashcard(
-    concept: Concept,
-) -> Exercise:
-    """Create a reverse flashcard exercise.
-
-    Shows the back (answer/definition); the user types the
-    front (prompt/term).
-
-    :param concept: The concept to test.
-    :return: A reverse-flashcard `Exercise`.
-    """
-    return Exercise(
-        concept=concept,
-        exercise_type=ExerciseType.REVERSE_FLASHCARD,
-    )
-
-
 def generate_self_graded(concept: Concept) -> Exercise:
     """Create a self-graded flashcard exercise.
 
@@ -156,9 +139,9 @@ def generate_exercise(
 ) -> Exercise:
     """Generate an exercise for a concept.
 
-    Picks uniformly from all 4 exercise types. Falls back
-    to flashcard when fewer than 2 concepts are available
-    (multiple choice needs distractors).
+    Picks uniformly from all exercise types. Falls back to
+    flashcard/self-graded when fewer than 2 concepts are
+    available (multiple choice needs distractors).
 
     :param concept: The concept to test.
     :param all_concepts: Pool of concepts for multiple-choice
@@ -168,7 +151,6 @@ def generate_exercise(
     if len(all_concepts) < 2:
         pool = [
             ExerciseType.FLASHCARD,
-            ExerciseType.REVERSE_FLASHCARD,
             ExerciseType.SELF_GRADED,
         ]
     else:
@@ -181,8 +163,6 @@ def generate_exercise(
         return generate_multiple_choice(
             concept, all_concepts,
         )
-    if chosen == ExerciseType.REVERSE_FLASHCARD:
-        return generate_reverse_flashcard(concept)
     return generate_self_graded(concept)
 
 
@@ -296,9 +276,6 @@ def evaluate_answer(
 
     Comparison is case-insensitive and strips whitespace.
 
-    For `REVERSE_FLASHCARD` exercises the expected answer is
-    `concept.front` (the term) instead of `concept.back`.
-
     For `SELF_GRADED` exercises the `quality` parameter (0-5)
     is required; `correct` is `True` when `quality >= 3`.
 
@@ -333,8 +310,6 @@ def evaluate_answer(
 
     if exercise.expected_answer:
         expected = exercise.expected_answer
-    elif etype == ExerciseType.REVERSE_FLASHCARD:
-        expected = exercise.concept.front
     else:
         expected = exercise.concept.back
 

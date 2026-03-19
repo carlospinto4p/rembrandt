@@ -1,4 +1,4 @@
-"""Demonstrate all four exercise types."""
+"""Demonstrate all exercise types."""
 
 import asyncio
 from rembrandt import Concept, Database
@@ -6,7 +6,6 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_flashcard,
     generate_multiple_choice,
-    generate_reverse_flashcard,
     generate_self_graded,
 )
 
@@ -51,12 +50,6 @@ async def main():
     for i, opt in enumerate(ex.options, 1):
         print(f"  {i}. {opt}")
     r = evaluate_answer(ex, "Tokyo")
-    print(f"  Correct: {r.correct}")
-
-    print("\n=== Reverse Flashcard ===")
-    ex = generate_reverse_flashcard(stored[2])
-    print(f"  Definition: {ex.concept.back}")
-    r = evaluate_answer(ex, "Capital of Brazil")
     print(f"  Correct: {r.correct}")
 
     print("\n=== Self-Graded ===")
