@@ -310,3 +310,4 @@ See the `examples/` directory:
 **Infrastructure examples** (`examples/infrastructure/`):
 - `01_crud_operations.py` — Concept and topic CRUD
 - `02_user_auth.py` — User registration and sessions
+- `03_seed_data_science.py` — Seed DB with 36 Data Science concepts

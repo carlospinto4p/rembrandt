@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v5.0.1 - 19th March 2026
+
+- Added `examples/infrastructure/03_seed_data_science.py`: seeds a
+  SQLite database with 36 Data Science concepts across 5 topics
+  (Statistics, ML, Deep Learning, Python Tools, Data Engineering).
+
+
 ### v5.0.0 - 19th March 2026
 
 - Removed PostgreSQL backend — the library now uses SQLite only:
