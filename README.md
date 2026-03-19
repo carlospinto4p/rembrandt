@@ -286,16 +286,6 @@ records = await db.export_progress(user_id=1)
 count = await db.import_progress(records)
 ```
 
-## PostgreSQL Backend
-
-```python
-from rembrandt import PostgresDatabase
-
-db = await PostgresDatabase.connect(
-    "postgresql://user:pass@localhost/rembrandt"
-)
-```
-
 ## Exercise Types
 
 Rembrandt generates four exercise types:
@@ -320,4 +310,3 @@ See the `examples/` directory:
 **Infrastructure examples** (`examples/infrastructure/`):
 - `01_crud_operations.py` — Concept and topic CRUD
 - `02_user_auth.py` — User registration and sessions
-- `03_postgres.py` — PostgreSQL backend

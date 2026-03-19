@@ -3,7 +3,6 @@
 from importlib.metadata import version
 
 from rembrandt.db import Database, import_concepts_csv
-from rembrandt.db_postgres import PostgresDatabase
 from rembrandt.topics import load_topics, topic_progress
 from rembrandt.fsrs import fsrs_review
 from rembrandt.models import (
@@ -42,7 +41,6 @@ __all__ = [
     "ExerciseType",
     "FSRSConfig",
     "Hint",
-    "PostgresDatabase",
     "ReviewConfig",
     "ReviewForecast",
     "Session",

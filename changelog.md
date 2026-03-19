@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v5.0.0 - 19th March 2026
+
+- Removed PostgreSQL backend — the library now uses SQLite only:
+  - `db_postgres.py`
+  - `PostgresDatabase` export
+  - `psycopg[binary]` dependency
+- Removed `docker-compose.yml`.
+- Removed `examples/infrastructure/03_postgres.py`.
+
+
 ### v4.0.0 - 18th March 2026
 
 - Transformed from a language-focused vocabulary tool into a
