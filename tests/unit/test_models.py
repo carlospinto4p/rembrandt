@@ -131,6 +131,7 @@ def test_concept_owner_id_explicit():
 
 
 def test_exercise_type_values():
+    assert ExerciseType.FLASHCARD == "flashcard"
     assert (
         ExerciseType.MULTIPLE_CHOICE
         == "multiple_choice"
@@ -139,10 +140,20 @@ def test_exercise_type_values():
 
 
 def test_exercise_type_count():
-    assert len(ExerciseType) == 2
+    assert len(ExerciseType) == 3
 
 
 # --- Exercise Tests ---
+
+
+def test_exercise_flashcard():
+    concept = Concept(front="cat", back="gato")
+    ex = Exercise(
+        concept=concept,
+        exercise_type=ExerciseType.FLASHCARD,
+    )
+    assert ex.exercise_type == ExerciseType.FLASHCARD
+    assert ex.options == []
 
 
 def test_exercise_multiple_choice():
@@ -160,7 +171,7 @@ def test_exercise_prompt_and_expected_defaults():
     concept = Concept(front="cat", back="gato")
     ex = Exercise(
         concept=concept,
-        exercise_type=ExerciseType.SELF_GRADED,
+        exercise_type=ExerciseType.FLASHCARD,
     )
     assert ex.prompt == ""
     assert ex.expected_answer == ""
@@ -433,7 +444,7 @@ def test_session_snapshot_with_data():
     )
     ex = Exercise(
         concept=concept,
-        exercise_type=ExerciseType.SELF_GRADED,
+        exercise_type=ExerciseType.FLASHCARD,
     )
     snap = SessionSnapshot(
         user_id=1,

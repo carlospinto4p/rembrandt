@@ -188,6 +188,7 @@ class ReviewConfig(BaseModel):
 class ExerciseType(str, Enum):
     """Type of exercise."""
 
+    FLASHCARD = "flashcard"
     MULTIPLE_CHOICE = "multiple_choice"
     SELF_GRADED = "self_graded"
 

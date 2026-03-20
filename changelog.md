@@ -1,15 +1,6 @@
 
 ## Changelog - Rembrandt
 
-### v7.0.0 - 20th March 2026
-
-- Removed `FLASHCARD` exercise type — it auto-grades typed answers
-  without giving the user time to self-assess.
-- Removed `generate_flashcard()` from `exercises`.
-- Updated `generate_exercise()`: falls back to `SELF_GRADED` when
-  fewer than 2 concepts are available.
-
-
 ### v6.0.0 - 19th March 2026
 
 - Removed `REVERSE_FLASHCARD` exercise type — exercises should not

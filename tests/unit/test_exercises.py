@@ -5,6 +5,7 @@ import pytest
 from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
+    generate_flashcard,
     generate_multiple_choice,
     generate_self_graded,
 )
@@ -13,6 +14,16 @@ from rembrandt.models import (
     Exercise,
     ExerciseType,
 )
+
+
+# --- Flashcard Tests ---
+
+
+def test_generate_flashcard(short_concepts):
+    ex = generate_flashcard(short_concepts[0])
+    assert ex.exercise_type == ExerciseType.FLASHCARD
+    assert ex.concept.front == "cat"
+    assert ex.options == []
 
 
 # --- Multiple Choice Tests ---
@@ -74,7 +85,10 @@ def test_generate_exercise_single_concept(
 ):
     concepts = short_concepts[:1]
     ex = generate_exercise(concepts[0], concepts)
-    assert ex.exercise_type == ExerciseType.SELF_GRADED
+    assert ex.exercise_type in (
+        ExerciseType.FLASHCARD,
+        ExerciseType.SELF_GRADED,
+    )
 
 
 def test_generate_exercise_returns_valid_type(
@@ -84,6 +98,7 @@ def test_generate_exercise_returns_valid_type(
         short_concepts[0], short_concepts,
     )
     assert ex.exercise_type in (
+        ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.SELF_GRADED,
     )
@@ -99,6 +114,7 @@ def test_generate_exercise_all_types(
         )
         types.add(ex.exercise_type)
     assert types == {
+        ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.SELF_GRADED,
     }
@@ -107,20 +123,8 @@ def test_generate_exercise_all_types(
 # --- Answer Evaluation Tests ---
 
 
-def _mc_exercise(concept: Concept) -> Exercise:
-    """Build a multiple-choice exercise without options.
-
-    Used by answer-evaluation tests that only need the
-    text-matching branch of `evaluate_answer`.
-    """
-    return Exercise(
-        concept=concept,
-        exercise_type=ExerciseType.MULTIPLE_CHOICE,
-    )
-
-
 def test_evaluate_answer_correct(short_concepts):
-    ex = _mc_exercise(short_concepts[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "gato")
     assert result.correct is True
     assert result.expected == "gato"
@@ -130,7 +134,7 @@ def test_evaluate_answer_correct(short_concepts):
 def test_evaluate_answer_correct_case_insensitive(
     short_concepts,
 ):
-    ex = _mc_exercise(short_concepts[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "Gato")
     assert result.correct is True
 
@@ -138,13 +142,13 @@ def test_evaluate_answer_correct_case_insensitive(
 def test_evaluate_answer_correct_with_whitespace(
     short_concepts,
 ):
-    ex = _mc_exercise(short_concepts[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "  gato  ")
     assert result.correct is True
 
 
 def test_evaluate_answer_incorrect(short_concepts):
-    ex = _mc_exercise(short_concepts[0])
+    ex = generate_flashcard(short_concepts[0])
     result = evaluate_answer(ex, "perro")
     assert result.correct is False
     assert result.expected == "gato"
@@ -208,7 +212,7 @@ def test_evaluate_answer_strips_parenthetical():
         front="to be",
         back="ser (essentially or identified as)",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "ser")
     assert result.correct is True
 
@@ -222,7 +226,7 @@ def test_evaluate_answer_strips_brackets():
             "[+masculine singular past participle]"
         ),
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "have")
     assert result.correct is True
 
@@ -233,7 +237,7 @@ def test_evaluate_answer_semicolon_segment():
         front="to have",
         back="tener; poseer",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "poseer")
     assert result.correct is True
 
@@ -244,7 +248,7 @@ def test_evaluate_answer_comma_segment():
         front="to say",
         back="decir, contar",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     assert evaluate_answer(
         ex, "decir",
     ).correct is True
@@ -260,7 +264,7 @@ def test_evaluate_answer_to_prefix():
     concept = Concept(
         id=1, front="ser", back="to be",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     assert evaluate_answer(
         ex, "be",
     ).correct is True
@@ -268,7 +272,7 @@ def test_evaluate_answer_to_prefix():
     concept2 = Concept(
         id=2, front="tener", back="have",
     )
-    ex2 = _mc_exercise(concept2)
+    ex2 = generate_flashcard(concept2)
     assert evaluate_answer(
         ex2, "to have",
     ).correct is True
@@ -336,7 +340,7 @@ def test_evaluate_accent_tolerant():
     concept = Concept(
         id=1, front="speak", back="habló",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablo")
     assert result.correct is True
 
@@ -348,7 +352,7 @@ def test_evaluate_answer_fuzzy_single_typo():
     concept = Concept(
         id=1, front="cat", back="gato",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gat")
     assert result.correct is True
     assert result.near_miss is True
@@ -360,7 +364,7 @@ def test_evaluate_answer_fuzzy_long_word():
         front="to understand",
         back="comprender",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "comprendr")
     assert result.correct is True
     assert result.near_miss is True
@@ -370,7 +374,7 @@ def test_evaluate_answer_fuzzy_too_far():
     concept = Concept(
         id=1, front="cat", back="gato",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "ga")
     assert result.correct is False
     assert result.near_miss is False
@@ -380,7 +384,7 @@ def test_evaluate_answer_exact_not_near_miss():
     concept = Concept(
         id=1, front="cat", back="gato",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gato")
     assert result.correct is True
     assert result.near_miss is False
@@ -390,7 +394,7 @@ def test_evaluate_answer_fuzzy_swapped_letters():
     concept = Concept(
         id=1, front="to speak", back="hablar",
     )
-    ex = _mc_exercise(concept)
+    ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablra")
     assert result.correct is True
     assert result.near_miss is True

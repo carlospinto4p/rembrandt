@@ -288,10 +288,11 @@ count = await db.import_progress(records)
 
 ## Exercise Types
 
-Rembrandt generates two exercise types:
+Rembrandt generates four exercise types:
 
 | Type | Description |
 |------|-------------|
+| `FLASHCARD` | Shows front, user types back |
 | `MULTIPLE_CHOICE` | Shows front with 4 options |
 | `SELF_GRADED` | User sees front, reveals back, self-rates 0-5 |
 

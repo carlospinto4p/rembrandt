@@ -54,6 +54,7 @@ async def test_next_exercise_returns_exercise(session):
     ex = await session.next_exercise()
     assert ex is not None
     assert ex.exercise_type in (
+        ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
         ExerciseType.SELF_GRADED,
     )
