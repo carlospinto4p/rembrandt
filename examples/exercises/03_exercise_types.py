@@ -4,7 +4,6 @@ import asyncio
 from rembrandt import Concept, Database
 from rembrandt.exercises import (
     evaluate_answer,
-    generate_flashcard,
     generate_multiple_choice,
     generate_self_graded,
 )
@@ -35,14 +34,7 @@ async def main():
     db = await Database.connect(":memory:")
     stored = await db.add_concepts(CONCEPTS)
 
-    print("=== Flashcard ===")
-    ex = generate_flashcard(stored[0])
-    print(f"  Q: {ex.concept.front}")
-    print(f"  A: {ex.concept.back}")
-    r = evaluate_answer(ex, "Paris")
-    print(f"  Correct: {r.correct}")
-
-    print("\n=== Multiple Choice ===")
+    print("=== Multiple Choice ===")
     ex = generate_multiple_choice(
         stored[1], stored,
     )

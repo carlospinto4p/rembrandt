@@ -74,18 +74,6 @@ def _strip_accents(text: str) -> str:
 # --- Exercise Generators ---
 
 
-def generate_flashcard(concept: Concept) -> Exercise:
-    """Create a simple flashcard exercise.
-
-    :param concept: The concept to test.
-    :return: A flashcard `Exercise`.
-    """
-    return Exercise(
-        concept=concept,
-        exercise_type=ExerciseType.FLASHCARD,
-    )
-
-
 def generate_multiple_choice(
     concept: Concept,
     all_concepts: list[Concept],
@@ -140,8 +128,8 @@ def generate_exercise(
     """Generate an exercise for a concept.
 
     Picks uniformly from all exercise types. Falls back to
-    flashcard/self-graded when fewer than 2 concepts are
-    available (multiple choice needs distractors).
+    self-graded when fewer than 2 concepts are available
+    (multiple choice needs distractors).
 
     :param concept: The concept to test.
     :param all_concepts: Pool of concepts for multiple-choice
@@ -149,16 +137,9 @@ def generate_exercise(
     :return: A generated `Exercise`.
     """
     if len(all_concepts) < 2:
-        pool = [
-            ExerciseType.FLASHCARD,
-            ExerciseType.SELF_GRADED,
-        ]
-    else:
-        pool = list(ExerciseType)
+        return generate_self_graded(concept)
 
-    chosen = random.choice(pool)
-    if chosen == ExerciseType.FLASHCARD:
-        return generate_flashcard(concept)
+    chosen = random.choice(list(ExerciseType))
     if chosen == ExerciseType.MULTIPLE_CHOICE:
         return generate_multiple_choice(
             concept, all_concepts,
