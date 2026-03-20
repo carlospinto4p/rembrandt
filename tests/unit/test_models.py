@@ -136,11 +136,10 @@ def test_exercise_type_values():
         ExerciseType.MULTIPLE_CHOICE
         == "multiple_choice"
     )
-    assert ExerciseType.SELF_GRADED == "self_graded"
 
 
 def test_exercise_type_count():
-    assert len(ExerciseType) == 3
+    assert len(ExerciseType) == 2
 
 
 # --- Exercise Tests ---

@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v7.0.0 - 20th March 2026
+
+- Removed `SELF_GRADED` exercise type — it shows the concept and
+  definition together, giving users no time to think.
+- Removed `generate_self_graded()` from `exercises`.
+- Updated `evaluate_answer()`: removed `quality` parameter and
+  self-graded branch.
+- Updated `Session.answer()`: removed `quality` parameter.
+
+
 ### v6.0.0 - 19th March 2026
 
 - Removed `REVERSE_FLASHCARD` exercise type — exercises should not

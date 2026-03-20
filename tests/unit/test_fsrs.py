@@ -311,7 +311,7 @@ def test_fsrs_review_suspended_unchanged():
 
 
 async def test_session_with_fsrs(db_with_concepts):
-    from rembrandt.models import ExerciseType
+
     from rembrandt.session import Session
 
     s = Session(
@@ -320,10 +320,7 @@ async def test_session_with_fsrs(db_with_concepts):
     )
     ex = await s.next_exercise()
     assert ex is not None
-    if ex.exercise_type == ExerciseType.SELF_GRADED:
-        result = await s.answer(quality=5)
-    else:
-        result = await s.answer(ex.concept.back)
+    result = await s.answer(ex.concept.back)
     assert result.correct is True
 
     progress = await db_with_concepts.get_progress(

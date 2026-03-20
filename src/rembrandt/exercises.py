@@ -4,7 +4,6 @@ import random
 import re
 import unicodedata
 
-from rembrandt.spaced_repetition import QUALITY_PASS_THRESHOLD
 from rembrandt.models import (
     AnswerResult,
     Concept,
@@ -118,21 +117,6 @@ def generate_multiple_choice(
     )
 
 
-def generate_self_graded(concept: Concept) -> Exercise:
-    """Create a self-graded flashcard exercise.
-
-    The user sees the front, mentally recalls the back,
-    then reveals it and self-assesses with a quality score.
-
-    :param concept: The concept to test.
-    :return: A self-graded `Exercise`.
-    """
-    return Exercise(
-        concept=concept,
-        exercise_type=ExerciseType.SELF_GRADED,
-    )
-
-
 def generate_exercise(
     concept: Concept,
     all_concepts: list[Concept],
@@ -140,8 +124,8 @@ def generate_exercise(
     """Generate an exercise for a concept.
 
     Picks uniformly from all exercise types. Falls back to
-    flashcard/self-graded when fewer than 2 concepts are
-    available (multiple choice needs distractors).
+    flashcard when fewer than 2 concepts are available
+    (multiple choice needs distractors).
 
     :param concept: The concept to test.
     :param all_concepts: Pool of concepts for multiple-choice
@@ -149,21 +133,14 @@ def generate_exercise(
     :return: A generated `Exercise`.
     """
     if len(all_concepts) < 2:
-        pool = [
-            ExerciseType.FLASHCARD,
-            ExerciseType.SELF_GRADED,
-        ]
-    else:
-        pool = list(ExerciseType)
+        return generate_flashcard(concept)
 
-    chosen = random.choice(pool)
+    chosen = random.choice(list(ExerciseType))
     if chosen == ExerciseType.FLASHCARD:
         return generate_flashcard(concept)
-    if chosen == ExerciseType.MULTIPLE_CHOICE:
-        return generate_multiple_choice(
-            concept, all_concepts,
-        )
-    return generate_self_graded(concept)
+    return generate_multiple_choice(
+        concept, all_concepts,
+    )
 
 
 # --- Answer Evaluation ---
@@ -270,44 +247,15 @@ def _resolve_option_number(
 def evaluate_answer(
     exercise: Exercise,
     answer_text: str = "",
-    quality: int | None = None,
 ) -> AnswerResult:
     """Evaluate a user's answer against the expected value.
 
     Comparison is case-insensitive and strips whitespace.
 
-    For `SELF_GRADED` exercises the `quality` parameter (0-5)
-    is required; `correct` is `True` when `quality >= 3`.
-
     :param exercise: The exercise being answered.
-    :param answer_text: The user's answer text (ignored for
-        self-graded exercises).
-    :param quality: Self-assessment score 0-5 (required for
-        `SELF_GRADED`, ignored otherwise).
+    :param answer_text: The user's answer text.
     :return: An `AnswerResult` indicating correctness.
-    :raises ValueError: If `quality` is missing or out of
-        range for a `SELF_GRADED` exercise.
     """
-    etype = exercise.exercise_type
-
-    if etype == ExerciseType.SELF_GRADED:
-        if quality is None:
-            raise ValueError(
-                "quality is required for SELF_GRADED "
-                "exercises"
-            )
-        if not 0 <= quality <= 5:
-            raise ValueError(
-                f"quality must be 0-5, got {quality}"
-            )
-        expected = exercise.concept.back
-        return AnswerResult(
-            correct=quality >= QUALITY_PASS_THRESHOLD,
-            expected=expected,
-            given=str(quality),
-            concept=exercise.concept,
-        )
-
     if exercise.expected_answer:
         expected = exercise.expected_answer
     else:

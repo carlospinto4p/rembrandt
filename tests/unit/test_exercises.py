@@ -1,13 +1,10 @@
 """Tests for rembrandt.exercises."""
 
-import pytest
-
 from rembrandt.exercises import (
     evaluate_answer,
     generate_exercise,
     generate_flashcard,
     generate_multiple_choice,
-    generate_self_graded,
 )
 from rembrandt.models import (
     Concept,
@@ -63,20 +60,6 @@ def test_generate_multiple_choice_fewer_concepts(
     assert "gato" in ex.options
 
 
-# --- Self-Graded Tests ---
-
-
-def test_generate_self_graded(sample_concepts):
-    ex = generate_self_graded(sample_concepts[0])
-    assert (
-        ex.exercise_type == ExerciseType.SELF_GRADED
-    )
-    assert (
-        ex.concept.front == "What is a p-value?"
-    )
-    assert ex.options == []
-
-
 # --- Random Exercise Tests ---
 
 
@@ -85,10 +68,7 @@ def test_generate_exercise_single_concept(
 ):
     concepts = short_concepts[:1]
     ex = generate_exercise(concepts[0], concepts)
-    assert ex.exercise_type in (
-        ExerciseType.FLASHCARD,
-        ExerciseType.SELF_GRADED,
-    )
+    assert ex.exercise_type == ExerciseType.FLASHCARD
 
 
 def test_generate_exercise_returns_valid_type(
@@ -100,7 +80,6 @@ def test_generate_exercise_returns_valid_type(
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.SELF_GRADED,
     )
 
 
@@ -116,7 +95,6 @@ def test_generate_exercise_all_types(
     assert types == {
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
-        ExerciseType.SELF_GRADED,
     }
 
 
@@ -153,54 +131,6 @@ def test_evaluate_answer_incorrect(short_concepts):
     assert result.correct is False
     assert result.expected == "gato"
     assert result.given == "perro"
-
-
-# --- Self-Graded Evaluation Tests ---
-
-
-def test_evaluate_self_graded_quality_high(
-    sample_concepts,
-):
-    ex = generate_self_graded(sample_concepts[0])
-    result = evaluate_answer(ex, quality=5)
-    assert result.correct is True
-    assert result.given == "5"
-
-
-def test_evaluate_self_graded_quality_threshold(
-    sample_concepts,
-):
-    ex = generate_self_graded(sample_concepts[0])
-    result = evaluate_answer(ex, quality=3)
-    assert result.correct is True
-
-
-def test_evaluate_self_graded_quality_low(
-    sample_concepts,
-):
-    ex = generate_self_graded(sample_concepts[0])
-    result = evaluate_answer(ex, quality=2)
-    assert result.correct is False
-
-
-def test_evaluate_self_graded_missing_quality(
-    sample_concepts,
-):
-    ex = generate_self_graded(sample_concepts[0])
-    with pytest.raises(
-        ValueError, match="quality is required",
-    ):
-        evaluate_answer(ex, "anything")
-
-
-def test_evaluate_self_graded_invalid_quality(
-    sample_concepts,
-):
-    ex = generate_self_graded(sample_concepts[0])
-    with pytest.raises(
-        ValueError, match="quality must be 0-5",
-    ):
-        evaluate_answer(ex, quality=6)
 
 
 # --- Flexible Answer Matching Tests ---

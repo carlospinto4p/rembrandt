@@ -190,7 +190,6 @@ class ExerciseType(str, Enum):
 
     FLASHCARD = "flashcard"
     MULTIPLE_CHOICE = "multiple_choice"
-    SELF_GRADED = "self_graded"
 
 
 class Exercise(BaseModel):

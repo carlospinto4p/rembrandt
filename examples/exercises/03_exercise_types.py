@@ -6,7 +6,6 @@ from rembrandt.exercises import (
     evaluate_answer,
     generate_flashcard,
     generate_multiple_choice,
-    generate_self_graded,
 )
 
 CONCEPTS = [
@@ -50,13 +49,6 @@ async def main():
     for i, opt in enumerate(ex.options, 1):
         print(f"  {i}. {opt}")
     r = evaluate_answer(ex, "Tokyo")
-    print(f"  Correct: {r.correct}")
-
-    print("\n=== Self-Graded ===")
-    ex = generate_self_graded(stored[3])
-    print(f"  Q: {ex.concept.front}")
-    print(f"  (reveal) A: {ex.concept.back}")
-    r = evaluate_answer(ex, quality=5)
     print(f"  Correct: {r.correct}")
 
     await db.close()

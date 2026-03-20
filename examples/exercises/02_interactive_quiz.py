@@ -1,9 +1,7 @@
 """Interactive quiz — math formulas."""
 
 import asyncio
-from rembrandt import (
-    ExerciseType, quick_session,
-)
+from rembrandt import quick_session
 
 FORMULAS = [
     {
@@ -47,21 +45,10 @@ async def main():
             for i, opt in enumerate(ex.options, 1):
                 print(f"  {i}. {opt}")
 
-        if (
-            ex.exercise_type
-            == ExerciseType.SELF_GRADED
-        ):
-            input("  Press Enter to reveal...")
-            print(f"  \u2192 {ex.concept.back}")
-            q = input("  Rate 0-5: ").strip()
-            result = await session.answer(
-                quality=int(q),
-            )
-        else:
-            answer = input("  Your answer: ").strip()
-            if answer.lower() == "q":
-                break
-            result = await session.answer(answer)
+        answer = input("  Your answer: ").strip()
+        if answer.lower() == "q":
+            break
+        result = await session.answer(answer)
 
         if result.correct:
             print("  Correct!")

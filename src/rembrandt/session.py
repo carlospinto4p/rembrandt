@@ -149,14 +149,10 @@ class Session:
     async def answer(
         self,
         text: str = "",
-        quality: int | None = None,
     ) -> AnswerResult:
         """Evaluate the user's answer and update progress.
 
-        :param text: The user's answer text (ignored for
-            self-graded exercises).
-        :param quality: Self-assessment score 0-5 (required
-            for `SELF_GRADED` exercises).
+        :param text: The user's answer text.
         :return: An `AnswerResult`.
         :raises RuntimeError: If no exercise is active.
         """
@@ -167,13 +163,10 @@ class Session:
             )
 
         result = evaluate_answer(
-            self._current_exercise, text, quality=quality,
+            self._current_exercise, text,
         )
 
-        if quality is not None:
-            sm2_quality = quality
-        else:
-            sm2_quality = 5 if result.correct else 1
+        sm2_quality = 5 if result.correct else 1
         concept_id = result.concept.id
         if concept_id is None:
             raise ValueError("Concept id must be set")
