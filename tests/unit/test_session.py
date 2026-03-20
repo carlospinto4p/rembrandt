@@ -26,6 +26,8 @@ def _correct_answer(ex: Exercise) -> dict:
     """Return kwargs for `session.answer()` that
     produce a correct answer for any exercise type.
     """
+    if ex.exercise_type == ExerciseType.SELF_GRADED:
+        return {"quality": 5}
     if ex.expected_answer:
         return {"text": ex.expected_answer}
     return {"text": ex.concept.back}
@@ -35,6 +37,8 @@ def _wrong_answer(ex: Exercise) -> dict:
     """Return kwargs for `session.answer()` that
     produce a wrong answer for any exercise type.
     """
+    if ex.exercise_type == ExerciseType.SELF_GRADED:
+        return {"quality": 1}
     return {"text": "wrong_answer_xyz"}
 
 
@@ -52,6 +56,7 @@ async def test_next_exercise_returns_exercise(session):
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
         ExerciseType.MULTIPLE_CHOICE,
+        ExerciseType.SELF_GRADED,
     )
 
 
@@ -332,6 +337,50 @@ async def test_skip_allows_next_exercise(session):
     session.skip()
     ex2 = await session.next_exercise()
     assert ex2 is not None
+
+
+# --- Self-Graded Exercise Tests ---
+
+
+async def test_self_graded_answer(db_with_concepts):
+    s = Session(db_with_concepts, 1)
+    for _ in range(100):
+        ex = await s.next_exercise()
+        if (
+            ex is not None
+            and ex.exercise_type
+            == ExerciseType.SELF_GRADED
+        ):
+            result = await s.answer(quality=4)
+            assert result.correct is True
+            return
+    pytest.skip("Did not get a self-graded exercise")
+
+
+async def test_self_graded_updates_progress(
+    db_with_concepts,
+):
+    s = Session(db_with_concepts, 1)
+    for _ in range(100):
+        ex = await s.next_exercise()
+        if (
+            ex is not None
+            and ex.exercise_type
+            == ExerciseType.SELF_GRADED
+        ):
+            concept_id = ex.concept.id
+            await s.answer(quality=4)
+            progress = (
+                await db_with_concepts.get_progress(
+                    1, concept_id,
+                )
+            )
+            assert progress is not None
+            assert (
+                progress.state == CardState.LEARNING
+            )
+            return
+    pytest.skip("Did not get a self-graded exercise")
 
 
 # --- quick_session Tests ---
