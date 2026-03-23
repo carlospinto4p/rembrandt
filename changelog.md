@@ -1,6 +1,30 @@
 
 ## Changelog - Rembrandt
 
+### v6.1.0 - 23rd March 2026
+
+- Added `Language` model in `models`: represents an available
+  language by ISO 639-1 code and name.
+- Added `ConceptTranslation` model in `models`: stores a
+  translated version of a concept (front, back, context) in a
+  specific language.
+- Added `languages` and `concept_translations` tables to the
+  database schema.
+- Added `Database` methods for language management:
+  - `add_language()`
+  - `get_languages()`
+  - `get_language()`
+  - `delete_language()`
+- Added `Database` methods for concept translations:
+  - `add_translation()`
+  - `get_translations()`
+  - `get_translation()`
+  - `update_translation()`
+  - `delete_translation()`
+- Exported `Language` and `ConceptTranslation` from the public
+  API.
+
+
 ### v6.0.0 - 19th March 2026
 
 - Removed `REVERSE_FLASHCARD` exercise type — exercises should not

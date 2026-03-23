@@ -233,6 +233,40 @@ session = Session(
 )
 ```
 
+## Multi-Language Translations
+
+Each concept can have translations in multiple languages:
+
+```python
+from rembrandt import Language, ConceptTranslation
+
+# Register languages
+await db.add_language("en", "English")
+await db.add_language("es", "Spanish")
+
+# Add a concept and its translations
+concept = await db.add_concept(
+    "What is overfitting?",
+    "Model learns noise, poor generalization",
+)
+await db.add_translation(
+    concept.id, "en",
+    front="What is overfitting?",
+    back="Model learns noise, poor generalization",
+    context="Common ML pitfall",
+)
+await db.add_translation(
+    concept.id, "es",
+    front="¿Qué es el sobreajuste?",
+    back="El modelo aprende ruido, mala generalización",
+    context="Error común en ML",
+)
+
+# Fetch translations
+all_tr = await db.get_translations(concept.id)
+es_tr = await db.get_translation(concept.id, "es")
+```
+
 ## Weak Concepts
 
 ```python

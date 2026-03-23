@@ -460,6 +460,41 @@ class ReviewForecast(BaseModel):
     due_count: int
 
 
+class Language(BaseModel):
+    """A language available for concept translations.
+
+    :param code: ISO 639-1 language code (e.g. `"en"`,
+        `"es"`).
+    :param name: Human-readable language name (e.g.
+        `"English"`, `"Spanish"`).
+    """
+
+    code: str
+    name: str
+
+
+class ConceptTranslation(BaseModel):
+    """A concept translated into a specific language.
+
+    All three text fields (`front`, `back`, `context`) are
+    required so that each translation is a complete,
+    self-contained version of the concept.
+
+    :param concept_id: The concept this translation belongs to.
+    :param language_code: ISO 639-1 code referencing a
+        `Language`.
+    :param front: Translated prompt.
+    :param back: Translated answer.
+    :param context: Translated explanation or notes.
+    """
+
+    concept_id: int
+    language_code: str
+    front: str
+    back: str
+    context: str
+
+
 class ConversationStage(str, Enum):
     """Stage in a multi-step bot conversation.
 

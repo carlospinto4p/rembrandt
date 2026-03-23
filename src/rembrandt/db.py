@@ -14,10 +14,12 @@ import aiosqlite
 from rembrandt.models import (
     AnswerHistory,
     CardState,
+    ConceptTranslation,
     ConversationStage,
     ConversationState,
     Concept,
     DailyStats,
+    Language,
     ReviewForecast,
     SessionSnapshot,
     Topic,
@@ -121,12 +123,30 @@ CREATE TABLE IF NOT EXISTS conversation_states (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS languages (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS concept_translations (
+    concept_id    INTEGER NOT NULL,
+    language_code TEXT    NOT NULL,
+    front         TEXT    NOT NULL,
+    back          TEXT    NOT NULL,
+    context       TEXT    NOT NULL DEFAULT '',
+    PRIMARY KEY (concept_id, language_code),
+    FOREIGN KEY (concept_id) REFERENCES concepts(id),
+    FOREIGN KEY (language_code) REFERENCES languages(code)
+);
+
 CREATE INDEX IF NOT EXISTS idx_concepts_tags
     ON concepts(tags);
 CREATE INDEX IF NOT EXISTS idx_progress_user_state
     ON progress(user_id, state);
 CREATE INDEX IF NOT EXISTS idx_answer_user_concept
     ON answer_history(user_id, concept_id);
+CREATE INDEX IF NOT EXISTS idx_translations_lang
+    ON concept_translations(language_code);
 """
 
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
@@ -250,6 +270,24 @@ def _row_to_concept(r: aiosqlite.Row) -> Concept:
         context=r["context"],
         tags=json.loads(r["tags"]),
         owner_id=r["owner_id"],
+    )
+
+
+def _row_to_language(r: aiosqlite.Row) -> Language:
+    """Convert a SQLite row to a `Language` model."""
+    return Language(code=r["code"], name=r["name"])
+
+
+def _row_to_translation(
+    r: aiosqlite.Row,
+) -> ConceptTranslation:
+    """Convert a SQLite row to a `ConceptTranslation`."""
+    return ConceptTranslation(
+        concept_id=r["concept_id"],
+        language_code=r["language_code"],
+        front=r["front"],
+        back=r["back"],
+        context=r["context"],
     )
 
 
@@ -631,6 +669,229 @@ class Database:
         if cursor.rowcount == 0:
             raise ValueError(
                 f"Concept not found: {concept_id}"
+            )
+        await self._conn.commit()
+
+    # -- Languages ----------------------------------------------------
+
+    async def add_language(
+        self, code: str, name: str,
+    ) -> Language:
+        """Register a new language.
+
+        :param code: ISO 639-1 code (e.g. `"en"`).
+        :param name: Human-readable name (e.g. `"English"`).
+        :return: The created `Language`.
+        :raises ValueError: If the code already exists.
+        """
+        try:
+            await self._conn.execute(
+                "INSERT INTO languages (code, name) "
+                "VALUES (?, ?)",
+                (code, name),
+            )
+            await self._conn.commit()
+        except sqlite3.IntegrityError:
+            raise ValueError(
+                f"Language already exists: {code!r}"
+            )
+        return Language(code=code, name=name)
+
+    async def get_languages(self) -> list[Language]:
+        """Fetch all registered languages.
+
+        :return: List of `Language` models ordered by code.
+        """
+        cursor = await self._conn.execute(
+            "SELECT * FROM languages ORDER BY code",
+        )
+        rows = await cursor.fetchall()
+        return [_row_to_language(r) for r in rows]
+
+    async def get_language(
+        self, code: str,
+    ) -> Language | None:
+        """Fetch a language by code.
+
+        :param code: ISO 639-1 code.
+        :return: `Language` or `None` if not found.
+        """
+        cursor = await self._conn.execute(
+            "SELECT * FROM languages WHERE code = ?",
+            (code,),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return _row_to_language(row)
+
+    async def delete_language(
+        self, code: str,
+    ) -> None:
+        """Delete a language and all its translations.
+
+        :param code: ISO 639-1 code.
+        :raises ValueError: If the language does not exist.
+        """
+        cursor = await self._conn.execute(
+            "DELETE FROM languages WHERE code = ?",
+            (code,),
+        )
+        if cursor.rowcount == 0:
+            raise ValueError(
+                f"Language not found: {code!r}"
+            )
+        await self._conn.execute(
+            "DELETE FROM concept_translations "
+            "WHERE language_code = ?",
+            (code,),
+        )
+        await self._conn.commit()
+
+    # -- Concept Translations -----------------------------------------
+
+    async def add_translation(
+        self,
+        concept_id: int,
+        language_code: str,
+        front: str,
+        back: str,
+        context: str = "",
+    ) -> ConceptTranslation:
+        """Add a translation for a concept.
+
+        :param concept_id: The concept to translate.
+        :param language_code: ISO 639-1 code of the target
+            language.
+        :param front: Translated prompt.
+        :param back: Translated answer.
+        :param context: Translated explanation or notes.
+        :return: The created `ConceptTranslation`.
+        :raises ValueError: If a translation for this
+            concept/language pair already exists.
+        """
+        try:
+            await self._conn.execute(
+                "INSERT INTO concept_translations "
+                "(concept_id, language_code, "
+                "front, back, context) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    concept_id, language_code,
+                    front, back, context,
+                ),
+            )
+            await self._conn.commit()
+        except sqlite3.IntegrityError:
+            raise ValueError(
+                "Translation already exists: "
+                f"concept {concept_id}, "
+                f"language {language_code!r}"
+            )
+        return ConceptTranslation(
+            concept_id=concept_id,
+            language_code=language_code,
+            front=front,
+            back=back,
+            context=context,
+        )
+
+    async def get_translations(
+        self, concept_id: int,
+    ) -> list[ConceptTranslation]:
+        """Fetch all translations for a concept.
+
+        :param concept_id: The concept identifier.
+        :return: List of `ConceptTranslation` models.
+        """
+        cursor = await self._conn.execute(
+            "SELECT * FROM concept_translations "
+            "WHERE concept_id = ? "
+            "ORDER BY language_code",
+            (concept_id,),
+        )
+        rows = await cursor.fetchall()
+        return [_row_to_translation(r) for r in rows]
+
+    async def get_translation(
+        self,
+        concept_id: int,
+        language_code: str,
+    ) -> ConceptTranslation | None:
+        """Fetch a single translation.
+
+        :param concept_id: The concept identifier.
+        :param language_code: ISO 639-1 code.
+        :return: `ConceptTranslation` or `None`.
+        """
+        cursor = await self._conn.execute(
+            "SELECT * FROM concept_translations "
+            "WHERE concept_id = ? "
+            "AND language_code = ?",
+            (concept_id, language_code),
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return _row_to_translation(row)
+
+    async def update_translation(
+        self, translation: ConceptTranslation,
+    ) -> ConceptTranslation:
+        """Update an existing translation.
+
+        :param translation: The translation with updated
+            fields.
+        :return: The updated `ConceptTranslation`.
+        :raises ValueError: If the translation does not
+            exist.
+        """
+        cursor = await self._conn.execute(
+            "UPDATE concept_translations "
+            "SET front = ?, back = ?, context = ? "
+            "WHERE concept_id = ? "
+            "AND language_code = ?",
+            (
+                translation.front,
+                translation.back,
+                translation.context,
+                translation.concept_id,
+                translation.language_code,
+            ),
+        )
+        if cursor.rowcount == 0:
+            raise ValueError(
+                "Translation not found: "
+                f"concept {translation.concept_id}, "
+                f"language "
+                f"{translation.language_code!r}"
+            )
+        await self._conn.commit()
+        return translation
+
+    async def delete_translation(
+        self,
+        concept_id: int,
+        language_code: str,
+    ) -> None:
+        """Delete a translation.
+
+        :param concept_id: The concept identifier.
+        :param language_code: ISO 639-1 code.
+        :raises ValueError: If the translation does not
+            exist.
+        """
+        cursor = await self._conn.execute(
+            "DELETE FROM concept_translations "
+            "WHERE concept_id = ? "
+            "AND language_code = ?",
+            (concept_id, language_code),
+        )
+        if cursor.rowcount == 0:
+            raise ValueError(
+                "Translation not found: "
+                f"concept {concept_id}, "
+                f"language {language_code!r}"
             )
         await self._conn.commit()
 

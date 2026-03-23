@@ -8,6 +8,7 @@ from rembrandt.db import Database, import_concepts_csv
 from rembrandt.models import (
     CardState,
     Concept,
+    ConceptTranslation,
     ConversationStage,
     ConversationState,
     Topic,
@@ -1411,3 +1412,181 @@ async def test_conversation_state_preserves_data(db):
     assert loaded.data["tags"] == [
         "food", "travel",
     ]
+
+
+# --- Language CRUD Tests ---
+
+
+async def test_add_language(db):
+    lang = await db.add_language("en", "English")
+    assert lang.code == "en"
+    assert lang.name == "English"
+
+
+async def test_add_language_duplicate_raises(db):
+    await db.add_language("en", "English")
+    with pytest.raises(
+        ValueError, match="already exists",
+    ):
+        await db.add_language("en", "English")
+
+
+async def test_get_languages(db):
+    await db.add_language("es", "Spanish")
+    await db.add_language("en", "English")
+    langs = await db.get_languages()
+    assert [lg.code for lg in langs] == ["en", "es"]
+
+
+async def test_get_language_found(db):
+    await db.add_language("en", "English")
+    lang = await db.get_language("en")
+    assert lang is not None
+    assert lang.name == "English"
+
+
+async def test_get_language_not_found(db):
+    assert await db.get_language("xx") is None
+
+
+async def test_delete_language(db):
+    await db.add_language("en", "English")
+    await db.delete_language("en")
+    assert await db.get_language("en") is None
+
+
+async def test_delete_language_not_found_raises(db):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.delete_language("xx")
+
+
+async def test_delete_language_cascades_translations(db):
+    await db.add_language("en", "English")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "en", "front_en", "back_en", "ctx_en",
+    )
+    await db.delete_language("en")
+    assert await db.get_translations(c.id) == []
+
+
+# --- ConceptTranslation CRUD Tests ---
+
+
+async def test_add_translation(db):
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    tr = await db.add_translation(
+        c.id, "es", "frente", "dorso", "contexto",
+    )
+    assert tr.concept_id == c.id
+    assert tr.language_code == "es"
+    assert tr.front == "frente"
+    assert tr.back == "dorso"
+    assert tr.context == "contexto"
+
+
+async def test_add_translation_duplicate_raises(db):
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "es", "frente", "dorso", "ctx",
+    )
+    with pytest.raises(
+        ValueError, match="already exists",
+    ):
+        await db.add_translation(
+            c.id, "es", "x", "y", "z",
+        )
+
+
+async def test_get_translations(db):
+    await db.add_language("en", "English")
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "es", "frente", "dorso", "",
+    )
+    await db.add_translation(
+        c.id, "en", "front_en", "back_en", "",
+    )
+    trs = await db.get_translations(c.id)
+    assert len(trs) == 2
+    assert trs[0].language_code == "en"
+    assert trs[1].language_code == "es"
+
+
+async def test_get_translations_empty(db):
+    c = await db.add_concept("front", "back")
+    assert await db.get_translations(c.id) == []
+
+
+async def test_get_translation_found(db):
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "es", "frente", "dorso", "ctx",
+    )
+    tr = await db.get_translation(c.id, "es")
+    assert tr is not None
+    assert tr.front == "frente"
+
+
+async def test_get_translation_not_found(db):
+    c = await db.add_concept("front", "back")
+    assert await db.get_translation(c.id, "xx") is None
+
+
+async def test_update_translation(db):
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "es", "frente", "dorso", "",
+    )
+    updated = await db.update_translation(
+        ConceptTranslation(
+            concept_id=c.id,
+            language_code="es",
+            front="frente2",
+            back="dorso2",
+            context="nuevo",
+        ),
+    )
+    assert updated.front == "frente2"
+    reloaded = await db.get_translation(c.id, "es")
+    assert reloaded.back == "dorso2"
+    assert reloaded.context == "nuevo"
+
+
+async def test_update_translation_not_found_raises(db):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.update_translation(
+            ConceptTranslation(
+                concept_id=999,
+                language_code="xx",
+                front="a",
+                back="b",
+                context="c",
+            ),
+        )
+
+
+async def test_delete_translation(db):
+    await db.add_language("es", "Spanish")
+    c = await db.add_concept("front", "back")
+    await db.add_translation(
+        c.id, "es", "frente", "dorso", "",
+    )
+    await db.delete_translation(c.id, "es")
+    assert await db.get_translation(c.id, "es") is None
+
+
+async def test_delete_translation_not_found_raises(db):
+    with pytest.raises(
+        ValueError, match="not found",
+    ):
+        await db.delete_translation(999, "xx")
