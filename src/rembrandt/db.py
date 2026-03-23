@@ -29,7 +29,11 @@ from rembrandt.models import (
     WeakConcept,
 )
 
-_SCHEMA = """\
+_BASE_SCHEMA = """\
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT NOT NULL UNIQUE,
@@ -123,6 +127,20 @@ CREATE TABLE IF NOT EXISTS conversation_states (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_concepts_tags
+    ON concepts(tags);
+CREATE INDEX IF NOT EXISTS idx_progress_user_state
+    ON progress(user_id, state);
+CREATE INDEX IF NOT EXISTS idx_answer_user_concept
+    ON answer_history(user_id, concept_id);
+"""
+
+# Each migration is a SQL script applied in order.  The list
+# index corresponds to the target schema version (1-based).
+# Append new migrations here — never modify existing ones.
+_MIGRATIONS: list[str] = [
+    # --- Migration 1: multi-language translations ---
+    """\
 CREATE TABLE IF NOT EXISTS languages (
     code TEXT PRIMARY KEY,
     name TEXT NOT NULL
@@ -139,15 +157,52 @@ CREATE TABLE IF NOT EXISTS concept_translations (
     FOREIGN KEY (language_code) REFERENCES languages(code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_concepts_tags
-    ON concepts(tags);
-CREATE INDEX IF NOT EXISTS idx_progress_user_state
-    ON progress(user_id, state);
-CREATE INDEX IF NOT EXISTS idx_answer_user_concept
-    ON answer_history(user_id, concept_id);
 CREATE INDEX IF NOT EXISTS idx_translations_lang
     ON concept_translations(language_code);
-"""
+""",
+]
+
+
+async def _get_schema_version(
+    conn: aiosqlite.Connection,
+) -> int:
+    """Return the current schema version (0 if unset)."""
+    cursor = await conn.execute(
+        "SELECT version FROM schema_version "
+        "LIMIT 1",
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        return 0
+    return row[0]
+
+
+async def _set_schema_version(
+    conn: aiosqlite.Connection,
+    version: int,
+) -> None:
+    """Persist the schema version."""
+    await conn.execute(
+        "DELETE FROM schema_version",
+    )
+    await conn.execute(
+        "INSERT INTO schema_version (version) "
+        "VALUES (?)",
+        (version,),
+    )
+
+
+async def _apply_migrations(
+    conn: aiosqlite.Connection,
+) -> None:
+    """Run pending schema migrations."""
+    current = await _get_schema_version(conn)
+    for i, sql in enumerate(
+        _MIGRATIONS[current:], start=current + 1,
+    ):
+        await conn.executescript(sql)
+        await _set_schema_version(conn, i)
+        await conn.commit()
 
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
@@ -334,13 +389,18 @@ class Database:
     ) -> "Database":
         """Create and initialise a new `Database`.
 
+        Creates the base schema if needed, then applies any
+        pending migrations so that existing databases are
+        upgraded automatically.
+
         :param path: Path to the SQLite database file.
             Use `":memory:"` for an in-memory database.
         :return: An open `Database` instance.
         """
         conn = await aiosqlite.connect(str(path))
         conn.row_factory = aiosqlite.Row
-        await conn.executescript(_SCHEMA)
+        await conn.executescript(_BASE_SCHEMA)
+        await _apply_migrations(conn)
         return cls(conn)
 
     # -- Users --------------------------------------------------------

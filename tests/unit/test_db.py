@@ -1590,3 +1590,36 @@ async def test_delete_translation_not_found_raises(db):
         ValueError, match="not found",
     ):
         await db.delete_translation(999, "xx")
+
+
+# --- Schema Migration Tests ---
+
+
+async def test_migration_upgrades_old_database(tmp_path):
+    """An old database (no languages tables) gets migrated."""
+    import aiosqlite
+
+    from rembrandt.db import _BASE_SCHEMA
+
+    db_path = tmp_path / "old.db"
+    conn = await aiosqlite.connect(str(db_path))
+    # Create only the base schema (version 0, no migrations)
+    await conn.executescript(_BASE_SCHEMA)
+    await conn.execute(
+        "INSERT INTO schema_version (version) "
+        "VALUES (0)",
+    )
+    await conn.commit()
+    await conn.close()
+
+    # Now open with Database.connect — migrations should run
+    db = await Database.connect(db_path)
+    await db.add_language("en", "English")
+    c = await db.add_concept("hi", "hola")
+    await db.add_translation(
+        c.id, "en", "hi", "hello", "",
+    )
+    tr = await db.get_translation(c.id, "en")
+    assert tr is not None
+    assert tr.front == "hi"
+    await db.close()

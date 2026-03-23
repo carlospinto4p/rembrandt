@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v6.2.0 - 23rd March 2026
+
+- Added schema migration system to `Database`:
+  - `schema_version` table tracks the current schema version.
+  - `_MIGRATIONS` list holds incremental SQL scripts.
+  - `Database.connect()` applies pending migrations
+    automatically, so existing client databases are upgraded
+    on next connection.
+- Moved `languages` and `concept_translations` tables from the
+  base schema into migration 1, so pre-v6.1.0 databases get
+  them via migration.
+
+
 ### v6.1.1 - 23rd March 2026
 
 - Updated `.claude/rules/committing.md`: added shell command rules
