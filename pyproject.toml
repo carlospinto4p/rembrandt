@@ -1,6 +1,6 @@
 [project]
 name = "rembrandt"
-version = "6.1.0"
+version = "6.1.1"
 description = "A general-purpose spaced-repetition library for any subject."
 authors = [{ name = "Carlos Pinto", email = "carlospinto4p@gmail.com" }]
 readme = "README.md"

@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.1.1 - 23rd March 2026
+
+- Updated `.claude/rules/committing.md`: added shell command rules
+  (no `cd` prefix, one simple command per Bash call).
+
+
 ### v6.1.0 - 23rd March 2026
 
 - Added `Language` model in `models`: represents an available

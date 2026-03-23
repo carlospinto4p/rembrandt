@@ -24,8 +24,16 @@
      aborted — fix and retry.
 7. **Tag the version**: Run `git tag vX.Y.Z` to create a tag for the
    new version.
-8. **Push to remote**: Push the changes and tag with `git push` then
-   `git push --tags`
+8. **Push to remote**: Run `git push`, then `git push --tags` as
+   **separate** commands.
+
+## Shell Command Rules
+
+- **One simple command per Bash call.** Do not chain commands with
+  `&&`, `||`, or pipes unless strictly necessary.
+- **No `cd` prefix.** The working directory is already the project
+  root. Never write `cd /path && git ...` — just run the git
+  command directly.
 
 This workflow is MANDATORY after every prompt that results in code changes.
 
