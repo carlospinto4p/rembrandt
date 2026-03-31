@@ -74,6 +74,7 @@ class Session:
         self._new_served = 0
         self._review_served = 0
         self._all_concepts: list[Concept] | None = None
+        self._topic_concepts: list[Concept] | None = None
 
     async def next_exercise(self) -> Exercise | None:
         """Select a concept and generate an exercise.
@@ -119,8 +120,18 @@ class Session:
             self._all_concepts = (
                 await self.db.get_concepts(tag=tag)
             )
+        if (
+            self._topic_concepts is None
+            and self._concept_ids
+        ):
+            id_set = set(self._concept_ids)
+            self._topic_concepts = [
+                c for c in self._all_concepts
+                if c.id in id_set
+            ]
         exercise = generate_exercise(
             concept, self._all_concepts,
+            preferred=self._topic_concepts,
         )
         self._current_exercise = exercise
         self._hint_count = 0

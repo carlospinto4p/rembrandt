@@ -1,6 +1,19 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.0 - 31st March 2026
+
+- Added `preferred` parameter to `generate_multiple_choice()`
+  and `generate_exercise()` in `exercises.py`: distractors are
+  drawn from the preferred pool first (e.g. same-topic concepts),
+  falling back to `all_concepts` for remaining slots.
+- Updated `Session.next_exercise()` in `session.py`: when a
+  session has `concept_ids` set (topic-scoped), builds a
+  topic-filtered distractor pool so MC options come from the same
+  topic, producing harder exercises.
+- Added preferred-distractor tests in `test_exercises.py`.
+
+
 ### v6.2.1 - 31st March 2026
 
 - Fixed `evaluate_answer()` in `exercises.py`: `FLASHCARD`

@@ -63,6 +63,64 @@ def test_generate_multiple_choice_fewer_concepts(
     assert "gato" in ex.options
 
 
+# --- Preferred Distractors Tests ---
+
+
+def test_mc_preferred_distractors_used_first():
+    """Distractors come from preferred pool when available."""
+    target = Concept(id=1, front="a", back="A")
+    preferred = [
+        Concept(id=2, front="b", back="B"),
+        Concept(id=3, front="c", back="C"),
+        Concept(id=4, front="d", back="D"),
+    ]
+    fallback = preferred + [
+        Concept(id=5, front="e", back="E"),
+        Concept(id=6, front="f", back="F"),
+    ]
+    # Run many times to check distractors are from preferred
+    for _ in range(20):
+        ex = generate_multiple_choice(
+            target, fallback, num_options=4,
+            preferred=preferred + [target],
+        )
+        backs = set(ex.options) - {"A"}
+        assert backs <= {"B", "C", "D"}
+
+
+def test_mc_preferred_fallback_when_not_enough():
+    """Falls back to all_concepts when preferred is too small."""
+    target = Concept(id=1, front="a", back="A")
+    preferred = [
+        Concept(id=2, front="b", back="B"),
+    ]
+    fallback = preferred + [
+        Concept(id=3, front="c", back="C"),
+        Concept(id=4, front="d", back="D"),
+    ]
+    ex = generate_multiple_choice(
+        target, fallback, num_options=4,
+        preferred=preferred + [target],
+    )
+    assert len(ex.options) == 4
+    assert "A" in ex.options
+    assert "B" in ex.options
+
+
+def test_mc_no_preferred_uses_all():
+    """Without preferred, distractors come from all_concepts."""
+    target = Concept(id=1, front="a", back="A")
+    all_c = [
+        target,
+        Concept(id=2, front="b", back="B"),
+        Concept(id=3, front="c", back="C"),
+        Concept(id=4, front="d", back="D"),
+    ]
+    ex = generate_multiple_choice(target, all_c)
+    assert len(ex.options) == 4
+    assert "A" in ex.options
+
+
 # --- Self-Graded Tests ---
 
 

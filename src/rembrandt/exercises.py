@@ -90,24 +90,47 @@ def generate_multiple_choice(
     concept: Concept,
     all_concepts: list[Concept],
     num_options: int = 4,
+    *,
+    preferred: list[Concept] | None = None,
 ) -> Exercise:
     """Create a multiple-choice exercise with distractors.
 
+    When `preferred` is given, distractors are drawn from it
+    first (e.g. same-topic concepts). Remaining slots are
+    filled from `all_concepts`.
+
     :param concept: The concept to test (correct answer).
-    :param all_concepts: Pool of concepts to draw distractors
-        from.
+    :param all_concepts: Fallback pool of concepts to draw
+        distractors from.
     :param num_options: Total number of options including the
         correct answer.
+    :param preferred: Preferred distractor pool (e.g.
+        same-topic concepts). Used first before falling
+        back to `all_concepts`.
     :return: A multiple-choice `Exercise`.
     """
-    distractors = [
-        c for c in all_concepts
-        if c.id != concept.id
-    ]
-    num_distractors = min(
-        num_options - 1, len(distractors)
-    )
-    chosen = random.sample(distractors, num_distractors)
+    need = num_options - 1
+    chosen: list[Concept] = []
+    used_ids = {concept.id}
+
+    if preferred:
+        pool = [
+            c for c in preferred
+            if c.id not in used_ids
+        ]
+        take = min(need, len(pool))
+        chosen = random.sample(pool, take)
+        used_ids.update(c.id for c in chosen)
+
+    remaining = need - len(chosen)
+    if remaining > 0:
+        fallback = [
+            c for c in all_concepts
+            if c.id not in used_ids
+        ]
+        take = min(remaining, len(fallback))
+        chosen += random.sample(fallback, take)
+
     options = [concept.back] + [c.back for c in chosen]
     random.shuffle(options)
 
@@ -136,6 +159,8 @@ def generate_self_graded(concept: Concept) -> Exercise:
 def generate_exercise(
     concept: Concept,
     all_concepts: list[Concept],
+    *,
+    preferred: list[Concept] | None = None,
 ) -> Exercise:
     """Generate an exercise for a concept.
 
@@ -146,6 +171,9 @@ def generate_exercise(
     :param concept: The concept to test.
     :param all_concepts: Pool of concepts for multiple-choice
         distractors.
+    :param preferred: Preferred distractor pool passed to
+        `generate_multiple_choice` (e.g. same-topic
+        concepts).
     :return: A generated `Exercise`.
     """
     if len(all_concepts) < 2:
@@ -162,6 +190,7 @@ def generate_exercise(
     if chosen == ExerciseType.MULTIPLE_CHOICE:
         return generate_multiple_choice(
             concept, all_concepts,
+            preferred=preferred,
         )
     return generate_self_graded(concept)
 
