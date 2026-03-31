@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v6.2.1 - 31st March 2026
+
+- Fixed `evaluate_answer()` in `exercises.py`: `FLASHCARD`
+  exercises now support quality-based evaluation when `quality`
+  is provided, falling back to text-based matching when omitted.
+  Previously, passing `quality` to a `FLASHCARD` exercise was
+  silently ignored and text matching with empty string always
+  returned incorrect.
+- Added flashcard quality evaluation tests in
+  `test_exercises.py`.
+
+
 ### v6.2.0 - 23rd March 2026
 
 - Added schema migration system to `Database`:

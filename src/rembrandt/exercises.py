@@ -279,18 +279,32 @@ def evaluate_answer(
     For `SELF_GRADED` exercises the `quality` parameter (0-5)
     is required; `correct` is `True` when `quality >= 3`.
 
+    `FLASHCARD` exercises support both modes: when `quality`
+    is provided, quality-based evaluation is used (same as
+    `SELF_GRADED`); when omitted, text-based matching is
+    used.
+
     :param exercise: The exercise being answered.
     :param answer_text: The user's answer text (ignored for
-        self-graded exercises).
+        self-graded exercises and when `quality` is
+        provided).
     :param quality: Self-assessment score 0-5 (required for
-        `SELF_GRADED`, ignored otherwise).
+        `SELF_GRADED`, optional for `FLASHCARD`, ignored
+        for `MULTIPLE_CHOICE`).
     :return: An `AnswerResult` indicating correctness.
     :raises ValueError: If `quality` is missing or out of
         range for a `SELF_GRADED` exercise.
     """
     etype = exercise.exercise_type
 
-    if etype == ExerciseType.SELF_GRADED:
+    # Quality-based path: required for SELF_GRADED,
+    # optional for FLASHCARD.
+    use_quality = (
+        etype == ExerciseType.SELF_GRADED
+        or (etype == ExerciseType.FLASHCARD
+            and quality is not None)
+    )
+    if use_quality:
         if quality is None:
             raise ValueError(
                 "quality is required for SELF_GRADED "

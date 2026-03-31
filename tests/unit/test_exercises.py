@@ -203,6 +203,35 @@ def test_evaluate_self_graded_invalid_quality(
         evaluate_answer(ex, quality=6)
 
 
+# --- Flashcard Quality Evaluation Tests ---
+
+
+def test_evaluate_flashcard_quality_high(
+    short_concepts,
+):
+    ex = generate_flashcard(short_concepts[0])
+    result = evaluate_answer(ex, quality=5)
+    assert result.correct is True
+    assert result.given == "5"
+
+
+def test_evaluate_flashcard_quality_low(
+    short_concepts,
+):
+    ex = generate_flashcard(short_concepts[0])
+    result = evaluate_answer(ex, quality=2)
+    assert result.correct is False
+
+
+def test_evaluate_flashcard_text_still_works(
+    short_concepts,
+):
+    """FLASHCARD without quality falls back to text."""
+    ex = generate_flashcard(short_concepts[0])
+    result = evaluate_answer(ex, "gato")
+    assert result.correct is True
+
+
 # --- Flexible Answer Matching Tests ---
 
 
