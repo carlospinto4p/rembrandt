@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.1 - 2nd April 2026
+
+- Added `/backlog` skill in `.claude/skills/backlog/`.
+
+
 ### v6.3.0 - 31st March 2026
 
 - Added `preferred` parameter to `generate_multiple_choice()`
