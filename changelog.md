@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.2 - 2nd April 2026
+
+- `CLAUDE.md`:
+  - Added Shell Commands, Project Configuration, Versioning / Release,
+    and Testing sections.
+
+
 ### v6.3.1 - 2nd April 2026
 
 - Added `/backlog` skill in `.claude/skills/backlog/`.

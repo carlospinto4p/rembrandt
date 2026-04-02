@@ -14,6 +14,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Rembrandt is a general-purpose spaced-repetition library for any subject (data science, math, history, vocabulary, etc.). The core unit is a **Concept** (front/back/context/tags) grouped into **Topics**.
 
+## Shell Commands
+
+Never use compound shell commands with `cd && git` or `cd &&` chaining. Always use separate commands or `cd` first, then run the git/shell command independently.
+
+## Project Configuration
+
+Store project rules and preferences in project config files (e.g., `.claude/settings.json`, `CLAUDE.md`), NOT in memory files. Never save user instructions as memory files.
+
+## Versioning / Release
+
+After version bumps, always stage and commit `uv.lock` along with the version change. Never forget the lock file.
+
+## Testing
+
+After any code change, run the full test suite and fix all failures before committing. Pay special attention to mock patching paths, fixture values, and assertion text that may need updating after refactors.
+
 ## Common Commands
 
 **IMPORTANT**: Always use `uv run` to execute Python commands. Never run raw `python` commands.
