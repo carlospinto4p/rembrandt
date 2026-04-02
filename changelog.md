@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.3 - 2nd April 2026
+
+- `.claude/settings.json`:
+  - Added PreToolUse hook to block compound git commands.
+
+
 ### v6.3.2 - 2nd April 2026
 
 - `CLAUDE.md`:
