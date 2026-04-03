@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.5 - 3rd April 2026
+
+- `.claude/`:
+  - Migrated `/refactor` from command to skill (v1.0.0)
+    for version tracking.
+
+
 ### v6.3.4 - 3rd April 2026
 
 - `.claude/`:
