@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.9 - 3rd April 2026
+
+- `.claude/`:
+  - Removed empty `commands/` directory (all commands migrated to skills).
+
+
 ### v6.3.8 - 3rd April 2026
 
 - `.claude/`:
