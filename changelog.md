@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.4 - 3rd April 2026
+
+- `.claude/`:
+  - Updated hooks to v2: read stdin JSON instead of
+    broken `$CLAUDE_TOOL_INPUT`/`$CLAUDE_FILE` env vars.
+  - Added script files in `.claude/hooks/`.
+
+
 ### v6.3.3 - 2nd April 2026
 
 - `.claude/settings.json`:
