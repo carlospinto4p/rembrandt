@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.12 - 3rd April 2026
+
+- `.claude/rules/`:
+  - Normalized `committing.md` to canonical template.
+
+
 ### v6.3.11 - 3rd April 2026
 
 - `.claude/rules/`:
