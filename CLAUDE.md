@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 3. **Update CLAUDE.md Each Iteration**: Review and update this file when rules change or new important patterns emerge.
 
+4. **Periodic Reviews**: Every 6-7 versions, propose a `/refactor`, `/optimize`, and `/improvements` pass.
+
 ## Project Overview
 
 Rembrandt is a general-purpose spaced-repetition library for any subject (data science, math, history, vocabulary, etc.). The core unit is a **Concept** (front/back/context/tags) grouped into **Topics**.
@@ -22,14 +24,6 @@ Never use compound shell commands with `cd && git` or `cd &&` chaining. Always u
 
 Store project rules and preferences in project config files (e.g., `.claude/settings.json`, `CLAUDE.md`), NOT in memory files. Never save user instructions as memory files.
 
-## Versioning / Release
-
-After version bumps, always stage and commit `uv.lock` along with the version change. Never forget the lock file.
-
-## Testing
-
-After any code change, run the full test suite and fix all failures before committing. Pay special attention to mock patching paths, fixture values, and assertion text that may need updating after refactors.
-
 ## Common Commands
 
 **IMPORTANT**: Always use `uv run` to execute Python commands. Never run raw `python` commands.
@@ -39,7 +33,7 @@ After any code change, run the full test suite and fix all failures before commi
 uv sync --all-extras
 
 # Run unit tests
-uv run pytest tests/unit -v
+uv run pytest tests/ -v
 
 # Run linter
 uv run ruff check src/ tests/
@@ -48,14 +42,22 @@ uv run ruff check src/ tests/
 uv run ruff check src/ tests/ --fix
 ```
 
-## Conventions
+## Versioning / Release
 
-- Example scripts use numeric prefixes for ordering: `01_`, `02_`, etc.
+After version bumps, always stage and commit `uv.lock` along with the version change. Never forget the lock file.
+
+## Testing
+
+After any code change, run the full test suite and fix all failures before committing. Pay special attention to mock patching paths, fixture values, and assertion text that may need updating after refactors.
 
 ## Code Style
 
 - Line length: 78 characters (enforced by ruff)
 - Type hints required
-- **Do NOT use `from __future__ import annotations`** — the project requires Python >= 3.13, so PEP 604 union syntax (`X | Y`) and all modern annotation features work natively
 - Docstring style: Sphinx/reST (`:param:`, `:return:`, `:raises:`)
-- In docstrings, use single backticks (`` `name` ``) not double (`` ``name`` ``)
+- In docstrings, prefer single backticks (`` `name` ``) for inline code references
+- **Do NOT use `from __future__ import annotations`** — the project requires Python >= 3.13, so PEP 604 union syntax (`X | Y`) and all modern annotation features work natively
+
+## Conventions
+
+- Example scripts use numeric prefixes for ordering: `01_`, `02_`, etc.

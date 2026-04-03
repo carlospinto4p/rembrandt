@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.10 - 3rd April 2026
+
+- `CLAUDE.md`:
+  - Normalized to canonical template: added missing
+    shared sections, removed low-value sections.
+
+
 ### v6.3.9 - 3rd April 2026
 
 - `.claude/`:
