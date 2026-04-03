@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.8 - 3rd April 2026
+
+- `.claude/`:
+  - Migrated `/self-refinement` from command to skill
+    (v1.0.0) for version tracking.
+
+
 ### v6.3.7 - 3rd April 2026
 
 - `.claude/`:
