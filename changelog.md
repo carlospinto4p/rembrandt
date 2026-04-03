@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.13 - 4th April 2026
+
+- `.claude/rules/`:
+  - Normalized `versioning.md` to enhanced canonical
+    with detailed sub-bullet guidance.
+
+
 ### v6.3.12 - 3rd April 2026
 
 - `.claude/rules/`:
