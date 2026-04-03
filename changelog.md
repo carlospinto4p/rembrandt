@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.11 - 3rd April 2026
+
+- `.claude/rules/`:
+  - Updated `committing.md`: added one-cmd-per-bash.
+
+
 ### v6.3.10 - 3rd April 2026
 
 - `CLAUDE.md`:
