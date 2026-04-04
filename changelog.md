@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.14 - 4th April 2026
+
+- `.claude/hooks/`:
+  - Added `block-raw-python.sh`: enforces `uv run python`
+    over bare `python`.
+
+
 ### v6.3.13 - 4th April 2026
 
 - `.claude/rules/`:
