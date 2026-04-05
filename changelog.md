@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.17 - 5th April 2026
+
+- `.claude/hooks/`:
+  - Fixed stdin consumption: all hooks now
+    capture stdin before piping to python.
+
+
 ### v6.3.16 - 5th April 2026
 
 - `.claude/`:
