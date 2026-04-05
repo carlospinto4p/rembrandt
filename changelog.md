@@ -1,6 +1,16 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.16 - 5th April 2026
+
+- `.claude/`:
+  - Updated `backlog` skill (v1.3.0): auto-cleans
+    completed items before display, shows per-section
+    tables when backlog has multiple sections.
+  - Updated `backlog` rule: added auto-cleanup
+    section.
+
+
 ### v6.3.15 - 5th April 2026
 
 - `.claude/`:
