@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.18 - 5th April 2026
+
+- `.claude/`:
+  - Updated `backlog` skill (v1.4.0): tables now
+    always include Priority and Effort columns.
+
+
 ### v6.3.17 - 5th April 2026
 
 - `.claude/hooks/`:
