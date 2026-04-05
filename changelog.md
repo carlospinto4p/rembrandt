@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.20 - 5th April 2026
+
+- `.claude/rules/`:
+  - Updated `versioning.md`: added changelog
+    rotation section (30-version limit, yearly
+    archives in `changelog/YYYY.md`).
+
+
 ### v6.3.19 - 5th April 2026
 
 - Rotated changelog: archived 115 old
