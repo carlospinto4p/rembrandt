@@ -1,6 +1,15 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.15 - 5th April 2026
+
+- `.claude/`:
+  - Updated `backlog` skill (v1.1.0): auto-cleans
+    completed items when 5+ accumulate.
+  - Updated `backlog` rule: added auto-cleanup
+    section.
+
+
 ### v6.3.14 - 4th April 2026
 
 - `.claude/hooks/`:
