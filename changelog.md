@@ -1,6 +1,18 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.22 - 10th April 2026
+
+- `.claude/rules/`:
+  - Decoupled `/improvements` rule: canonical
+    `improvements.md` is now procedural only.
+  - Added `improvement-areas.md` with
+    project-specific areas to watch.
+- `.claude/skills/improvements/`:
+  - Updated `SKILL.md` to read both canonical
+    procedure and per-project areas.
+
+
 ### v6.3.21 - 5th April 2026
 
 - `.claude/rules/`:
