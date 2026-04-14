@@ -18,10 +18,6 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/pre-commit-tests.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/block-chained-commands.sh"
           }
         ]
       }
