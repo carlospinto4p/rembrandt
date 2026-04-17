@@ -21,8 +21,11 @@
       "Bash(tree:*)"
     ],
     "deny": [
-      "Read(credentials/**)",
-      "Read(.env)"
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(credentials/**)"
     ]
   }
 }
