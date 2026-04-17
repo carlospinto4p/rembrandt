@@ -1,6 +1,10 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.27 - 17th April 2026
+
+- `.gitattributes`: Added LF line ending normalization.
+
 ### v6.3.26 - 15th April 2026
 
 - `.claude/`: cross-project migration landed today:
