@@ -1,7 +1,6 @@
-# Set up
+# Pycharm
 .idea/
 .project
-*.local.*
 
 # Python
 __pycache__/
@@ -15,8 +14,36 @@ venv/
 credentials/
 */credentials/
 
+# Jupyter Notebooks
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Sketches
+sketches/
+notebooks/
+*.local.*
+*.tmp.*
+
+# AWS / Cloud
+.aws-sam/
+
+# Logs / Output
+*.log
+
+# Data
+*/data/
+
+# Large data files (suffix _all)
+*_all.*
+
+# Agent Builder workspace
+workspace/
+
 # Build artifacts
 build/
 
-# Runtime databases
-*.db
+# Ruff cache
+.ruff_cache/
+
+# direnv
+.envrc

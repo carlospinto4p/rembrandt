@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.30 - 20th April 2026
+
+- Synced canonical `.gitignore` from programme (direnv block).
+
+
 ### v6.3.29 - 20th April 2026
 
 - Synced canonical `.claude/rules/*.md` from programme.
