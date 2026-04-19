@@ -4,7 +4,7 @@
 
 **IMPORTANT**: After completing any task that involves code changes, ALWAYS follow this workflow:
 
-1. **Run tests**: Execute `uv run pytest tests/ -v` and ensure all tests pass
+1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
 2. **Update tests if needed**: If the changes require test updates, fix them before committing
 3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline changes (`.claude/rules/`, `CLAUDE.md`) in the changelog too.
 4. **Update README.md if needed**: When changes affect user-facing functionality:

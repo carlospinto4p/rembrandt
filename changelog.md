@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.29 - 20th April 2026
+
+- Synced canonical `.claude/rules/*.md` from programme.
+
+
 ### v6.3.28 - 19th April 2026
 
 - Added `scripts/pre-commit.sh`: canonical pre-commit check from programme. Auto-detects `tests/unit/` vs `tests/` and no-ops if neither exists.
