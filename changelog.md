@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.31 - 26th April 2026
+
+- Updated `.claude/rules/committing.md`: add Windows `SKIP=ruff-format,ruff-fix` pattern for pre-commit hook failures when ruff is not in PATH.
+
+
+
 ### v6.3.30 - 20th April 2026
 
 - Synced canonical `.gitignore` from programme (direnv block).
