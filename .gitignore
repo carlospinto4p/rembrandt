@@ -18,9 +18,7 @@ credentials/
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
-# Sketches
-sketches/
-notebooks/
+# Temp / local overrides
 *.local.*
 *.tmp.*
 
@@ -29,15 +27,6 @@ notebooks/
 
 # Logs / Output
 *.log
-
-# Data
-*/data/
-
-# Large data files (suffix _all)
-*_all.*
-
-# Agent Builder workspace
-workspace/
 
 # Build artifacts
 build/
@@ -48,3 +37,4 @@ build/
 # direnv / PowerShell venv env files
 .envrc
 .env.ps1
+.claude/settings.local.json
