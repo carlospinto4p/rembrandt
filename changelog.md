@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.33 - 2nd May 2026
+
+- Rotated changelog: archived 2 entries to , keeping 30.
+
+
+
 ### v6.3.32 - 26th April 2026
 
 - Updated `.claude/rules/committing.md`: remove SKIP workaround, ruff now runs via `uv run ruff` in all projects.
@@ -218,17 +224,5 @@
 
 - `.claude/settings.json`:
   - Added PreToolUse hook to block compound git commands.
-
-
-### v6.3.2 - 2nd April 2026
-
-- `CLAUDE.md`:
-  - Added Shell Commands, Project Configuration, Versioning / Release,
-    and Testing sections.
-
-
-### v6.3.1 - 2nd April 2026
-
-- Added `/backlog` skill in `.claude/skills/backlog/`.
 
 
