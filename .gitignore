@@ -34,7 +34,4 @@ build/
 # Ruff cache
 .ruff_cache/
 
-# direnv / PowerShell venv env files
-.envrc
-.env.ps1
 .claude/settings.local.json
