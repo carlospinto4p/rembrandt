@@ -23,6 +23,12 @@ credentials/
 *.tmp.*
 *.bak.*
 
+# Sketches / local experiments
+sketches/
+
+# Environment tokens
+.gitlab_token
+
 # AWS / Cloud
 .aws-sam/
 
@@ -36,3 +42,4 @@ build/
 .ruff_cache/
 
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
