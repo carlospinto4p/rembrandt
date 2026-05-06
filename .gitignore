@@ -1,6 +1,7 @@
-# Pycharm
+# Set up
 .idea/
 .project
+*.local.*
 
 # Python
 __pycache__/
@@ -14,32 +15,8 @@ venv/
 credentials/
 */credentials/
 
-# Jupyter Notebooks
-.ipynb_checkpoints
-*/.ipynb_checkpoints/*
-
-# Temp / local overrides
-*.local.*
-*.tmp.*
-*.bak.*
-
-# Sketches / local experiments
-sketches/
-
-# Environment tokens
-.gitlab_token
-
-# AWS / Cloud
-.aws-sam/
-
-# Logs / Output
-*.log
-
 # Build artifacts
 build/
 
-# Ruff cache
-.ruff_cache/
-
-.claude/settings.local.json
-.claude/scheduled_tasks.lock
+# Runtime databases
+*.db
