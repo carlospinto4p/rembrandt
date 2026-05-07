@@ -1,3 +1,9 @@
+---
+name: versioning
+description: Semantic versioning scheme, changelog format, and release workflow
+version: 1.0
+---
+
 # Versioning Workflow
 
 After making significant changes, proactively update the version and changelog as part of the commit workflow. Ask the user which version type (major/minor/patch) if unclear.
@@ -81,7 +87,7 @@ After making significant changes, proactively update the version and changelog a
 
 **IMPORTANT**: Always leave **two blank lines** between version entries in the changelog for readability.
 
-**IMPORTANT**: Always include changes to `.claude/rules/` and `CLAUDE.md` in the changelog. These are project configuration changes that affect development workflow and must be tracked like any other change.
+**IMPORTANT**: Always include changes under `.claude/` (rules, skills, commands, hooks, `settings.json`, `settings.local.json`) and `CLAUDE.md` in the changelog, and bump at least a patch version. These are project configuration/tooling changes that affect development workflow and must be tracked like any other change. Cross-project migrations that modify each repo's `.claude/` files require a patch bump per repo, not just in the project that drove the migration.
 
 ## Reading the Changelog
 
