@@ -1,3 +1,9 @@
+---
+name: committing
+description: Git commit conventions and post-change workflow
+version: 1.0
+---
+
 # Committing Guidelines
 
 ## Post-Change Workflow
@@ -6,30 +12,21 @@
 
 1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
 2. **Update tests if needed**: If the changes require test updates, fix them before committing
-3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline and tooling changes (`.claude/**`, `CLAUDE.md`) in the changelog too — **any** change under `.claude/` counts (rules, skills, commands, hooks, `settings.json`, etc.).
+3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline and tooling changes (`.claude/**`, `CLAUDE.md`) in the changelog too � **any** change under `.claude/` counts (rules, skills, commands, hooks, `settings.json`, etc.).
 4. **Update README.md if needed**: When changes affect user-facing functionality:
    - New methods or classes: add usage examples
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when `pyproject.toml` changed (version bumps, dependency changes, etc.). Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
-7. **Sync the registry when defs change**: If this change *added, renamed, or removed* a hook, skill, rule, or command (anywhere — global at `~/.claude/` or per-project under `.claude/`), or if it added new entries to `scripts/seed_config.py`, run the registry sync before committing:
-   - `uv run python scripts/seed_config.py` — register new `HookDef` / `SkillDef` / `RuleDef` / `CommandDef` entries (idempotent; existing rows are skipped).
-   - `uv run python scripts/sync_registry.py` — ingest the actual file contents (script bodies, `SKILL.md`, rule markdown, etc.) into the registry so the canonical content matches disk.
-   This is mandatory for new defs — without it, the registry is the cross-machine source of truth but won't carry the change. An unsynced def is effectively lost when switching machines. Pure edits to existing defs only need step 2 (`sync_registry.py`); seeding is only needed when the def's *identity* (name / hook_type / matcher / command) is new.
-8. **Promote and propagate edited defs**: If this change *edited the content* of an existing rule, skill, hook, or command (i.e. the def already existed and you reworked its body), the edit must reach every linked project — not just programme. After step 7:
-   - Identify the canonical source project for the def via `RULE_CANONICAL_OVERRIDES` (and the matching `_OVERRIDES` for other types) in `scripts/sync_registry.py`. If the edit landed in a different project (e.g. you edited `programme/.claude/rules/foo.md` but `cpinto` is the canonical source), mirror the edit to the canonical source first, then re-run `sync_registry.py`.
-   - Run `uv run python .claude/skills/promote-rule/promote_rule.py <source-project> <def-name> [<kind>]` (dry-run) to see the new vs old hash and the linked-project list.
-   - Run `uv run python .claude/skills/sync-config/push_to_projects.py` (dry-run) and inspect the per-project diff. **Inspect canonicals before push**: read each affected file, not just the line counts, to catch project-specific drift that a whole-file push would clobber. Drifted projects belong in `RULE_SKIP_PROJECTS` (or the type's equivalent) until section-aware push lands.
-   - At minimum, surface this as the obvious next step to the user before ending the turn — even if you don't apply. Skipping it leaves canonical content stale in 16+ repos.
-9. **Commit changes**: Create a commit with a descriptive message following the format below
+6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when `pyproject.toml` changed (version bumps, dependency changes, etc.). Note: `uv sync` may uninstall the editable install � if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
+7. **Commit changes**: Create a commit with a descriptive message following the format below
    - **Always include uv.lock** in commits when it has changed
-10. **Push to remote**: Push the changes with `git push`
+8. **Push to remote**: Push the changes with `git push`
 
 This workflow is MANDATORY after every prompt that results in code changes.
 
-**Config/tooling changes** (anything under `.claude/` — rules,
-skills, commands, hooks, `settings.json`, `settings.local.json` —
+**Config/tooling changes** (anything under `.claude/` � rules,
+skills, commands, hooks, `settings.json`, `settings.local.json` �
 and `CLAUDE.md`): still require a patch version bump and changelog
 entry, even when no application code changed. Follow the full
 workflow above (skip tests only if no code changed). This applies
@@ -67,7 +64,7 @@ Use conventional commit style:
   something a reader wouldn't get from the subject, the diff,
   and the changelog entry.
 - Reference issues when applicable
-- **One command per Bash call** — never chain git commands with `&&`,
+- **One command per Bash call** � never chain git commands with `&&`,
   `;`, heredocs, or subshells. Each `git add`, `git commit`,
   `git push`, etc. must be its own separate Bash call.
 
@@ -88,7 +85,7 @@ Do **not** write bodies that:
 - Add multi-paragraph design rationale that belongs in a PR description
 
 If you do add a body, separate it from the subject with a blank line
-and keep it tight — one short paragraph is almost always enough.
+and keep it tight � one short paragraph is almost always enough.
 
 ## Examples
 
