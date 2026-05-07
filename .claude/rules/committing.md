@@ -12,21 +12,21 @@ version: 1.0
 
 1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
 2. **Update tests if needed**: If the changes require test updates, fix them before committing
-3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline and tooling changes (`.claude/**`, `CLAUDE.md`) in the changelog too — **any** change under `.claude/` counts (rules, skills, commands, hooks, `settings.json`, etc.).
+3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline and tooling changes (`.claude/**`, `CLAUDE.md`) in the changelog too â€” **any** change under `.claude/` counts (rules, skills, commands, hooks, `settings.json`, etc.).
 4. **Update README.md if needed**: When changes affect user-facing functionality:
    - New methods or classes: add usage examples
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when `pyproject.toml` changed (version bumps, dependency changes, etc.). Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
+6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when `pyproject.toml` changed (version bumps, dependency changes, etc.). Note: `uv sync` may uninstall the editable install â€” if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
 7. **Commit changes**: Create a commit with a descriptive message following the format below
    - **Always include uv.lock** in commits when it has changed
 8. **Push to remote**: Push the changes with `git push`
 
 This workflow is MANDATORY after every prompt that results in code changes.
 
-**Config/tooling changes** (anything under `.claude/` — rules,
-skills, commands, hooks, `settings.json`, `settings.local.json` —
+**Config/tooling changes** (anything under `.claude/` â€” rules,
+skills, commands, hooks, `settings.json`, `settings.local.json` â€”
 and `CLAUDE.md`): still require a patch version bump and changelog
 entry, even when no application code changed. Follow the full
 workflow above (skip tests only if no code changed). This applies
@@ -64,7 +64,7 @@ Use conventional commit style:
   something a reader wouldn't get from the subject, the diff,
   and the changelog entry.
 - Reference issues when applicable
-- **One command per Bash call** — never chain git commands with `&&`,
+- **One command per Bash call** â€” never chain git commands with `&&`,
   `;`, heredocs, or subshells. Each `git add`, `git commit`,
   `git push`, etc. must be its own separate Bash call.
 
@@ -85,7 +85,7 @@ Do **not** write bodies that:
 - Add multi-paragraph design rationale that belongs in a PR description
 
 If you do add a body, separate it from the subject with a blank line
-and keep it tight — one short paragraph is almost always enough.
+and keep it tight â€” one short paragraph is almost always enough.
 
 ## Examples
 
