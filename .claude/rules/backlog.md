@@ -1,3 +1,9 @@
+---
+name: backlog
+description: Backlog management format and workflow
+version: 1.0
+---
+
 # Backlog Management
 
 The `backlog.md` file tracks all improvements, fixes, and refactoring proposals.
