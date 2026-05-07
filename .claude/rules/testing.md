@@ -1,3 +1,9 @@
+---
+name: testing
+description: Test structure, style, fixtures, and coverage guidelines
+version: 1.0
+---
+
 # Testing Guidelines
 
 ## Test Structure
