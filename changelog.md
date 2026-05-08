@@ -1,6 +1,13 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.36 - 9th May 2026
+
+- Regrouped 2 historical changelog entries flagged by `/changelog-review` (programme v2.52.143):
+  - `changelog/2026.md` v0.27.1: 3 bullets touching `db.py` collapsed under one parent.
+  - `changelog/2026.md` v0.9.0: 3 bullets touching `scripts/` collapsed under one parent.
+
+
 ### v6.3.35 - 9th May 2026
 
 - Updated `.claude/rules/versioning.md` (1.0 → 1.1): rewrote changelog-format section to fix rule/example contradiction; threshold now stated as "3+ top-level bullets touching the same module → group under a parent"; sub-bullet patterns reorganised; added "When NOT to group" section. Synced from programme v2.52.144.
