@@ -1,7 +1,7 @@
 ---
 name: versioning
 description: Semantic versioning scheme, changelog format, and release workflow
-version: 1.0
+version: 1.1
 ---
 
 # Versioning Workflow
@@ -33,57 +33,79 @@ After making significant changes, proactively update the version and changelog a
 1. `pyproject.toml` - Update the `version` field
 2. `changelog.md` - Add entry at the top following the format below
 
-**Changelog format — keep it concise:**
+**Changelog format:**
+
+Each version is a top-level bullet list. **When 3+ top-level
+bullets would touch the same file or directory, group them under
+a single parent bullet for that module** — do not repeat the
+path across siblings. With 1–2 same-module bullets, keep them
+flat with the path inline.
+
 ```markdown
 ### vX.Y.Z - DDth Month YYYY
 
-- Added enums in `module_name`:
-  - `EnumA`
-  - `EnumB`
-- Added `ClassName.method_name()`: brief description.
-- Updated `ClassName`: brief description of what changed.
+- Added `src/programme/release.py`:
+  - `BumpResult`: dataclass.
+  - `Bumper`: base class.
+  - `PythonBumper`, `KotlinBumper`, `NoneBumper`: language handlers.
+- Added `tests/unit/test_release.py`: 16 dispatch tests.
+- Closes the gap surfaced earlier today: cross-project commit
+  scripts now branch on `Project.language`.
 ```
 
-**Style rules:**
-- Use single backticks (`` `name` ``) for inline code — never double backticks.
-- Do not add "Breaking change" labels or bold markers — the major version bump already signals that. Just describe what changed.
-- Use short action verbs: "Added", "Updated", "Fixed", "Removed".
-- Name the class/method/enum directly — no need to repeat the full module path for every sub-item.
-- One bullet per logical change. **When listing 3+ items** (enums, methods, files, etc.), **always use sub-bullets** — never inline them in a comma-separated list.
-- **Always group by module**: Group items under a parent bullet for each module/directory (e.g., `src/`, `.claude/rules/`). This applies even when all items belong to a single module — the module header makes the scope clear at a glance.
+The grouped form makes the scope readable at a glance and removes
+path repetition. Narrative bullets (decisions, motivation,
+cross-project context) stay flat — they have no module to group
+by.
 
-**When to use sub-bullets:**
-- Multiple functions/classes added to the same module:
+**Style rules:**
+
+- Use single backticks (`` `name` ``) for inline code — never
+  double backticks.
+- Do not add "Breaking change" labels or bold markers — the major
+  version bump already signals that. Just describe what changed.
+- Use short action verbs: "Added", "Updated", "Fixed", "Removed".
+- Name the class/method/enum directly — no need to repeat the
+  full module path for every sub-item.
+- One bullet per logical change. **When listing 3+ items inside a
+  parent** (enums, methods, files, etc.), use sub-bullets — never
+  inline them in a comma-separated list.
+
+**Sub-bullet patterns** (each derives from the 3+ shared-module
+rule above):
+
+- **Same file** — multiple changes to one file:
   ```
-  - Added `db/utils.py`:
-    - `create_db()`: description.
-    - `require_db()`: description.
+  - `db/utils.py`:
+    - Added `create_db()`.
+    - Added `require_db()`.
+    - Added `dump_db()`.
   ```
-- Multiple files affected by the same logical change:
+- **Same directory** — multiple files in one directory:
   ```
   - Added unit tests:
     - `tests/test_base.py`: 22 tests.
     - `tests/test_tables.py`: 12 tests.
+    - `tests/test_drift.py`: 14 tests.
   ```
-- Multiple fixes in one version:
-  ```
-  - Fixed:
-    - `module_a.py`: description.
-    - `module_b.py`: description.
-  ```
-- Consequences of a parent change:
+- **Cascade** — a parent change with downstream consequences:
   ```
   - Moved `app/` into `src/project/app/`:
     - Updated `Dockerfile` entrypoint.
     - Updated `README.md` run command.
+    - Updated `docker-compose.yml` volume.
   ```
 
-**When NOT to use sub-bullets:**
-- Single-item sublists — fold into the parent bullet instead:
+**When NOT to group:**
+
+- 1- or 2-item changes touching the same module — keep flat with
+  the path inline:
   ```
   - Added `docs/schema.md`: ERD and schema documentation.
+  - Updated `src/foo.py` and `src/bar.py`: shared error class.
   ```
-- Unrelated changes — keep as separate top-level bullets.
+- Unrelated changes — separate top-level bullets.
+- Narrative bullets without a file reference — flat at top level.
 
 **IMPORTANT**: Always leave **two blank lines** between version entries in the changelog for readability.
 
