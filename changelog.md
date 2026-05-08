@@ -1,6 +1,12 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.34 - 8th May 2026
+
+- Synced canonical rules from `programme` v2.52.139/v2.52.140: `backlog`, `refactoring`, `optimization`, `improvements` rules promoted to global (`~/.claude/rules/`) and removed locally; `versioning.md` updated with depth-based-cadence batch exception.
+
+
+
 ### v6.3.33 - 2nd May 2026
 
 - Rotated changelog: archived 2 entries to , keeping 30.

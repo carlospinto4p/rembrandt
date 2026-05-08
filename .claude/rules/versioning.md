@@ -10,7 +10,7 @@ After making significant changes, proactively update the version and changelog a
 
 **Important: One feature per version release.** Each new feature gets its own version release. Do NOT combine multiple features into a single version, even if implemented in the same session. This keeps the changelog clean and makes it easier to track what changed in each version.
 
-**Exception — refactoring batches**: When running `/refactor` and implementing multiple cleanup items, they can share a single patch version since they are small, related improvements — not independent features.
+**Exception — periodic-pass batches**: When implementing items from a single periodic pass (`/scan`, `/improvements`, or `/prune`), small related items in the same finding category (e.g. several "Memory" findings from one scan) can share a single commit and patch version. Independent features still get their own version. The grouping unit is the finding category, not the entire backlog dump — this prevents version drift after a 60-item scan.
 
 **Version scheme** (semantic versioning):
 - `MAJOR.0.0` - Breaking changes (removed/renamed modules, changed dependencies, API changes that break existing code)
