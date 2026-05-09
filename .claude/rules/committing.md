@@ -1,7 +1,7 @@
 ---
 name: committing
 description: Git commit conventions and post-change workflow
-version: 1.0
+version: 1.1
 ---
 
 # Committing Guidelines
@@ -36,6 +36,27 @@ entry.
 
 **Pure tracking changes** (`backlog.md` checkboxes only): commit and push,
 but skip tests and version bump.
+
+## When to Skip Tests
+
+The default is to run tests (step 1). **Skip tests when the
+staged diff consists exclusively of one or more of**:
+
+- Markdown / docs (`*.md`, `changelog.md`, `README.md`)
+- Version bump in `pyproject.toml`
+- Lock file (`uv.lock`)
+- `.claude/` config files (rules, skills, commands, hooks,
+  `settings.json`, `settings.local.json`)
+- `CLAUDE.md`
+
+If **any** `.py` file is in the diff (including under
+`tests/`), run tests. If the diff mixes a skippable file with
+anything outside the list above, run tests. When in doubt, run
+them — but do not launch a long suite for a one-line markdown
+edit.
+
+The signal is the diff itself, not your intent. Check
+`git status --porcelain` before deciding.
 
 ## Commit Message Format
 
