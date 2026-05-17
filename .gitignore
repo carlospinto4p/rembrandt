@@ -20,3 +20,6 @@ build/
 
 # Runtime databases
 *.db
+
+# Generated
+.pre-commit-scripts/
