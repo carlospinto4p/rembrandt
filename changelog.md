@@ -1,6 +1,14 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.39 - 31st May 2026
+
+- Added `scripts/backup_db.py`: snapshots `data_science.db` to
+  `~/Dropbox/home/development/db/rembrandt/` using the SQLite online
+  backup API (atomic write; source opened read-only). Destination
+  overridable via `REMBRANDT_BACKUP_DEST` env var or `--dest` flag.
+
+
 ### v6.3.38 - 17th May 2026
 
 - Rotated changelog: archived 5 old entries to `changelog/2026.md`.
