@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.40 - 31st May 2026
+
+- Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
+
+
 ### v6.3.39 - 31st May 2026
 
 - Added `scripts/backup_db.py`: snapshots `data_science.db` to
