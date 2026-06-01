@@ -88,6 +88,18 @@ Use conventional commit style:
 - **One command per Bash call** — never chain git commands with `&&`,
   `;`, heredocs, or subshells. Each `git add`, `git commit`,
   `git push`, etc. must be its own separate Bash call.
+- **Never put a git command in a parallel tool batch.** Send each
+  git operation as the *only* tool call in its message and wait for
+  the result before the next. A `PreToolUse` hook that rejects one
+  call (`exit 2`) cancels every other call queued in the same
+  batch — so a single blocked `git commit` silently discards all
+  the reads/edits bundled with it, and stale results from the
+  cancelled batch get misread as current state. Serial git calls
+  avoid the cascade entirely.
+- **Use repeated `-m` flags for commit bodies**, not heredocs or
+  `$(cat <<EOF …)`. The newline in a heredoc trips the
+  chained-command hook even though the body is legitimate; two
+  `-m` flags (subject, then body) pass cleanly.
 
 ## When to Add a Body
 
