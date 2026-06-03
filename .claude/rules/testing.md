@@ -32,6 +32,8 @@ They never depend on external services or real data files.
   files.
 - Prefer `tmp_path` (built-in) for temporary files/databases.
 - Use `@pytest.fixture` without parentheses for consistency.
+- For SQLite-backed fixtures, use the session-scoped template
+  pattern — see the shared `testing-python` rule.
 
 ## Assertions
 

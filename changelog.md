@@ -1,6 +1,10 @@
 
 ## Changelog - Rembrandt
 
+### v6.3.42 - 3rd June 2026
+
+- Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
+
 ### v6.3.41 - 1st June 2026
 
 - Updated `.claude/rules/committing.md`: no-parallel-git-command rule and `-m` flag guidance.
