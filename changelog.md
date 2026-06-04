@@ -1,6 +1,11 @@
 
 ## Changelog - Rembrandt
 
+
+### v6.3.44 - 4th June 2026
+
+- Rotated changelog: archived 6 entries to `changelog/2026.md`.
+
 ### v6.3.43 - 4th June 2026
 
 - Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
@@ -207,44 +212,5 @@
 - `.claude/hooks/`:
   - Added `block-raw-python.sh`: enforces `uv run python`
     over bare `python`.
-
-
-### v6.3.13 - 4th April 2026
-
-- `.claude/rules/`:
-  - Normalized `versioning.md` to enhanced canonical
-    with detailed sub-bullet guidance.
-
-
-### v6.3.12 - 3rd April 2026
-
-- `.claude/rules/`:
-  - Normalized `committing.md` to canonical template.
-
-
-### v6.3.11 - 3rd April 2026
-
-- `.claude/rules/`:
-  - Updated `committing.md`: added one-cmd-per-bash.
-
-
-### v6.3.10 - 3rd April 2026
-
-- `CLAUDE.md`:
-  - Normalized to canonical template: added missing
-    shared sections, removed low-value sections.
-
-
-### v6.3.9 - 3rd April 2026
-
-- `.claude/`:
-  - Removed empty `commands/` directory (all commands migrated to skills).
-
-
-### v6.3.8 - 3rd April 2026
-
-- `.claude/`:
-  - Migrated `/self-refinement` from command to skill
-    (v1.0.0) for version tracking.
 
 
