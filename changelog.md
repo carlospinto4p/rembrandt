@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+
+### v6.3.45 - 7th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
 ### v6.3.44 - 4th June 2026
 
 - Rotated changelog: archived 6 entries to `changelog/2026.md`.
@@ -205,12 +210,5 @@
     completed items when 5+ accumulate.
   - Updated `backlog` rule: added auto-cleanup
     section.
-
-
-### v6.3.14 - 4th April 2026
-
-- `.claude/hooks/`:
-  - Added `block-raw-python.sh`: enforces `uv run python`
-    over bare `python`.
 
 
