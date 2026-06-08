@@ -23,3 +23,10 @@ build/
 
 # Generated
 .pre-commit-scripts/
+
+# Universal entries (programme sync)
+*.bak.*
+*.tmp.*
+.ruff_cache/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

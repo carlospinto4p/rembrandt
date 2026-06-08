@@ -115,8 +115,17 @@ rule above):
 
 **Never read the full changelog.** It wastes tokens.
 
-- **To add a new entry**: read only the first 5 lines
-  (`limit: 5`) to find the header, then prepend after it.
+- **To add a new entry**: read the top of the file —
+  enough to see the title line **and** the whole current
+  top entry (its `### vX.Y.Z` header *and* its bullets),
+  not just the first few lines. Then insert the new entry
+  in the blank gap **above** the current top header,
+  leaving that header untouched. **Never** let the edit
+  replace or modify the existing top `### vX.Y.Z` header
+  line — that deletes its entry's header and orphans the
+  bullets under your new entry (this silently flattened
+  six versions on 2026-06-07). The `check-changelog-headers`
+  pre-commit hook blocks a commit that does this.
 - **To find a specific entry**: use Grep with the version
   or keyword — never read the whole file to search.
 - **To count versions** (e.g., for periodic pass cadence):
