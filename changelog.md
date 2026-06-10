@@ -3,6 +3,11 @@
 
 
 
+
+### v6.3.47 - 10th June 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
 ### v6.3.46 - 8th June 2026
 
 - Synced from programme: reworded `versioning.md` changelog-prepend guidance (insert a new entry above the top header, never replace it) and added universal `.gitignore` entries (`*.bak.*`, `*.tmp.*`, etc.).
@@ -196,24 +201,5 @@
 - `.claude/hooks/`:
   - Fixed stdin consumption: all hooks now
     capture stdin before piping to python.
-
-
-### v6.3.16 - 5th April 2026
-
-- `.claude/`:
-  - Updated `backlog` skill (v1.3.0): auto-cleans
-    completed items before display, shows per-section
-    tables when backlog has multiple sections.
-  - Updated `backlog` rule: added auto-cleanup
-    section.
-
-
-### v6.3.15 - 5th April 2026
-
-- `.claude/`:
-  - Updated `backlog` skill (v1.1.0): auto-cleans
-    completed items when 5+ accumulate.
-  - Updated `backlog` rule: added auto-cleanup
-    section.
 
 
