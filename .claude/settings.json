@@ -24,8 +24,13 @@
       "Read(**/*.key)",
       "Read(**/*.pem)",
       "Read(.env)",
-      "Read(.env.*)",
-      "Read(credentials/**)"
+      "Read(credentials/**)",
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(.env.development)",
+      "Read(.env.production)",
+      "Read(.env.staging)",
+      "Read(.env.test)"
     ]
   }
 }
