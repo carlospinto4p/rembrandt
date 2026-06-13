@@ -4,6 +4,11 @@
 
 
 
+
+### v6.3.48 - 13th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
 ### v6.3.47 - 10th June 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
@@ -194,12 +199,5 @@
 - `.claude/`:
   - Updated `backlog` skill (v1.4.0): tables now
     always include Priority and Effort columns.
-
-
-### v6.3.17 - 5th April 2026
-
-- `.claude/hooks/`:
-  - Fixed stdin consumption: all hooks now
-    capture stdin before piping to python.
 
 
