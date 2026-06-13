@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.49 - 13th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v6.3.48 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
@@ -189,10 +194,3 @@
 
 - Rotated changelog: archived 115 old
   entries to `changelog/` yearly files.
-
-
-### v6.3.18 - 5th April 2026
-
-- `.claude/`:
-  - Updated `backlog` skill (v1.4.0): tables now
-    always include Priority and Effort columns.
