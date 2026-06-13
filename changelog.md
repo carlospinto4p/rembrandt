@@ -2,16 +2,15 @@
 ## Changelog - Rembrandt
 
 
-
-
-
 ### v6.3.48 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
 
+
 ### v6.3.47 - 10th June 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
 
 ### v6.3.46 - 8th June 2026
 
@@ -22,17 +21,21 @@
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
 
+
 ### v6.3.44 - 4th June 2026
 
 - Rotated changelog: archived 6 entries to `changelog/2026.md`.
+
 
 ### v6.3.43 - 4th June 2026
 
 - Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
 
+
 ### v6.3.42 - 3rd June 2026
 
 - Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
+
 
 ### v6.3.41 - 1st June 2026
 
@@ -57,11 +60,9 @@
 - Rotated changelog: archived 5 old entries to `changelog/2026.md`.
 
 
-
 ### v6.3.37 - 9th May 2026
 
 - Added `When to Skip Tests` section to `.claude/rules/committing.md`: explicit allowlist (markdown, version bump, lock file, `.claude/` config, `CLAUDE.md`) of diffs where tests can be safely skipped.
-
 
 
 ### v6.3.36 - 9th May 2026
@@ -76,11 +77,9 @@
 - Updated `.claude/rules/versioning.md` (1.0 → 1.1): rewrote changelog-format section to fix rule/example contradiction; threshold now stated as "3+ top-level bullets touching the same module → group under a parent"; sub-bullet patterns reorganised; added "When NOT to group" section. Synced from programme v2.52.144.
 
 
-
 ### v6.3.34 - 8th May 2026
 
 - Synced canonical rules from `programme` v2.52.139/v2.52.140: `backlog`, `refactoring`, `optimization`, `improvements` rules promoted to global (`~/.claude/rules/`) and removed locally; `versioning.md` updated with depth-based-cadence batch exception.
-
 
 
 ### v6.3.33 - 2nd May 2026
@@ -88,17 +87,14 @@
 - Rotated changelog: archived 2 entries to , keeping 30.
 
 
-
 ### v6.3.32 - 26th April 2026
 
 - Updated `.claude/rules/committing.md`: remove SKIP workaround, ruff now runs via `uv run ruff` in all projects.
 
 
-
 ### v6.3.31 - 26th April 2026
 
 - Updated `.claude/rules/committing.md`: add Windows `SKIP=ruff-format,ruff-fix` pattern for pre-commit hook failures when ruff is not in PATH.
-
 
 
 ### v6.3.30 - 20th April 2026
@@ -119,6 +115,7 @@
 ### v6.3.27 - 17th April 2026
 
 - `.gitattributes`: Added LF line ending normalization.
+
 
 ### v6.3.26 - 15th April 2026
 
@@ -199,5 +196,3 @@
 - `.claude/`:
   - Updated `backlog` skill (v1.4.0): tables now
     always include Priority and Effort columns.
-
-
