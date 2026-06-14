@@ -29,4 +29,4 @@ repos:
         entry: .pre-commit-scripts/check_changelog_headers.sh
         language: script
         pass_filenames: false
-        files: '^(changelog\.md|changelog/.*\.md)$'
+        files: '(^|/)changelog\.md$|(^|/)changelog/.*\.md$'

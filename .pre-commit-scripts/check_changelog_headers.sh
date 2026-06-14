@@ -15,10 +15,16 @@
 #
 # Pure bash + git/grep — no Python — so it drops into any repo (Rust,
 # Kotlin, Svelte, …) without pulling in a language runtime.
+#
+# The pathspec is depth-agnostic (`*changelog.md` / `*changelog/*.md`):
+# it covers a flat repo's root `changelog.md` plus its `changelog/`
+# archive AND every subproject `changelog.md` in a monorepo (e.g.
+# `agents7_ui/changelog.md`), so a single root-level hook guards them
+# all.
 
 set -u
 
-diff="$(git diff --cached -- changelog.md changelog)"
+diff="$(git diff --cached -- '*changelog.md' '*changelog/*.md')"
 if [ -z "$diff" ]; then
   exit 0
 fi
