@@ -22,3 +22,11 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+  - repo: local
+    hooks:
+      - id: check-changelog-headers
+        name: Changelog header overwrite guard
+        entry: .pre-commit-scripts/check_changelog_headers.sh
+        language: script
+        pass_filenames: false
+        files: '^(changelog\.md|changelog/.*\.md)$'
