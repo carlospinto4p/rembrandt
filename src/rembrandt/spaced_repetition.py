@@ -28,15 +28,13 @@ def _update_ef(ef: float, quality: int) -> float:
     :param quality: Quality score 0-5.
     :return: Updated easiness factor (>= 1.3).
     """
-    ef = ef + (
-        0.1
-        - (5 - quality) * (0.08 + (5 - quality) * 0.02)
-    )
+    ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
     return max(ef, 1.3)
 
 
 def _fuzz_interval(
-    interval: int, max_fuzz_factor: float,
+    interval: int,
+    max_fuzz_factor: float,
 ) -> int:
     """Add random jitter to a day-based interval.
 
@@ -50,13 +48,16 @@ def _fuzz_interval(
     return max(
         1,
         random.randint(
-            interval - fuzz_days, interval + fuzz_days,
+            interval - fuzz_days,
+            interval + fuzz_days,
         ),
     )
 
 
 def _schedule(
-    *, minutes: int = 0, days: int = 0,
+    *,
+    minutes: int = 0,
+    days: int = 0,
 ) -> datetime:
     """Calculate a next-review datetime from now.
 
@@ -65,7 +66,8 @@ def _schedule(
     :return: Scheduled datetime.
     """
     return datetime.now() + timedelta(
-        minutes=minutes, days=days,
+        minutes=minutes,
+        days=days,
     )
 
 
@@ -146,9 +148,7 @@ def _handle_learning(
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
             next_review=_schedule(
-                minutes=config.learning_steps[
-                    next_step
-                ],
+                minutes=config.learning_steps[next_step],
             ),
         )
     interval = _fuzz_interval(
@@ -182,10 +182,7 @@ def _handle_review(
             )
         else:
             interval = _fuzz_interval(
-                round(
-                    progress.interval
-                    * progress.easiness_factor
-                ),
+                round(progress.interval * progress.easiness_factor),
                 config.max_fuzz_factor,
             )
         return _ReviewResult(
@@ -197,10 +194,7 @@ def _handle_review(
             next_review=_schedule(days=interval),
         )
     lapse_count = progress.lapse_count + 1
-    if (
-        config.leech_threshold > 0
-        and lapse_count >= config.leech_threshold
-    ):
+    if config.leech_threshold > 0 and lapse_count >= config.leech_threshold:
         return _ReviewResult(
             state=CardState.SUSPENDED,
             step_index=progress.step_index,
@@ -222,10 +216,7 @@ def _handle_review(
         )
     interval = _fuzz_interval(
         max(
-            round(
-                progress.interval
-                * config.lapse_new_interval_factor
-            ),
+            round(progress.interval * config.lapse_new_interval_factor),
             config.lapse_min_interval,
         ),
         config.max_fuzz_factor,
@@ -266,17 +257,12 @@ def _handle_relearning(
             reps=progress.repetitions,
             lapse_count=progress.lapse_count,
             next_review=_schedule(
-                minutes=config.relearning_steps[
-                    next_step
-                ],
+                minutes=config.relearning_steps[next_step],
             ),
         )
     interval = _fuzz_interval(
         max(
-            round(
-                progress.interval
-                * config.lapse_new_interval_factor
-            ),
+            round(progress.interval * config.lapse_new_interval_factor),
             config.lapse_min_interval,
         ),
         config.max_fuzz_factor,
@@ -309,9 +295,7 @@ def review(
     :raises ValueError: If `quality` is not in 0..5.
     """
     if not 0 <= quality <= 5:
-        raise ValueError(
-            f"quality must be 0-5, got {quality}"
-        )
+        raise ValueError(f"quality must be 0-5, got {quality}")
 
     if progress.state == CardState.SUSPENDED:
         return progress
@@ -378,26 +362,21 @@ async def select_concepts(
     if not all_concepts:
         return []
 
-    allowed = (
-        set(concept_ids)
-        if concept_ids is not None else None
-    )
+    allowed = set(concept_ids) if concept_ids is not None else None
     excluded = exclude_concept_ids or set()
     if allowed is not None or excluded:
         all_concepts = [
-            c for c in all_concepts
-            if (allowed is None or c.id in allowed)
-            and c.id not in excluded
+            c
+            for c in all_concepts
+            if (allowed is None or c.id in allowed) and c.id not in excluded
         ]
         if not all_concepts:
             return []
 
-    ids = [
-        c.id for c in all_concepts
-        if c.id is not None
-    ]
+    ids = [c.id for c in all_concepts if c.id is not None]
     progress_map = await db.get_all_progress(
-        user_id, ids,
+        user_id,
+        ids,
     )
 
     now = datetime.now()
@@ -413,17 +392,22 @@ async def select_concepts(
             new.append(concept)
         elif progress.state == CardState.SUSPENDED:
             continue
-        elif progress.state in (
-            CardState.LEARNING,
-            CardState.RELEARNING,
-        ) and progress.next_review <= now:
+        elif (
+            progress.state
+            in (
+                CardState.LEARNING,
+                CardState.RELEARNING,
+            )
+            and progress.next_review <= now
+        ):
             in_steps.append(concept)
         elif progress.next_review <= now:
             due.append(concept)
 
     if prioritize_weak and due:
         weak = await db.weak_concepts(
-            user_id, tag=tag,
+            user_id,
+            tag=tag,
         )
         weak_ids = {wc.concept.id for wc in weak}
         due.sort(

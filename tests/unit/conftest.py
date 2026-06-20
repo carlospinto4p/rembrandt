@@ -90,42 +90,32 @@ async def db_with_concepts(tmp_path):
     )
     await database.register_user("u1", "pass")
     await database.register_user("u2", "pass")
-    await database.add_concepts([
-        Concept(
-            front="What is a p-value?",
-            back=(
-                "Probability of observing data"
-                " as extreme as sample given H0"
+    await database.add_concepts(
+        [
+            Concept(
+                front="What is a p-value?",
+                back=(
+                    "Probability of observing data"
+                    " as extreme as sample given H0"
+                ),
             ),
-        ),
-        Concept(
-            front="What is overfitting?",
-            back=(
-                "Model learns noise,"
-                " poor generalization"
+            Concept(
+                front="What is overfitting?",
+                back=("Model learns noise, poor generalization"),
             ),
-        ),
-        Concept(
-            front="What is gradient descent?",
-            back=(
-                "Iterative optimization"
-                " to minimize loss"
+            Concept(
+                front="What is gradient descent?",
+                back=("Iterative optimization to minimize loss"),
             ),
-        ),
-        Concept(
-            front="What is cross-validation?",
-            back=(
-                "Evaluate model"
-                " by partitioning data"
+            Concept(
+                front="What is cross-validation?",
+                back=("Evaluate model by partitioning data"),
             ),
-        ),
-        Concept(
-            front="What is regularization?",
-            back=(
-                "Penalty term"
-                " to prevent overfitting"
+            Concept(
+                front="What is regularization?",
+                back=("Penalty term to prevent overfitting"),
             ),
-        ),
-    ])
+        ]
+    )
     yield database
     await database.close()

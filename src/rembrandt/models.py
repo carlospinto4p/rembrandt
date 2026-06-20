@@ -293,12 +293,25 @@ class FSRSConfig(BaseModel):
     """
 
     weights: tuple[float, ...] = (
-        0.40255, 1.18385, 3.173, 15.69105,
-        7.1949, 0.5345, 1.4604, 0.0046,
-        1.54575, 0.1192, 1.01925,
-        1.9395, 0.11, 0.29605, 2.2698,
-        0.2315, 2.9898,
-        0.51655, 0.6621,
+        0.40255,
+        1.18385,
+        3.173,
+        15.69105,
+        7.1949,
+        0.5345,
+        1.4604,
+        0.0046,
+        1.54575,
+        0.1192,
+        1.01925,
+        1.9395,
+        0.11,
+        0.29605,
+        2.2698,
+        0.2315,
+        2.9898,
+        0.51655,
+        0.6621,
     )
     desired_retention: float = 0.9
     max_interval: int = 36500
@@ -384,9 +397,7 @@ class UserProgress(BaseModel):
     easiness_factor: float = 2.5
     interval: int = 0
     repetitions: int = 0
-    next_review: datetime = Field(
-        default_factory=datetime.now
-    )
+    next_review: datetime = Field(default_factory=datetime.now)
     state: CardState = CardState.NEW
     step_index: int = 0
     lapse_count: int = 0
@@ -429,9 +440,7 @@ class AnswerHistory(BaseModel):
     exercise_type: str
     correct: bool
     quality: int
-    answered_at: datetime = Field(
-        default_factory=datetime.now
-    )
+    answered_at: datetime = Field(default_factory=datetime.now)
 
 
 class DailyStats(BaseModel):

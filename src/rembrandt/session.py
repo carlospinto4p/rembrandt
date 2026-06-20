@@ -90,9 +90,7 @@ class Session:
             remaining = cfg.max_new_cards - self._new_served
             max_new = max(remaining, 0)
         if cfg is not None and cfg.max_review_cards > 0:
-            remaining = (
-                cfg.max_review_cards - self._review_served
-            )
+            remaining = cfg.max_review_cards - self._review_served
             max_review = max(remaining, 0)
 
         tag = self._tags[0] if self._tags else None
@@ -103,9 +101,7 @@ class Session:
             mode=self.mode,
             tag=tag,
             concept_ids=self._concept_ids,
-            exclude_concept_ids=(
-                self._buried_concept_ids or None
-            ),
+            exclude_concept_ids=(self._buried_concept_ids or None),
             max_new=max_new,
             max_review=max_review,
         )
@@ -117,20 +113,15 @@ class Session:
             self._buried_concept_ids.add(concept.id)
         await self._track_served(concept)
         if self._all_concepts is None:
-            self._all_concepts = (
-                await self.db.get_concepts(tag=tag)
-            )
-        if (
-            self._topic_concepts is None
-            and self._concept_ids
-        ):
+            self._all_concepts = await self.db.get_concepts(tag=tag)
+        if self._topic_concepts is None and self._concept_ids:
             id_set = set(self._concept_ids)
             self._topic_concepts = [
-                c for c in self._all_concepts
-                if c.id in id_set
+                c for c in self._all_concepts if c.id in id_set
             ]
         exercise = generate_exercise(
-            concept, self._all_concepts,
+            concept,
+            self._all_concepts,
             preferred=self._topic_concepts,
         )
         self._current_exercise = exercise
@@ -138,14 +129,16 @@ class Session:
         return exercise
 
     async def _track_served(
-        self, concept: Concept,
+        self,
+        concept: Concept,
     ) -> None:
         """Increment new/review served counters.
 
         :param concept: The concept about to be served.
         """
         progress = await self.db.get_progress(
-            self.user_id, concept.id,
+            self.user_id,
+            concept.id,
         )
         if progress is None:
             self._new_served += 1
@@ -173,12 +166,13 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. "
-                "Call next_exercise() first."
+                "No active exercise. Call next_exercise() first."
             )
 
         result = evaluate_answer(
-            self._current_exercise, text, quality=quality,
+            self._current_exercise,
+            text,
+            quality=quality,
         )
 
         if quality is not None:
@@ -188,9 +182,7 @@ class Session:
         concept_id = result.concept.id
         if concept_id is None:
             raise ValueError("Concept id must be set")
-        progress = await self.db.get_progress(
-            self.user_id, concept_id
-        )
+        progress = await self.db.get_progress(self.user_id, concept_id)
         if progress is None:
             progress = UserProgress(
                 user_id=self.user_id,
@@ -199,12 +191,14 @@ class Session:
 
         if self._fsrs_config is not None:
             updated = fsrs_review(
-                progress, sm2_quality,
+                progress,
+                sm2_quality,
                 config=self._fsrs_config,
             )
         else:
             updated = review(
-                progress, sm2_quality,
+                progress,
+                sm2_quality,
                 config=self._review_config,
             )
         await self.db.upsert_progress(updated)
@@ -243,8 +237,7 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. "
-                "Call next_exercise() first."
+                "No active exercise. Call next_exercise() first."
             )
         skipped = self._current_exercise
         self._current_exercise = None
@@ -263,8 +256,7 @@ class Session:
         """
         if self._current_exercise is None:
             raise RuntimeError(
-                "No active exercise. "
-                "Call next_exercise() first."
+                "No active exercise. Call next_exercise() first."
             )
         ex = self._current_exercise
         if ex.expected_answer:
@@ -277,10 +269,7 @@ class Session:
 
         first = answer[0] if answer else ""
         length = len(answer)
-        pattern = (
-            answer[:reveal] + "_" * (length - reveal)
-            if length else ""
-        )
+        pattern = answer[:reveal] + "_" * (length - reveal) if length else ""
 
         context = ex.concept.context or ""
 
@@ -298,9 +287,7 @@ class Session:
         :return: A `SessionStats` snapshot.
         """
         total = self._correct + self._incorrect
-        pct = (
-            self._correct / total * 100.0 if total else 0.0
-        )
+        pct = self._correct / total * 100.0 if total else 0.0
         return SessionStats(
             total=total,
             correct=self._correct,
@@ -343,7 +330,8 @@ class Session:
             sessions per user (e.g. a chat id).
         """
         await self.db.save_session_snapshot(
-            self.snapshot(), key=key,
+            self.snapshot(),
+            key=key,
         )
 
     @classmethod
@@ -363,7 +351,8 @@ class Session:
             snapshot exists.
         """
         snap = await db.get_session_snapshot(
-            user_id, key=key,
+            user_id,
+            key=key,
         )
         if snap is None:
             return None
@@ -423,9 +412,7 @@ async def quick_session(
     """
     if isinstance(vocab, list):
         if db_path is None:
-            raise ValueError(
-                "db_path is required when vocab is a list"
-            )
+            raise ValueError("db_path is required when vocab is a list")
         entries = vocab
     else:
         vocab = Path(vocab)
@@ -440,7 +427,8 @@ async def quick_session(
         user = await db.get_user("default")
         if user is None:
             user = await db.register_user(
-                "default", "default",
+                "default",
+                "default",
             )
         user_id = user.id
 
@@ -460,6 +448,7 @@ async def quick_session(
         await db.add_concepts(concepts)
 
     return Session(
-        db, user_id,
+        db,
+        user_id,
         review_config=review_config,
     )

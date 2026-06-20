@@ -11,11 +11,13 @@ from rembrandt.exercises import (
 
 CONCEPTS = [
     Concept(
-        front="Capital of France", back="Paris",
+        front="Capital of France",
+        back="Paris",
         tags=["geography"],
     ),
     Concept(
-        front="Capital of Japan", back="Tokyo",
+        front="Capital of Japan",
+        back="Tokyo",
         tags=["geography"],
     ),
     Concept(
@@ -44,7 +46,8 @@ async def main():
 
     print("\n=== Multiple Choice ===")
     ex = generate_multiple_choice(
-        stored[1], stored,
+        stored[1],
+        stored,
     )
     print(f"  Q: {ex.concept.front}")
     for i, opt in enumerate(ex.options, 1):

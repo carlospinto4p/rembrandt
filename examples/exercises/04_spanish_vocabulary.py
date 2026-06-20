@@ -17,18 +17,12 @@ SPANISH = [
     },
     {
         "front": "pragmático",
-        "back": (
-            "Que se orienta a la práctica "
-            "y la utilidad"
-        ),
+        "back": ("Que se orienta a la práctica y la utilidad"),
         "tags": ["español", "vocabulario"],
     },
     {
         "front": "resiliencia",
-        "back": (
-            "Capacidad de adaptarse a "
-            "situaciones adversas"
-        ),
+        "back": ("Capacidad de adaptarse a situaciones adversas"),
         "tags": ["español", "vocabulario"],
     },
 ]
@@ -36,7 +30,8 @@ SPANISH = [
 
 async def main():
     session = await quick_session(
-        SPANISH, db_path="spanish.db",
+        SPANISH,
+        db_path="spanish.db",
     )
 
     for _ in range(4):
@@ -48,9 +43,7 @@ async def main():
         if ex.options:
             for i, opt in enumerate(ex.options, 1):
                 print(f"  {i}. {opt}")
-        print(
-            f"  Definición: {ex.concept.back}"
-        )
+        print(f"  Definición: {ex.concept.back}")
         result = await session.answer(
             ex.concept.back,
         )

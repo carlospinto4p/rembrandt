@@ -168,8 +168,7 @@ async def _get_schema_version(
 ) -> int:
     """Return the current schema version (0 if unset)."""
     cursor = await conn.execute(
-        "SELECT version FROM schema_version "
-        "LIMIT 1",
+        "SELECT version FROM schema_version LIMIT 1",
     )
     row = await cursor.fetchone()
     if row is None:
@@ -186,8 +185,7 @@ async def _set_schema_version(
         "DELETE FROM schema_version",
     )
     await conn.execute(
-        "INSERT INTO schema_version (version) "
-        "VALUES (?)",
+        "INSERT INTO schema_version (version) VALUES (?)",
         (version,),
     )
 
@@ -198,11 +196,13 @@ async def _apply_migrations(
     """Run pending schema migrations."""
     current = await _get_schema_version(conn)
     for i, sql in enumerate(
-        _MIGRATIONS[current:], start=current + 1,
+        _MIGRATIONS[current:],
+        start=current + 1,
     ):
         await conn.executescript(sql)
         await _set_schema_version(conn, i)
         await conn.commit()
+
 
 _ISO_FMT = "%Y-%m-%dT%H:%M:%S"
 
@@ -379,13 +379,15 @@ class Database:
     """
 
     def __init__(
-        self, conn: aiosqlite.Connection,
+        self,
+        conn: aiosqlite.Connection,
     ) -> None:
         self._conn = conn
 
     @classmethod
     async def connect(
-        cls, path: str | Path,
+        cls,
+        path: str | Path,
     ) -> "Database":
         """Create and initialise a new `Database`.
 
@@ -431,9 +433,7 @@ class Database:
             )
             await self._conn.commit()
         except sqlite3.IntegrityError:
-            raise ValueError(
-                f"Username already exists: {username!r}"
-            )
+            raise ValueError(f"Username already exists: {username!r}")
         return User(
             id=cursor.lastrowid,
             username=username,
@@ -442,7 +442,8 @@ class Database:
         )
 
     async def get_user(
-        self, username: str,
+        self,
+        username: str,
     ) -> User | None:
         """Fetch a user by username.
 
@@ -474,7 +475,8 @@ class Database:
         if user is None:
             return None
         if not _verify_password(
-            password, user.password_hash,
+            password,
+            user.password_hash,
         ):
             return None
         return user
@@ -517,7 +519,8 @@ class Database:
         )
 
     async def get_session(
-        self, token: str,
+        self,
+        token: str,
     ) -> UserSession | None:
         """Fetch a session by token.
 
@@ -528,8 +531,7 @@ class Database:
         :return: `UserSession` or `None`.
         """
         cursor = await self._conn.execute(
-            "SELECT * FROM user_sessions "
-            "WHERE token = ?",
+            "SELECT * FROM user_sessions WHERE token = ?",
             (token,),
         )
         row = await cursor.fetchone()
@@ -552,15 +554,15 @@ class Database:
         await self._conn.commit()
 
     async def delete_user_sessions(
-        self, user_id: int,
+        self,
+        user_id: int,
     ) -> None:
         """Delete all sessions for a user.
 
         :param user_id: The user's database id.
         """
         await self._conn.execute(
-            "DELETE FROM user_sessions "
-            "WHERE user_id = ?",
+            "DELETE FROM user_sessions WHERE user_id = ?",
             (user_id,),
         )
         await self._conn.commit()
@@ -592,7 +594,9 @@ class Database:
             "(front, back, context, tags, owner_id) "
             "VALUES (?, ?, ?, ?, ?)",
             (
-                front, back, context,
+                front,
+                back,
+                context,
                 json.dumps(tags),
                 owner_id,
             ),
@@ -626,7 +630,9 @@ class Database:
                 "(front, back, context, tags, owner_id) "
                 "VALUES (?, ?, ?, ?, ?)",
                 (
-                    c.front, c.back, c.context,
+                    c.front,
+                    c.back,
+                    c.context,
                     json.dumps(c.tags),
                     c.owner_id,
                 ),
@@ -666,14 +672,9 @@ class Database:
             )
             params.append(tag)
         if owner_id is not None:
-            clauses.append(
-                "(owner_id IS NULL OR owner_id = ?)"
-            )
+            clauses.append("(owner_id IS NULL OR owner_id = ?)")
             params.append(owner_id)
-        sql = (
-            "SELECT id, front, back, context, "
-            "tags, owner_id FROM concepts"
-        )
+        sql = "SELECT id, front, back, context, tags, owner_id FROM concepts"
         if clauses:
             sql += " WHERE " + " AND ".join(clauses)
         cursor = await self._conn.execute(sql, params)
@@ -681,7 +682,8 @@ class Database:
         return [_row_to_concept(r) for r in rows]
 
     async def update_concept(
-        self, concept: Concept,
+        self,
+        concept: Concept,
     ) -> Concept:
         """Update an existing concept.
 
@@ -708,14 +710,13 @@ class Database:
             ),
         )
         if cursor.rowcount == 0:
-            raise ValueError(
-                f"Concept not found: {concept.id}"
-            )
+            raise ValueError(f"Concept not found: {concept.id}")
         await self._conn.commit()
         return concept
 
     async def delete_concept(
-        self, concept_id: int,
+        self,
+        concept_id: int,
     ) -> None:
         """Delete a concept by id.
 
@@ -727,15 +728,15 @@ class Database:
             (concept_id,),
         )
         if cursor.rowcount == 0:
-            raise ValueError(
-                f"Concept not found: {concept_id}"
-            )
+            raise ValueError(f"Concept not found: {concept_id}")
         await self._conn.commit()
 
     # -- Languages ----------------------------------------------------
 
     async def add_language(
-        self, code: str, name: str,
+        self,
+        code: str,
+        name: str,
     ) -> Language:
         """Register a new language.
 
@@ -746,15 +747,12 @@ class Database:
         """
         try:
             await self._conn.execute(
-                "INSERT INTO languages (code, name) "
-                "VALUES (?, ?)",
+                "INSERT INTO languages (code, name) VALUES (?, ?)",
                 (code, name),
             )
             await self._conn.commit()
         except sqlite3.IntegrityError:
-            raise ValueError(
-                f"Language already exists: {code!r}"
-            )
+            raise ValueError(f"Language already exists: {code!r}")
         return Language(code=code, name=name)
 
     async def get_languages(self) -> list[Language]:
@@ -769,7 +767,8 @@ class Database:
         return [_row_to_language(r) for r in rows]
 
     async def get_language(
-        self, code: str,
+        self,
+        code: str,
     ) -> Language | None:
         """Fetch a language by code.
 
@@ -786,7 +785,8 @@ class Database:
         return _row_to_language(row)
 
     async def delete_language(
-        self, code: str,
+        self,
+        code: str,
     ) -> None:
         """Delete a language and all its translations.
 
@@ -798,12 +798,9 @@ class Database:
             (code,),
         )
         if cursor.rowcount == 0:
-            raise ValueError(
-                f"Language not found: {code!r}"
-            )
+            raise ValueError(f"Language not found: {code!r}")
         await self._conn.execute(
-            "DELETE FROM concept_translations "
-            "WHERE language_code = ?",
+            "DELETE FROM concept_translations WHERE language_code = ?",
             (code,),
         )
         await self._conn.commit()
@@ -837,8 +834,11 @@ class Database:
                 "front, back, context) "
                 "VALUES (?, ?, ?, ?, ?)",
                 (
-                    concept_id, language_code,
-                    front, back, context,
+                    concept_id,
+                    language_code,
+                    front,
+                    back,
+                    context,
                 ),
             )
             await self._conn.commit()
@@ -857,7 +857,8 @@ class Database:
         )
 
     async def get_translations(
-        self, concept_id: int,
+        self,
+        concept_id: int,
     ) -> list[ConceptTranslation]:
         """Fetch all translations for a concept.
 
@@ -896,7 +897,8 @@ class Database:
         return _row_to_translation(row)
 
     async def update_translation(
-        self, translation: ConceptTranslation,
+        self,
+        translation: ConceptTranslation,
     ) -> ConceptTranslation:
         """Update an existing translation.
 
@@ -970,8 +972,7 @@ class Database:
             exists.
         """
         cursor = await self._conn.execute(
-            "SELECT * FROM progress "
-            "WHERE user_id = ? AND concept_id = ?",
+            "SELECT * FROM progress WHERE user_id = ? AND concept_id = ?",
             (user_id, concept_id),
         )
         row = await cursor.fetchone()
@@ -1001,13 +1002,11 @@ class Database:
             [user_id, *concept_ids],
         )
         rows = await cursor.fetchall()
-        return {
-            row["concept_id"]: _row_to_progress(row)
-            for row in rows
-        }
+        return {row["concept_id"]: _row_to_progress(row) for row in rows}
 
     async def upsert_progress(
-        self, progress: UserProgress,
+        self,
+        progress: UserProgress,
     ) -> None:
         """Insert or update progress for a user-concept pair.
 
@@ -1048,7 +1047,8 @@ class Database:
         await self._conn.commit()
 
     async def export_progress(
-        self, user_id: int,
+        self,
+        user_id: int,
     ) -> list[dict]:
         """Export all progress rows for a user as dicts.
 
@@ -1083,7 +1083,8 @@ class Database:
         ]
 
     async def import_progress(
-        self, records: list[dict],
+        self,
+        records: list[dict],
     ) -> int:
         """Import progress records, upserting each one.
 
@@ -1092,15 +1093,17 @@ class Database:
         :raises KeyError: If a required key is missing.
         """
         required = {
-            "user_id", "concept_id", "easiness_factor",
-            "interval", "repetitions", "next_review",
+            "user_id",
+            "concept_id",
+            "easiness_factor",
+            "interval",
+            "repetitions",
+            "next_review",
         }
         for rec in records:
             missing = required - rec.keys()
             if missing:
-                raise KeyError(
-                    f"Missing keys: {sorted(missing)}"
-                )
+                raise KeyError(f"Missing keys: {sorted(missing)}")
             state = rec.get("state", "review")
             step_index = rec.get("step_index", 0)
             lapse_count = rec.get("lapse_count", 0)
@@ -1173,8 +1176,11 @@ class Database:
             " correct, quality) "
             "VALUES (?, ?, ?, ?, ?)",
             (
-                user_id, concept_id, exercise_type,
-                int(correct), quality,
+                user_id,
+                concept_id,
+                exercise_type,
+                int(correct),
+                quality,
             ),
         )
         await self._conn.commit()
@@ -1206,13 +1212,11 @@ class Database:
         if since is not None:
             sql += "AND answered_at >= ? "
             params.append(since.strftime(_ISO_FMT))
-        sql += (
-            "ORDER BY answered_at DESC, id DESC "
-            "LIMIT ?"
-        )
+        sql += "ORDER BY answered_at DESC, id DESC LIMIT ?"
         params.append(limit)
         cursor = await self._conn.execute(
-            sql, params,
+            sql,
+            params,
         )
         rows = await cursor.fetchall()
         return [
@@ -1242,11 +1246,10 @@ class Database:
         :param days: Number of past days to include.
         :return: List of `DailyStats`, most recent first.
         """
-        cutoff = (
-            datetime.now() - timedelta(days=days)
-        ).strftime(_ISO_FMT)
+        cutoff = (datetime.now() - timedelta(days=days)).strftime(_ISO_FMT)
         cursor = await self._conn.execute(
-            _DAILY_STATS_SQL, (user_id, cutoff),
+            _DAILY_STATS_SQL,
+            (user_id, cutoff),
         )
         rows = await cursor.fetchall()
         return [
@@ -1285,8 +1288,11 @@ class Database:
             cursor = await self._conn.execute(
                 _WEAK_CONCEPTS_TAGGED_SQL,
                 (
-                    user_id, tag,
-                    min_attempts, threshold, limit,
+                    user_id,
+                    tag,
+                    min_attempts,
+                    threshold,
+                    limit,
                 ),
             )
         else:
@@ -1294,7 +1300,9 @@ class Database:
                 _WEAK_CONCEPTS_SQL,
                 (
                     user_id,
-                    min_attempts, threshold, limit,
+                    min_attempts,
+                    threshold,
+                    limit,
                 ),
             )
         rows = await cursor.fetchall()
@@ -1311,7 +1319,8 @@ class Database:
                 attempts=r["attempts"],
                 errors=r["errors"],
                 error_rate=round(
-                    r["errors"] / r["attempts"], 2,
+                    r["errors"] / r["attempts"],
+                    2,
                 ),
                 last_attempt=datetime.fromisoformat(
                     r["last_attempt"],
@@ -1333,9 +1342,7 @@ class Database:
         :return: Percentage of correct answers (0.0-100.0),
             or 0.0 if no answers exist.
         """
-        cutoff = (
-            datetime.now() - timedelta(days=days)
-        ).strftime(_ISO_FMT)
+        cutoff = (datetime.now() - timedelta(days=days)).strftime(_ISO_FMT)
         cursor = await self._conn.execute(
             "SELECT COUNT(*) AS total, "
             "SUM(CASE WHEN correct THEN 1 ELSE 0 END) "
@@ -1398,7 +1405,8 @@ class Database:
                 count += overdue
             result.append(
                 ReviewForecast(
-                    date=d_str, due_count=count,
+                    date=d_str,
+                    due_count=count,
                 )
             )
         return result
@@ -1424,7 +1432,8 @@ class Database:
             )
 
     async def add_topic(
-        self, topic: Topic,
+        self,
+        topic: Topic,
     ) -> Topic:
         """Insert a topic and link its concepts.
 
@@ -1434,7 +1443,8 @@ class Database:
         return (await self.add_topics([topic]))[0]
 
     async def add_topics(
-        self, topics: list[Topic],
+        self,
+        topics: list[Topic],
     ) -> list[Topic]:
         """Bulk-insert topics in a single transaction.
 
@@ -1458,7 +1468,8 @@ class Database:
             )
             topic_id = cursor.lastrowid
             await self._insert_topic_concepts(
-                topic_id, topic.concept_ids,
+                topic_id,
+                topic.concept_ids,
             )
             result.append(
                 topic.model_copy(
@@ -1487,10 +1498,7 @@ class Database:
                 "WHERE json_each.value = ?)"
             )
             params.append(tag)
-        where = (
-            " WHERE " + " AND ".join(clauses)
-            if clauses else ""
-        )
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
         cursor = await self._conn.execute(
             "SELECT id, title, description, "
             "tags, concept_count "
@@ -1513,9 +1521,9 @@ class Database:
         tc_rows = await cursor.fetchall()
         concept_map: dict[int, list[int]] = {}
         for tc in tc_rows:
-            concept_map.setdefault(
-                tc["topic_id"], []
-            ).append(tc["concept_id"])
+            concept_map.setdefault(tc["topic_id"], []).append(
+                tc["concept_id"]
+            )
         return [
             Topic(
                 id=r["id"],
@@ -1524,14 +1532,16 @@ class Database:
                 tags=json.loads(r["tags"]),
                 concept_count=r["concept_count"],
                 concept_ids=concept_map.get(
-                    r["id"], [],
+                    r["id"],
+                    [],
                 ),
             )
             for r in rows
         ]
 
     async def get_topic(
-        self, topic_id: int,
+        self,
+        topic_id: int,
     ) -> Topic | None:
         """Fetch a single topic by id.
 
@@ -1560,13 +1570,12 @@ class Database:
             description=row["description"],
             tags=json.loads(row["tags"]),
             concept_count=row["concept_count"],
-            concept_ids=[
-                r["concept_id"] for r in concept_rows
-            ],
+            concept_ids=[r["concept_id"] for r in concept_rows],
         )
 
     async def update_topic(
-        self, topic: Topic,
+        self,
+        topic: Topic,
     ) -> Topic:
         """Update an existing topic and its concept links.
 
@@ -1591,22 +1600,21 @@ class Database:
             ),
         )
         if cursor.rowcount == 0:
-            raise ValueError(
-                f"Topic not found: {topic.id}"
-            )
+            raise ValueError(f"Topic not found: {topic.id}")
         await self._conn.execute(
-            "DELETE FROM topic_concepts "
-            "WHERE topic_id = ?",
+            "DELETE FROM topic_concepts WHERE topic_id = ?",
             (topic.id,),
         )
         await self._insert_topic_concepts(
-            topic.id, topic.concept_ids,
+            topic.id,
+            topic.concept_ids,
         )
         await self._conn.commit()
         return topic
 
     async def delete_topic(
-        self, topic_id: int,
+        self,
+        topic_id: int,
     ) -> None:
         """Delete a topic and its concept links.
 
@@ -1614,8 +1622,7 @@ class Database:
         :raises ValueError: If the topic does not exist.
         """
         await self._conn.execute(
-            "DELETE FROM topic_concepts "
-            "WHERE topic_id = ?",
+            "DELETE FROM topic_concepts WHERE topic_id = ?",
             (topic_id,),
         )
         cursor = await self._conn.execute(
@@ -1623,9 +1630,7 @@ class Database:
             (topic_id,),
         )
         if cursor.rowcount == 0:
-            raise ValueError(
-                f"Topic not found: {topic_id}"
-            )
+            raise ValueError(f"Topic not found: {topic_id}")
         await self._conn.commit()
 
     async def save_session_snapshot(
@@ -1691,8 +1696,7 @@ class Database:
             `False` if none existed.
         """
         cursor = await self._conn.execute(
-            "DELETE FROM session_snapshots "
-            "WHERE user_id = ? AND key = ?",
+            "DELETE FROM session_snapshots WHERE user_id = ? AND key = ?",
             (user_id, key),
         )
         await self._conn.commit()
@@ -1765,8 +1769,7 @@ class Database:
             `False` if none existed.
         """
         cursor = await self._conn.execute(
-            "DELETE FROM conversation_states "
-            "WHERE user_id = ? AND key = ?",
+            "DELETE FROM conversation_states WHERE user_id = ? AND key = ?",
             (user_id, key),
         )
         await self._conn.commit()
@@ -1819,9 +1822,7 @@ async def import_concepts_csv(
     """
     path = Path(path)
     if delimiter is None:
-        delimiter = _CSV_DELIMITERS.get(
-            path.suffix.lower(), ","
-        )
+        delimiter = _CSV_DELIMITERS.get(path.suffix.lower(), ",")
     with open(path, encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh, delimiter=delimiter)
         fields = reader.fieldnames or []
@@ -1836,15 +1837,17 @@ async def import_concepts_csv(
         for row in reader:
             tags_raw = row.get("tags", "")
             tags = (
-                [t.strip() for t in tags_raw.split(",")
-                 if t.strip()]
-                if tags_raw else []
+                [t.strip() for t in tags_raw.split(",") if t.strip()]
+                if tags_raw
+                else []
             )
-            concepts.append(Concept(
-                front=row[front_col],
-                back=row[back_col],
-                context=row.get("context", ""),
-                tags=tags,
-                owner_id=owner_id,
-            ))
+            concepts.append(
+                Concept(
+                    front=row[front_col],
+                    back=row[back_col],
+                    context=row.get("context", ""),
+                    tags=tags,
+                    owner_id=owner_id,
+                )
+            )
     return await db.add_concepts(concepts)

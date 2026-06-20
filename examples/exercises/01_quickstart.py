@@ -35,8 +35,7 @@ CONCEPTS = [
     {
         "front": "What is regularization?",
         "back": (
-            "Penalty term added to loss function "
-            "to prevent overfitting"
+            "Penalty term added to loss function to prevent overfitting"
         ),
     },
 ]
@@ -44,7 +43,8 @@ CONCEPTS = [
 
 async def main():
     session = await quick_session(
-        CONCEPTS, db_path="quickstart.db",
+        CONCEPTS,
+        db_path="quickstart.db",
     )
 
     for _ in range(3):
@@ -65,10 +65,7 @@ async def main():
         print(f"  {tag}")
 
     stats = session.summary()
-    print(
-        f"\nScore: {stats.correct}/{stats.total} "
-        f"({stats.accuracy_pct}%)"
-    )
+    print(f"\nScore: {stats.correct}/{stats.total} ({stats.accuracy_pct}%)")
     await session.db.close()
 
 

@@ -28,7 +28,8 @@ EASY = 4
 
 
 def retrievability(
-    elapsed_days: float, stability: float,
+    elapsed_days: float,
+    stability: float,
 ) -> float:
     """Compute recall probability after `elapsed_days`.
 
@@ -55,16 +56,13 @@ def _interval(
     """
     if desired_retention <= 0 or desired_retention >= 1:
         return max_interval
-    iv = (
-        stability
-        / FACTOR
-        * (desired_retention ** (1 / DECAY) - 1)
-    )
+    iv = stability / FACTOR * (desired_retention ** (1 / DECAY) - 1)
     return max(1, min(round(iv), max_interval))
 
 
 def _init_stability(
-    grade: int, w: tuple[float, ...],
+    grade: int,
+    w: tuple[float, ...],
 ) -> float:
     """Initial stability for a first review.
 
@@ -76,7 +74,8 @@ def _init_stability(
 
 
 def _init_difficulty(
-    grade: int, w: tuple[float, ...],
+    grade: int,
+    w: tuple[float, ...],
 ) -> float:
     """Initial difficulty for a first review.
 
@@ -89,7 +88,9 @@ def _init_difficulty(
 
 
 def _next_difficulty(
-    d: float, grade: int, w: tuple[float, ...],
+    d: float,
+    grade: int,
+    w: tuple[float, ...],
 ) -> float:
     """Update difficulty after a review.
 
@@ -211,9 +212,7 @@ def fsrs_review(
             updated.step_index = 0
             if config.learning_steps:
                 mins = config.learning_steps[0]
-                updated.next_review = (
-                    now + timedelta(minutes=mins)
-                )
+                updated.next_review = now + timedelta(minutes=mins)
             else:
                 updated.next_review = now + timedelta(
                     days=_interval(
@@ -228,9 +227,7 @@ def fsrs_review(
             updated.step_index = 0
             if config.learning_steps:
                 mins = config.learning_steps[0]
-                updated.next_review = (
-                    now + timedelta(minutes=mins)
-                )
+                updated.next_review = now + timedelta(minutes=mins)
             else:
                 updated.state = CardState.REVIEW
                 updated.next_review = now + timedelta(
@@ -257,9 +254,7 @@ def fsrs_review(
                 else:
                     mins = config.learning_steps[1]
                     updated.step_index = 1
-                    updated.next_review = (
-                        now + timedelta(minutes=mins)
-                    )
+                    updated.next_review = now + timedelta(minutes=mins)
             else:
                 updated.state = CardState.REVIEW
                 updated.next_review = now + timedelta(
@@ -282,22 +277,20 @@ def fsrs_review(
 
     # --- LEARNING / RELEARNING state ---
     if progress.state in (
-        CardState.LEARNING, CardState.RELEARNING,
+        CardState.LEARNING,
+        CardState.RELEARNING,
     ):
-        is_relearning = (
-            progress.state == CardState.RELEARNING
-        )
+        is_relearning = progress.state == CardState.RELEARNING
         steps = (
-            config.relearning_steps if is_relearning
+            config.relearning_steps
+            if is_relearning
             else config.learning_steps
         )
 
         if grade == AGAIN:
             updated.step_index = 0
             if steps:
-                updated.next_review = (
-                    now + timedelta(minutes=steps[0])
-                )
+                updated.next_review = now + timedelta(minutes=steps[0])
             else:
                 updated.state = CardState.REVIEW
                 updated.next_review = now + timedelta(
@@ -308,8 +301,7 @@ def fsrs_review(
                     )
                 )
         elif grade in (GOOD, EASY) or (
-            grade == HARD
-            and progress.step_index + 1 >= len(steps)
+            grade == HARD and progress.step_index + 1 >= len(steps)
         ):
             # Graduate
             next_step = progress.step_index + 1
@@ -325,26 +317,21 @@ def fsrs_review(
                 )
             else:
                 updated.step_index = next_step
-                updated.next_review = (
-                    now
-                    + timedelta(minutes=steps[next_step])
+                updated.next_review = now + timedelta(
+                    minutes=steps[next_step]
                 )
         else:
             # HARD: stay at current step
             if steps and progress.step_index < len(steps):
                 mins = steps[progress.step_index]
-                updated.next_review = (
-                    now + timedelta(minutes=mins)
-                )
+                updated.next_review = now + timedelta(minutes=mins)
         return updated
 
     # --- REVIEW state ---
-    elapsed = (
-        now - progress.next_review
-    ).total_seconds() / 86400.0
-    elapsed = max(0.0, elapsed + (
-        progress.interval if progress.interval else 1
-    ))
+    elapsed = (now - progress.next_review).total_seconds() / 86400.0
+    elapsed = max(
+        0.0, elapsed + (progress.interval if progress.interval else 1)
+    )
 
     s = progress.stability or 1.0
     d = progress.difficulty or 5.0
@@ -354,7 +341,10 @@ def fsrs_review(
 
     if grade == AGAIN:
         updated.stability = _next_stability_fail(
-            d, s, r, w,
+            d,
+            s,
+            r,
+            w,
         )
         updated.lapse_count = progress.lapse_count + 1
         if config.relearning_steps:
@@ -370,12 +360,14 @@ def fsrs_review(
                 config.max_interval,
             )
             updated.interval = iv
-            updated.next_review = (
-                now + timedelta(days=iv)
-            )
+            updated.next_review = now + timedelta(days=iv)
     else:
         updated.stability = _next_stability_success(
-            d, s, r, grade, w,
+            d,
+            s,
+            r,
+            grade,
+            w,
         )
         iv = _interval(
             updated.stability,

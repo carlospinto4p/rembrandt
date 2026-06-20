@@ -13,8 +13,8 @@ from rembrandt.models import (
 )
 
 # Fuzzy matching: max Levenshtein distance by word length
-_FUZZY_MAX_SHORT = 1   # words with len <= 5
-_FUZZY_MAX_LONG = 2    # words with len > 5
+_FUZZY_MAX_SHORT = 1  # words with len <= 5
+_FUZZY_MAX_LONG = 2  # words with len > 5
 
 _RE_BRACKETS = re.compile(r"\s*\[.*?\]")
 _RE_PARENS = re.compile(r"\s*\(.*?\)")
@@ -38,11 +38,13 @@ def _levenshtein(a: str, b: str) -> int:
         curr = [i + 1]
         for j, cb in enumerate(b):
             cost = 0 if ca == cb else 1
-            curr.append(min(
-                prev[j + 1] + 1,
-                curr[j] + 1,
-                prev[j] + cost,
-            ))
+            curr.append(
+                min(
+                    prev[j + 1] + 1,
+                    curr[j] + 1,
+                    prev[j] + cost,
+                )
+            )
         prev = curr
     return prev[-1]
 
@@ -65,10 +67,7 @@ def _strip_accents(text: str) -> str:
     :return: String with accents removed.
     """
     nfkd = unicodedata.normalize("NFKD", text)
-    return "".join(
-        ch for ch in nfkd
-        if unicodedata.category(ch) != "Mn"
-    )
+    return "".join(ch for ch in nfkd if unicodedata.category(ch) != "Mn")
 
 
 # --- Exercise Generators ---
@@ -114,20 +113,14 @@ def generate_multiple_choice(
     used_ids = {concept.id}
 
     if preferred:
-        pool = [
-            c for c in preferred
-            if c.id not in used_ids
-        ]
+        pool = [c for c in preferred if c.id not in used_ids]
         take = min(need, len(pool))
         chosen = random.sample(pool, take)
         used_ids.update(c.id for c in chosen)
 
     remaining = need - len(chosen)
     if remaining > 0:
-        fallback = [
-            c for c in all_concepts
-            if c.id not in used_ids
-        ]
+        fallback = [c for c in all_concepts if c.id not in used_ids]
         take = min(remaining, len(fallback))
         chosen += random.sample(fallback, take)
 
@@ -189,7 +182,8 @@ def generate_exercise(
         return generate_flashcard(concept)
     if chosen == ExerciseType.MULTIPLE_CHOICE:
         return generate_multiple_choice(
-            concept, all_concepts,
+            concept,
+            all_concepts,
             preferred=preferred,
         )
     return generate_self_graded(concept)
@@ -211,16 +205,11 @@ def _acceptable_answers(expected: str) -> list[str]:
     """
     cleaned = _RE_BRACKETS.sub("", expected)
     cleaned = _RE_PARENS.sub("", cleaned)
-    segments = [
-        s.strip() for s in cleaned.split(";") if s.strip()
-    ]
+    segments = [s.strip() for s in cleaned.split(";") if s.strip()]
     # Also split comma-separated alternatives
     parts: list[str] = []
     for seg in segments:
-        parts.extend(
-            p.strip() for p in seg.split(",")
-            if p.strip()
-        )
+        parts.extend(p.strip() for p in seg.split(",") if p.strip())
     answers = [expected] + segments + parts
     seen: set[str] = set()
     unique: list[str] = []
@@ -233,7 +222,8 @@ def _acceptable_answers(expected: str) -> list[str]:
 
 
 def _answers_match(
-    given: str, expected: str,
+    given: str,
+    expected: str,
 ) -> str:
     """Check if `given` matches `expected` with flexible rules.
 
@@ -328,21 +318,14 @@ def evaluate_answer(
 
     # Quality-based path: required for SELF_GRADED,
     # optional for FLASHCARD.
-    use_quality = (
-        etype == ExerciseType.SELF_GRADED
-        or (etype == ExerciseType.FLASHCARD
-            and quality is not None)
+    use_quality = etype == ExerciseType.SELF_GRADED or (
+        etype == ExerciseType.FLASHCARD and quality is not None
     )
     if use_quality:
         if quality is None:
-            raise ValueError(
-                "quality is required for SELF_GRADED "
-                "exercises"
-            )
+            raise ValueError("quality is required for SELF_GRADED exercises")
         if not 0 <= quality <= 5:
-            raise ValueError(
-                f"quality must be 0-5, got {quality}"
-            )
+            raise ValueError(f"quality must be 0-5, got {quality}")
         expected = exercise.concept.back
         return AnswerResult(
             correct=quality >= QUALITY_PASS_THRESHOLD,
@@ -357,7 +340,8 @@ def evaluate_answer(
         expected = exercise.concept.back
 
     given = _resolve_option_number(
-        answer_text.strip(), exercise.options,
+        answer_text.strip(),
+        exercise.options,
     )
 
     match = _answers_match(given, expected)

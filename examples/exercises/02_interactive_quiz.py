@@ -2,7 +2,8 @@
 
 import asyncio
 from rembrandt import (
-    ExerciseType, quick_session,
+    ExerciseType,
+    quick_session,
 )
 
 FORMULAS = [
@@ -31,7 +32,8 @@ FORMULAS = [
 
 async def main():
     session = await quick_session(
-        FORMULAS, db_path="math_quiz.db",
+        FORMULAS,
+        db_path="math_quiz.db",
     )
 
     while True:
@@ -47,10 +49,7 @@ async def main():
             for i, opt in enumerate(ex.options, 1):
                 print(f"  {i}. {opt}")
 
-        if (
-            ex.exercise_type
-            == ExerciseType.SELF_GRADED
-        ):
+        if ex.exercise_type == ExerciseType.SELF_GRADED:
             input("  Press Enter to reveal...")
             print(f"  \u2192 {ex.concept.back}")
             q = input("  Rate 0-5: ").strip()
@@ -66,15 +65,10 @@ async def main():
         if result.correct:
             print("  Correct!")
         else:
-            print(
-                f"  Wrong \u2014 expected: "
-                f"{result.expected}"
-            )
+            print(f"  Wrong \u2014 expected: {result.expected}")
 
     stats = session.summary()
-    print(
-        f"\nDone: {stats.correct}/{stats.total}"
-    )
+    print(f"\nDone: {stats.correct}/{stats.total}")
     await session.db.close()
 
 

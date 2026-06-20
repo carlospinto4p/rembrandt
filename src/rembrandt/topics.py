@@ -34,13 +34,15 @@ async def load_topics(
     topics: list[Topic] = []
     for entry in raw_topics:
         concept_ids = entry.get("concept_ids", [])
-        topics.append(Topic(
-            title=entry["title"],
-            description=entry.get("description", ""),
-            tags=entry.get("tags", []),
-            concept_count=len(concept_ids),
-            concept_ids=concept_ids,
-        ))
+        topics.append(
+            Topic(
+                title=entry["title"],
+                description=entry.get("description", ""),
+                tags=entry.get("tags", []),
+                concept_count=len(concept_ids),
+                concept_ids=concept_ids,
+            )
+        )
     return await db.add_topics(topics)
 
 
@@ -70,12 +72,14 @@ async def topic_progress(
         )
 
     progress_map = await db.get_all_progress(
-        user_id, topic.concept_ids,
+        user_id,
+        topic.concept_ids,
     )
 
     studied = len(progress_map)
     mastered = sum(
-        1 for p in progress_map.values()
+        1
+        for p in progress_map.values()
         if p.state == CardState.REVIEW
         and p.repetitions >= MASTERY_REPETITIONS
     )

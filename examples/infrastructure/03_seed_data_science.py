@@ -33,8 +33,7 @@ STATISTICS = [
         tags=["statistics", "hypothesis-testing"],
     ),
     Concept(
-        front="What is the difference between "
-        "population and sample?",
+        front="What is the difference between population and sample?",
         back="A population is the entire group of "
         "interest; a sample is a subset drawn from it "
         "for analysis.",
@@ -101,8 +100,7 @@ MACHINE_LEARNING = [
         back="An optimization algorithm that iteratively "
         "updates parameters in the direction of steepest "
         "decrease of the loss function.",
-        context="Variants: batch, stochastic (SGD), "
-        "mini-batch.",
+        context="Variants: batch, stochastic (SGD), mini-batch.",
         tags=["ml", "optimization"],
     ),
     Concept(
@@ -164,8 +162,7 @@ DEEP_LEARNING = [
         tags=["deep-learning"],
     ),
     Concept(
-        front="What is a convolutional neural network "
-        "(CNN)?",
+        front="What is a convolutional neural network (CNN)?",
         back="A neural network that uses convolutional "
         "layers with learnable filters to extract spatial "
         "features. Dominant in image tasks.",
@@ -223,8 +220,7 @@ PYTHON_AND_TOOLS = [
         tags=["python", "pandas"],
     ),
     Concept(
-        front="What is the difference between "
-        "`loc` and `iloc` in pandas?",
+        front="What is the difference between `loc` and `iloc` in pandas?",
         back="`loc` selects by label (column/index "
         "names). `iloc` selects by integer position.",
         tags=["python", "pandas"],
@@ -325,16 +321,15 @@ async def main() -> None:
     ]
 
     for title, tags, concepts in groups:
-        topic = await db.add_topic(Topic(
-            title=title,
-            tags=tags,
-            concept_count=len(concepts),
-            concept_ids=[c.id for c in concepts],
-        ))
-        print(
-            f"  {topic.title}: "
-            f"{len(concepts)} concepts"
+        topic = await db.add_topic(
+            Topic(
+                title=title,
+                tags=tags,
+                concept_count=len(concepts),
+                concept_ids=[c.id for c in concepts],
+            )
         )
+        print(f"  {topic.title}: {len(concepts)} concepts")
 
     total = await db.get_concepts()
     print(f"\nTotal: {len(total)} concepts in 5 topics")

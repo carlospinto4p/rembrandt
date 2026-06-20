@@ -95,7 +95,8 @@ async def test_answer_updates_progress(session):
     await session.answer(**_correct_answer(ex))
 
     progress = await session.db.get_progress(
-        1, concept_id,
+        1,
+        concept_id,
     )
     assert progress is not None
     assert progress.state == CardState.LEARNING
@@ -103,7 +104,8 @@ async def test_answer_updates_progress(session):
 
 async def test_answer_without_exercise_raises(session):
     with pytest.raises(
-        RuntimeError, match="No active exercise",
+        RuntimeError,
+        match="No active exercise",
     ):
         await session.answer("anything")
 
@@ -203,9 +205,7 @@ async def test_hint_pattern_format(session):
     assert ex is not None
     h = session.hint()
     assert h.pattern[0] == h.first_letter
-    assert h.pattern.count("_") == (
-        h.word_length - 1
-    )
+    assert h.pattern.count("_") == (h.word_length - 1)
     assert len(h.pattern) == h.word_length
     assert h.reveal_count == 1
 
@@ -218,15 +218,11 @@ async def test_hint_progressive_reveal(session):
         expected = ex.expected_answer
     h1 = session.hint()
     assert h1.reveal_count == 1
-    assert h1.pattern == (
-        expected[0] + "_" * (len(expected) - 1)
-    )
+    assert h1.pattern == (expected[0] + "_" * (len(expected) - 1))
     h2 = session.hint()
     assert h2.reveal_count == 2
     assert h2.pattern[:2] == expected[:2]
-    assert h2.pattern.count("_") == (
-        len(expected) - 2
-    )
+    assert h2.pattern.count("_") == (len(expected) - 2)
 
 
 async def test_hint_reveal_caps_at_length(session):
@@ -254,7 +250,8 @@ async def test_hint_resets_on_new_exercise(session):
 
 async def test_hint_without_exercise_raises(session):
     with pytest.raises(
-        RuntimeError, match="No active exercise",
+        RuntimeError,
+        match="No active exercise",
     ):
         session.hint()
 
@@ -274,16 +271,20 @@ async def test_hint_context_field(tmp_path):
         tmp_path / "hint.db",
     )
     await database.register_user("u1", "pass")
-    await database.add_concepts([
-        Concept(
-            front="cat", back="gato",
-            context="A small furry animal",
-        ),
-        Concept(
-            front="dog", back="perro",
-            context="A loyal pet",
-        ),
-    ])
+    await database.add_concepts(
+        [
+            Concept(
+                front="cat",
+                back="gato",
+                context="A small furry animal",
+            ),
+            Concept(
+                front="dog",
+                back="perro",
+                context="A loyal pet",
+            ),
+        ]
+    )
     s = Session(database, user_id=1)
     await s.next_exercise()
     h = s.hint()
@@ -309,9 +310,7 @@ async def test_skip_does_not_affect_progress(
     assert ex is not None
     concept_id = ex.concept.id
     session.skip()
-    assert (
-        await session.db.get_progress(1, concept_id)
-    ) is None
+    assert (await session.db.get_progress(1, concept_id)) is None
 
 
 async def test_skip_does_not_affect_stats(session):
@@ -326,7 +325,8 @@ async def test_skip_does_not_affect_stats(session):
 
 async def test_skip_without_exercise_raises(session):
     with pytest.raises(
-        RuntimeError, match="No active exercise",
+        RuntimeError,
+        match="No active exercise",
     ):
         session.skip()
 
@@ -346,11 +346,7 @@ async def test_self_graded_answer(db_with_concepts):
     s = Session(db_with_concepts, 1)
     for _ in range(100):
         ex = await s.next_exercise()
-        if (
-            ex is not None
-            and ex.exercise_type
-            == ExerciseType.SELF_GRADED
-        ):
+        if ex is not None and ex.exercise_type == ExerciseType.SELF_GRADED:
             result = await s.answer(quality=4)
             assert result.correct is True
             return
@@ -363,22 +359,15 @@ async def test_self_graded_updates_progress(
     s = Session(db_with_concepts, 1)
     for _ in range(100):
         ex = await s.next_exercise()
-        if (
-            ex is not None
-            and ex.exercise_type
-            == ExerciseType.SELF_GRADED
-        ):
+        if ex is not None and ex.exercise_type == ExerciseType.SELF_GRADED:
             concept_id = ex.concept.id
             await s.answer(quality=4)
-            progress = (
-                await db_with_concepts.get_progress(
-                    1, concept_id,
-                )
+            progress = await db_with_concepts.get_progress(
+                1,
+                concept_id,
             )
             assert progress is not None
-            assert (
-                progress.state == CardState.LEARNING
-            )
+            assert progress.state == CardState.LEARNING
             return
     pytest.skip("Did not get a self-graded exercise")
 
@@ -427,12 +416,14 @@ async def test_quick_session_skips_reload(tmp_path):
     db_path = tmp_path / "shared.db"
 
     s1 = await quick_session(
-        vocab_file, db_path=db_path,
+        vocab_file,
+        db_path=db_path,
     )
     await s1.db.close()
 
     s2 = await quick_session(
-        vocab_file, db_path=db_path,
+        vocab_file,
+        db_path=db_path,
     )
     concepts = await s2.db.get_concepts()
     assert len(concepts) == 5
@@ -446,7 +437,8 @@ async def test_quick_session_limit(tmp_path):
         encoding="utf-8",
     )
     s = await quick_session(
-        vocab_file, limit=3,
+        vocab_file,
+        limit=3,
     )
     concepts = await s.db.get_concepts()
     assert len(concepts) == 3
@@ -455,10 +447,8 @@ async def test_quick_session_limit(tmp_path):
 
 async def test_quick_session_custom_keys(tmp_path):
     custom_items = [
-        {"question": "What is ML?",
-         "answer": "Machine learning"},
-        {"question": "What is AI?",
-         "answer": "Artificial intelligence"},
+        {"question": "What is ML?", "answer": "Machine learning"},
+        {"question": "What is AI?", "answer": "Artificial intelligence"},
     ]
     vocab_file = tmp_path / "custom.json"
     vocab_file.write_text(
@@ -478,7 +468,8 @@ async def test_quick_session_custom_keys(tmp_path):
 
 async def test_quick_session_list_requires_db_path():
     with pytest.raises(
-        ValueError, match="db_path is required",
+        ValueError,
+        match="db_path is required",
     ):
         await quick_session(_SAMPLE_CONCEPTS)
 
@@ -500,7 +491,8 @@ async def test_session_learn_new_mode(
     )
 
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         mode=SessionMode.LEARN_NEW,
     )
     ex = await s.next_exercise()
@@ -522,7 +514,8 @@ async def test_session_review_due_mode(
     )
 
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         mode=SessionMode.REVIEW_DUE,
     )
     ex = await s.next_exercise()
@@ -535,11 +528,13 @@ async def test_session_concept_ids_filter(
 ):
     all_concepts = await db_with_concepts.get_concepts()
     subset = [
-        all_concepts[0].id, all_concepts[1].id,
+        all_concepts[0].id,
+        all_concepts[1].id,
     ]
 
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         concept_ids=subset,
     )
     seen_ids = set()
@@ -581,10 +576,7 @@ async def test_answer_records_exercise_type(session):
     assert ex is not None
     await session.answer(**_correct_answer(ex))
     history = await session.db.get_answer_history(1)
-    assert (
-        history[0].exercise_type
-        == ex.exercise_type.value
-    )
+    assert history[0].exercise_type == ex.exercise_type.value
 
 
 async def test_answer_records_quality(session):
@@ -613,7 +605,8 @@ async def test_session_respects_max_new_cards(
 ):
     config = ReviewConfig(max_new_cards=2)
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         review_config=config,
     )
     served = []
@@ -629,9 +622,7 @@ async def test_session_respects_max_new_cards(
 async def test_session_respects_max_review_cards(
     db_with_concepts,
 ):
-    all_concepts = (
-        await db_with_concepts.get_concepts()
-    )
+    all_concepts = await db_with_concepts.get_concepts()
     for c in all_concepts:
         await db_with_concepts.upsert_progress(
             UserProgress(
@@ -644,7 +635,8 @@ async def test_session_respects_max_review_cards(
 
     config = ReviewConfig(max_review_cards=1)
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         mode=SessionMode.REVIEW_DUE,
         review_config=config,
     )
@@ -713,16 +705,14 @@ async def test_save_and_restore(db_with_concepts):
     assert s2._correct == 1
     assert s2._hint_count == 1
     assert s2._current_exercise is not None
-    assert (
-        s2._current_exercise.concept.id
-        == ex2.concept.id
-    )
+    assert s2._current_exercise.concept.id == ex2.concept.id
     assert len(s2._buried_concept_ids) == 2
 
 
 async def test_restore_nonexistent(db_with_concepts):
     result = await Session.restore(
-        db_with_concepts, 999,
+        db_with_concepts,
+        999,
     )
     assert result is None
 
@@ -738,10 +728,14 @@ async def test_save_with_key(db_with_concepts):
     await s2.save(key="chat_456")
 
     r1 = await Session.restore(
-        db_with_concepts, 1, key="chat_123",
+        db_with_concepts,
+        1,
+        key="chat_123",
     )
     r2 = await Session.restore(
-        db_with_concepts, 1, key="chat_456",
+        db_with_concepts,
+        1,
+        key="chat_456",
     )
     assert r1 is not None
     assert r2 is not None
@@ -761,7 +755,8 @@ async def test_save_overwrites_existing(
     await s.save()
 
     restored = await Session.restore(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
     )
     assert restored is not None
     assert restored._correct == 1
@@ -773,20 +768,15 @@ async def test_delete_session_snapshot(
     s = Session(db_with_concepts, 1)
     await s.save()
 
-    deleted = (
-        await db_with_concepts
-        .delete_session_snapshot(1)
-    )
+    deleted = await db_with_concepts.delete_session_snapshot(1)
     assert deleted is True
 
-    deleted2 = (
-        await db_with_concepts
-        .delete_session_snapshot(1)
-    )
+    deleted2 = await db_with_concepts.delete_session_snapshot(1)
     assert deleted2 is False
 
     restored = await Session.restore(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
     )
     assert restored is None
 
@@ -799,7 +789,8 @@ async def test_restore_preserves_config(
         learning_steps=[1, 5, 15],
     )
     s = Session(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
         review_config=config,
         mode=SessionMode.LEARN_NEW,
         concept_ids=[1, 2],
@@ -807,19 +798,15 @@ async def test_restore_preserves_config(
     await s.save()
 
     restored = await Session.restore(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
     )
     assert restored is not None
     assert restored.mode == SessionMode.LEARN_NEW
     assert restored._concept_ids == [1, 2]
     assert restored._review_config is not None
-    assert (
-        restored._review_config.max_new_cards == 5
-    )
-    assert (
-        restored._review_config.learning_steps
-        == [1, 5, 15]
-    )
+    assert restored._review_config.max_new_cards == 5
+    assert restored._review_config.learning_steps == [1, 5, 15]
 
 
 async def test_restore_continues_session(
@@ -832,7 +819,8 @@ async def test_restore_continues_session(
     await s1.save()
 
     s2 = await Session.restore(
-        db_with_concepts, 1,
+        db_with_concepts,
+        1,
     )
     assert s2 is not None
     ex2 = await s2.next_exercise()

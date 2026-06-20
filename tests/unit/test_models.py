@@ -44,7 +44,8 @@ def test_user_creation_defaults():
 
 def test_user_password_hash_excluded_from_dump():
     user = User(
-        username="alice", password_hash="salt$hash",
+        username="alice",
+        password_hash="salt$hash",
     )
     data = user.model_dump()
     assert "password_hash" not in data
@@ -56,7 +57,9 @@ def test_user_password_hash_excluded_from_dump():
 def test_user_session_creation():
     expires = datetime(2026, 3, 2, 12, 0, 0)
     session = UserSession(
-        user_id=1, token="abc123", expires_at=expires,
+        user_id=1,
+        token="abc123",
+        expires_at=expires,
     )
     assert session.id is None
     assert session.user_id == 1
@@ -122,7 +125,9 @@ def test_concept_owner_id_default_none():
 
 def test_concept_owner_id_explicit():
     concept = Concept(
-        front="cat", back="gato", owner_id=42,
+        front="cat",
+        back="gato",
+        owner_id=42,
     )
     assert concept.owner_id == 42
 
@@ -132,10 +137,7 @@ def test_concept_owner_id_explicit():
 
 def test_exercise_type_values():
     assert ExerciseType.FLASHCARD == "flashcard"
-    assert (
-        ExerciseType.MULTIPLE_CHOICE
-        == "multiple_choice"
-    )
+    assert ExerciseType.MULTIPLE_CHOICE == "multiple_choice"
     assert ExerciseType.SELF_GRADED == "self_graded"
 
 
@@ -219,7 +221,8 @@ def test_answer_result_near_miss_default():
 
 def test_user_progress_defaults():
     progress = UserProgress(
-        user_id=1, concept_id=1,
+        user_id=1,
+        concept_id=1,
     )
     assert progress.easiness_factor == 2.5
     assert progress.interval == 0
@@ -400,7 +403,9 @@ def test_daily_stats_creation():
 
 def test_weak_concept_creation():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     wc = WeakConcept(
         concept=concept,
@@ -440,7 +445,9 @@ def test_session_snapshot_defaults():
 
 def test_session_snapshot_with_data():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = Exercise(
         concept=concept,
@@ -469,7 +476,8 @@ def test_session_snapshot_with_data():
 
 def test_review_forecast_creation():
     rf = ReviewForecast(
-        date="2026-03-01", due_count=5,
+        date="2026-03-01",
+        due_count=5,
     )
     assert rf.date == "2026-03-01"
     assert rf.due_count == 5
@@ -479,26 +487,12 @@ def test_review_forecast_creation():
 
 
 def test_conversation_stage_values():
-    assert (
-        ConversationStage.CHOOSING_TOPIC
-        == "choosing_topic"
-    )
+    assert ConversationStage.CHOOSING_TOPIC == "choosing_topic"
     assert ConversationStage.IDLE == "idle"
-    assert (
-        ConversationStage.EXERCISING == "exercising"
-    )
-    assert (
-        ConversationStage.AWAITING_ANSWER
-        == "awaiting_answer"
-    )
-    assert (
-        ConversationStage.AWAITING_SELF_GRADE
-        == "awaiting_self_grade"
-    )
-    assert (
-        ConversationStage.VIEWING_STATS
-        == "viewing_stats"
-    )
+    assert ConversationStage.EXERCISING == "exercising"
+    assert ConversationStage.AWAITING_ANSWER == "awaiting_answer"
+    assert ConversationStage.AWAITING_SELF_GRADE == "awaiting_self_grade"
+    assert ConversationStage.VIEWING_STATS == "viewing_stats"
 
 
 # --- ConversationState Tests ---

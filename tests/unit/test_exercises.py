@@ -33,20 +33,19 @@ def test_generate_multiple_choice_has_correct_answer(
     short_concepts,
 ):
     ex = generate_multiple_choice(
-        short_concepts[0], short_concepts,
+        short_concepts[0],
+        short_concepts,
     )
     assert "gato" in ex.options
-    assert (
-        ex.exercise_type
-        == ExerciseType.MULTIPLE_CHOICE
-    )
+    assert ex.exercise_type == ExerciseType.MULTIPLE_CHOICE
 
 
 def test_generate_multiple_choice_option_count(
     short_concepts,
 ):
     ex = generate_multiple_choice(
-        short_concepts[0], short_concepts,
+        short_concepts[0],
+        short_concepts,
         num_options=4,
     )
     assert len(ex.options) == 4
@@ -57,7 +56,9 @@ def test_generate_multiple_choice_fewer_concepts(
 ):
     concepts = short_concepts[:2]
     ex = generate_multiple_choice(
-        concepts[0], concepts, num_options=4,
+        concepts[0],
+        concepts,
+        num_options=4,
     )
     assert len(ex.options) == 2
     assert "gato" in ex.options
@@ -81,7 +82,9 @@ def test_mc_preferred_distractors_used_first():
     # Run many times to check distractors are from preferred
     for _ in range(20):
         ex = generate_multiple_choice(
-            target, fallback, num_options=4,
+            target,
+            fallback,
+            num_options=4,
             preferred=preferred + [target],
         )
         backs = set(ex.options) - {"A"}
@@ -99,7 +102,9 @@ def test_mc_preferred_fallback_when_not_enough():
         Concept(id=4, front="d", back="D"),
     ]
     ex = generate_multiple_choice(
-        target, fallback, num_options=4,
+        target,
+        fallback,
+        num_options=4,
         preferred=preferred + [target],
     )
     assert len(ex.options) == 4
@@ -126,12 +131,8 @@ def test_mc_no_preferred_uses_all():
 
 def test_generate_self_graded(sample_concepts):
     ex = generate_self_graded(sample_concepts[0])
-    assert (
-        ex.exercise_type == ExerciseType.SELF_GRADED
-    )
-    assert (
-        ex.concept.front == "What is a p-value?"
-    )
+    assert ex.exercise_type == ExerciseType.SELF_GRADED
+    assert ex.concept.front == "What is a p-value?"
     assert ex.options == []
 
 
@@ -153,7 +154,8 @@ def test_generate_exercise_returns_valid_type(
     short_concepts,
 ):
     ex = generate_exercise(
-        short_concepts[0], short_concepts,
+        short_concepts[0],
+        short_concepts,
     )
     assert ex.exercise_type in (
         ExerciseType.FLASHCARD,
@@ -168,7 +170,8 @@ def test_generate_exercise_all_types(
     types = set()
     for _ in range(500):
         ex = generate_exercise(
-            short_concepts[0], short_concepts,
+            short_concepts[0],
+            short_concepts,
         )
         types.add(ex.exercise_type)
     assert types == {
@@ -246,7 +249,8 @@ def test_evaluate_self_graded_missing_quality(
 ):
     ex = generate_self_graded(sample_concepts[0])
     with pytest.raises(
-        ValueError, match="quality is required",
+        ValueError,
+        match="quality is required",
     ):
         evaluate_answer(ex, "anything")
 
@@ -256,7 +260,8 @@ def test_evaluate_self_graded_invalid_quality(
 ):
     ex = generate_self_graded(sample_concepts[0])
     with pytest.raises(
-        ValueError, match="quality must be 0-5",
+        ValueError,
+        match="quality must be 0-5",
     ):
         evaluate_answer(ex, quality=6)
 
@@ -336,38 +341,64 @@ def test_evaluate_answer_comma_segment():
         back="decir, contar",
     )
     ex = generate_flashcard(concept)
-    assert evaluate_answer(
-        ex, "decir",
-    ).correct is True
-    assert evaluate_answer(
-        ex, "contar",
-    ).correct is True
-    assert evaluate_answer(
-        ex, "decir, contar",
-    ).correct is True
+    assert (
+        evaluate_answer(
+            ex,
+            "decir",
+        ).correct
+        is True
+    )
+    assert (
+        evaluate_answer(
+            ex,
+            "contar",
+        ).correct
+        is True
+    )
+    assert (
+        evaluate_answer(
+            ex,
+            "decir, contar",
+        ).correct
+        is True
+    )
 
 
 def test_evaluate_answer_to_prefix():
     concept = Concept(
-        id=1, front="ser", back="to be",
+        id=1,
+        front="ser",
+        back="to be",
     )
     ex = generate_flashcard(concept)
-    assert evaluate_answer(
-        ex, "be",
-    ).correct is True
+    assert (
+        evaluate_answer(
+            ex,
+            "be",
+        ).correct
+        is True
+    )
 
     concept2 = Concept(
-        id=2, front="tener", back="have",
+        id=2,
+        front="tener",
+        back="have",
     )
     ex2 = generate_flashcard(concept2)
-    assert evaluate_answer(
-        ex2, "to have",
-    ).correct is True
+    assert (
+        evaluate_answer(
+            ex2,
+            "to have",
+        ).correct
+        is True
+    )
 
 
 def test_evaluate_multiple_choice_by_number():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = Exercise(
         concept=concept,
@@ -381,7 +412,9 @@ def test_evaluate_multiple_choice_by_number():
 
 def test_evaluate_multiple_choice_by_number_wrong():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = Exercise(
         concept=concept,
@@ -395,7 +428,9 @@ def test_evaluate_multiple_choice_by_number_wrong():
 
 def test_evaluate_multiple_choice_out_of_range():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = Exercise(
         concept=concept,
@@ -409,7 +444,9 @@ def test_evaluate_multiple_choice_out_of_range():
 
 def test_evaluate_multiple_choice_by_text():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = Exercise(
         concept=concept,
@@ -425,7 +462,9 @@ def test_evaluate_multiple_choice_by_text():
 
 def test_evaluate_accent_tolerant():
     concept = Concept(
-        id=1, front="speak", back="habló",
+        id=1,
+        front="speak",
+        back="habló",
     )
     ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablo")
@@ -437,7 +476,9 @@ def test_evaluate_accent_tolerant():
 
 def test_evaluate_answer_fuzzy_single_typo():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gat")
@@ -459,7 +500,9 @@ def test_evaluate_answer_fuzzy_long_word():
 
 def test_evaluate_answer_fuzzy_too_far():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "ga")
@@ -469,7 +512,9 @@ def test_evaluate_answer_fuzzy_too_far():
 
 def test_evaluate_answer_exact_not_near_miss():
     concept = Concept(
-        id=1, front="cat", back="gato",
+        id=1,
+        front="cat",
+        back="gato",
     )
     ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "gato")
@@ -479,7 +524,9 @@ def test_evaluate_answer_exact_not_near_miss():
 
 def test_evaluate_answer_fuzzy_swapped_letters():
     concept = Concept(
-        id=1, front="to speak", back="hablar",
+        id=1,
+        front="to speak",
+        back="hablar",
     )
     ex = generate_flashcard(concept)
     result = evaluate_answer(ex, "hablra")
