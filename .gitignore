@@ -22,7 +22,6 @@ build/
 *.db
 
 # Generated
-.pre-commit-scripts/
 
 # Universal entries (programme sync)
 *.bak.*

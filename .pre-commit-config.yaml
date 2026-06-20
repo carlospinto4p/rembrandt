@@ -30,3 +30,11 @@ repos:
         language: script
         pass_filenames: false
         files: '(^|/)changelog\.md$|(^|/)changelog/.*\.md$'
+  - repo: local
+    hooks:
+      - id: check-version-changelog
+        name: Version bump needs a changelog entry
+        entry: .pre-commit-scripts/check_version_changelog.sh
+        language: script
+        pass_filenames: false
+        always_run: true
