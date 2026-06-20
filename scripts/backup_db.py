@@ -55,16 +55,25 @@ def _effective_dest() -> Path:
     return Path(env) if env else DEFAULT_DEST
 
 
-def backup_one(src_path: Path, dest_dir: Path) -> Path:
+def backup_one(
+    src_path: Path, dest_dir: Path, *, allow_shrink: bool = False
+) -> Path:
     """Write a consistent snapshot of one DB into ``dest_dir``.
 
     :param src_path: Path to the live source database.
     :param dest_dir: Directory to write the snapshot into.
+    :param allow_shrink: Permit a snapshot far smaller than the existing
+        backup (off by default) — the override for a legitimate shrink.
     :return: Path to the written snapshot.
-    :raises SystemExit: When the source database does not exist.
+    :raises SystemExit: When the source is missing/empty, or the new
+        snapshot would dangerously shrink the existing backup.
     """
     if not src_path.exists():
         raise SystemExit(f"error: source database not found at {src_path}")
+    if src_path.stat().st_size == 0:
+        raise SystemExit(
+            f"error: refusing backup — source database is empty: {src_path}"
+        )
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src_path.name
@@ -79,6 +88,22 @@ def backup_one(src_path: Path, dest_dir: Path) -> Path:
             dst.close()
     finally:
         src.close()
+
+    # Guard before the atomic rename: a seed/empty DB must not overwrite
+    # a populated backup on a freshly restored machine. Refuse a snapshot
+    # far smaller than the existing backup unless --allow-shrink is given.
+    new_size = tmp.stat().st_size
+    if dest.exists() and dest.stat().st_size:
+        old_size = dest.stat().st_size
+        if new_size < old_size * 0.5 and not allow_shrink:
+            tmp.unlink(missing_ok=True)
+            pct = new_size / old_size * 100
+            raise SystemExit(
+                f"error: refusing backup — new snapshot is {new_size} "
+                f"bytes, only {pct:.0f}% of the existing backup "
+                f"({old_size} bytes) at {dest}; pass --allow-shrink to "
+                "override"
+            )
 
     os.replace(tmp, dest)
     size = dest.stat().st_size
@@ -106,12 +131,18 @@ def _build_parser() -> argparse.ArgumentParser:
         default=effective,
         help=f"Destination directory (default: {effective}).",
     )
+    p.add_argument(
+        "--allow-shrink",
+        action="store_true",
+        help="Permit a snapshot far smaller than the existing backup "
+        "(needed when the source legitimately shrank).",
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> None:
     args = _build_parser().parse_args(argv)
-    backup_one(args.db, args.dest)
+    backup_one(args.db, args.dest, allow_shrink=args.allow_shrink)
 
 
 if __name__ == "__main__":
