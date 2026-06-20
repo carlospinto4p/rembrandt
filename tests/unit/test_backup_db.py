@@ -62,6 +62,20 @@ def test_backup_one_refuses_shrink_and_preserves_backup(tmp_path):
     assert not (dest_dir / "data.db.tmp").exists()
 
 
+def test_backup_one_refuses_even_slightly_smaller(tmp_path):
+    mod = _load()
+    src = tmp_path / "data.db"
+    _make_sqlite(src, rows=50)
+    snap = mod.backup_one(src, tmp_path / "probe").stat().st_size
+    dest_dir = tmp_path / "dest"
+    dest_dir.mkdir()
+    existing = dest_dir / "data.db"
+    existing.write_bytes(b"x" * (snap + 1))  # one byte larger
+    with pytest.raises(SystemExit):
+        mod.backup_one(src, dest_dir)
+    assert existing.stat().st_size == snap + 1
+
+
 def test_backup_one_allow_shrink_overwrites(tmp_path):
     mod = _load()
     src = tmp_path / "data.db"

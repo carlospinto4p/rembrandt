@@ -89,20 +89,20 @@ def backup_one(
     finally:
         src.close()
 
-    # Guard before the atomic rename: a seed/empty DB must not overwrite
-    # a populated backup on a freshly restored machine. Refuse a snapshot
-    # far smaller than the existing backup unless --allow-shrink is given.
+    # Guard before the atomic rename: a backup any smaller than the one
+    # already saved signals truncation/data loss, so refuse it. Exiting
+    # non-zero fires the unit's OnFailure alarm. --allow-shrink overrides.
     new_size = tmp.stat().st_size
     if dest.exists() and dest.stat().st_size:
         old_size = dest.stat().st_size
-        if new_size < old_size * 0.5 and not allow_shrink:
+        if new_size < old_size and not allow_shrink:
             tmp.unlink(missing_ok=True)
             pct = new_size / old_size * 100
             raise SystemExit(
-                f"error: refusing backup — new snapshot is {new_size} "
-                f"bytes, only {pct:.0f}% of the existing backup "
-                f"({old_size} bytes) at {dest}; pass --allow-shrink to "
-                "override"
+                f"error: refusing backup — new snapshot ({new_size} bytes) "
+                f"is smaller than the existing backup ({old_size} bytes) — "
+                f"{pct:.1f}% of it — at {dest}. Pass --allow-shrink if the "
+                "shrink is expected."
             )
 
     os.replace(tmp, dest)

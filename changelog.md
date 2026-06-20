@@ -2,6 +2,15 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.52 - 20th June 2026
+
+- `scripts/backup_db.py`: tightened the shrink guard to refuse **any**
+  snapshot smaller than the existing backup (was a >50% collapse) — a
+  smaller source signals truncation/data loss. The refusal exits
+  non-zero so the backup unit's `OnFailure` handler raises the alarm;
+  `--allow-shrink` overrides. Added a one-byte-smaller regression test.
+
+
 ### v6.3.51 - 20th June 2026
 
 - `scripts/backup_db.py`: guard `backup_one` against clobbering a good
