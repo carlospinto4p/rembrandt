@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.54 - 25th June 2026
+
+- Rotated changelog: archived 5 entries to `changelog/2026.md`.
+
+
 ### v6.3.53 - 20th June 2026
 
 - Added `scripts/changelog-add.sh` (safe changelog-prepend helper) and the `check-version-changelog` pre-commit guard, distributed in the programme fleet rollout.
@@ -182,49 +187,3 @@
 - `.claude/skills/refactor/`:
   - Updated `SKILL.md` to read both canonical
     procedure and per-project areas.
-
-
-### v6.3.23 - 11th April 2026
-
-- `.claude/rules/`:
-  - Decoupled `/optimize` rule: canonical
-    `optimization.md` is now procedural only.
-  - Added `optimization-areas.md` with
-    project-specific performance areas.
-- `.claude/skills/optimize/`:
-  - Updated `SKILL.md` to read both canonical
-    procedure and per-project areas.
-
-
-### v6.3.22 - 10th April 2026
-
-- `.claude/rules/`:
-  - Decoupled `/improvements` rule: canonical
-    `improvements.md` is now procedural only.
-  - Added `improvement-areas.md` with
-    project-specific areas to watch.
-- `.claude/skills/improvements/`:
-  - Updated `SKILL.md` to read both canonical
-    procedure and per-project areas.
-
-
-### v6.3.21 - 5th April 2026
-
-- `.claude/rules/`:
-  - Updated `versioning.md`: added changelog
-    rotation section (30-version limit, yearly
-    archives in `changelog/YYYY.md`).
-
-
-### v6.3.20 - 5th April 2026
-
-- `.claude/rules/`:
-  - Updated `versioning.md`: added changelog
-    rotation section (30-version limit, yearly
-    archives in `changelog/YYYY.md`).
-
-
-### v6.3.19 - 5th April 2026
-
-- Rotated changelog: archived 115 old
-  entries to `changelog/` yearly files.
