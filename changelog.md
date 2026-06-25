@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.55 - 25th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v6.3.54 - 25th June 2026
 
 - Rotated changelog: archived 5 entries to `changelog/2026.md`.
@@ -175,15 +180,3 @@
 - Updated `.claude/hooks/block-chained-commands.sh`:
   propagated newline-chaining block from the
   programme canonical.
-
-
-### v6.3.24 - 11th April 2026
-
-- `.claude/rules/`:
-  - Decoupled `/refactor` rule: canonical
-    `refactoring.md` is now procedural only.
-  - Added `refactoring-areas.md` with
-    project-specific code smells to watch.
-- `.claude/skills/refactor/`:
-  - Updated `SKILL.md` to read both canonical
-    procedure and per-project areas.
