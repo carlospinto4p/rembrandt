@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.56 - 28th June 2026
+
+- Rotated changelog: archived 1 entries to `changelog/2026.md`.
+
+
 ### v6.3.55 - 25th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
@@ -173,10 +178,3 @@
   - Removed `.claude/hooks/block-chained-commands.sh` and `.claude/skills/{refactor,improvements,optimize,self-refinement,backlog}/`; the hook and the five periodic-review skills are now provided globally under `~/.claude/`.
   - Removed `.claude/hooks/format-python.sh`; the ruff auto-format PostToolUse hook is now provided globally at `~/.claude/hooks/`.
   - Removed `.claude/hooks/pre-commit-tests.sh`; replaced by a global dispatcher at `~/.claude/hooks/pre-commit-tests.sh` that invokes `scripts/pre-commit.sh` on `git commit`. Added `scripts/pre-commit.sh` with the project-local test command.
-
-
-### v6.3.25 - 12th April 2026
-
-- Updated `.claude/hooks/block-chained-commands.sh`:
-  propagated newline-chaining block from the
-  programme canonical.
