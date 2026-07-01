@@ -38,3 +38,12 @@ repos:
         language: script
         pass_filenames: false
         always_run: true
+  - repo: local
+    hooks:
+      - id: check-no-nul-bytes
+        name: Reject NUL bytes in text files
+        entry: .pre-commit-scripts/check_no_nul_bytes.sh
+        language: script
+        # Only files pre-commit classifies as text — real binaries (images,
+        # fonts) legitimately contain NUL and must not be flagged.
+        types: [text]
