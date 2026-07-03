@@ -13,6 +13,9 @@
 #     the read is section-aware ([package] / [project] only);
 #   - a newly added manifest (no version at HEAD) is ignored, so a
 #     freshly scaffolded project's first commit is never blocked;
+#   - manifests under reservations/ are ignored — defensive
+#     package-name placeholders (crates.io / npm / PyPI brand holds)
+#     carry their own versions, independent of the app release;
 #   - only X.Y.Z versions are tracked.
 #
 # Pure bash + git/grep/awk — no language runtime — so it drops into any
@@ -59,7 +62,10 @@ while IFS= read -r f; do
   [ -n "$old" ] || continue
   [ "$old" = "$new" ] && continue
   bumped="${bumped:+$bumped }$new"
-done < <(git diff --cached --name-only -- '*pyproject.toml' '*Cargo.toml' '*package.json')
+# `reservations/` holds defensive package-name placeholders (crates.io / npm /
+# PyPI brand holds) with their OWN versions, independent of the app release —
+# bumping one must NOT demand an app changelog entry. Exclude that subtree.
+done < <(git diff --cached --name-only -- '*pyproject.toml' '*Cargo.toml' '*package.json' ':(exclude)reservations/**')
 
 bumped="$(printf '%s\n' $bumped | sort -u | grep -v '^$' || true)"
 [ -z "$bumped" ] && exit 0

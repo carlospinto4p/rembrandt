@@ -2,6 +2,14 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.58 - 3rd July 2026
+
+- Updated `.pre-commit-scripts/check_version_changelog.sh` to canonical:
+  exclude `reservations/**` placeholder manifests from version-bump
+  detection, so defensive package-name holds don't demand a changelog
+  entry (programme fleet rollout).
+
+
 ### v6.3.57 - 1st July 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
