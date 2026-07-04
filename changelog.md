@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.59 - 4th July 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.58 - 3rd July 2026
 
 - Updated `.pre-commit-scripts/check_version_changelog.sh` to canonical:
@@ -172,13 +177,3 @@
 ### v6.3.29 - 20th April 2026
 
 - Synced canonical `.claude/rules/*.md` from programme.
-
-
-### v6.3.28 - 19th April 2026
-
-- Added `scripts/pre-commit.sh`: canonical pre-commit check from programme. Auto-detects `tests/unit/` vs `tests/` and no-ops if neither exists.
-
-
-### v6.3.27 - 17th April 2026
-
-- `.gitattributes`: Added LF line ending normalization.
