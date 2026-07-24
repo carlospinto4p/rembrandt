@@ -6,14 +6,34 @@
 repos:
   - repo: local
     hooks:
+      # `uv run`, not `uvx`: uvx resolves whatever ruff PyPI serves today,
+      # which drifts from the lock-pinned ruff used in development and
+      # silently changes the default rule set between releases. `uv run`
+      # uses this project's own ruff, so commit-time and local linting
+      # always agree. No path argument — pre-commit passes the staged
+      # files; a literal `.` would override that and format the whole tree.
+      #
+      # `--no-sync` is required, not an optimization. A bare `uv run`
+      # re-syncs first, and this project deliberately lets `uv.lock`'s
+      # self-referential version drift on non-code patch bumps (see
+      # CLAUDE.md) — so on a version-bump commit the sync *rewrites
+      # `uv.lock` mid-hook*, and pre-commit's stash/restore cycle then
+      # fights its own linter. Verified 2026-07-24: with a bumped
+      # `pyproject.toml`, `uv run ruff --version` rewrote `uv.lock`;
+      # `uv run --no-sync` left it byte-identical. A linter must never
+      # mutate the repo it is linting.
+      #
+      # Precondition: the project venv must already hold ruff (every
+      # repo declares it as a dev dependency, so `uv sync --all-extras`
+      # satisfies this). `--no-sync` will not install it on demand.
       - id: ruff-fix
         name: Ruff Lint Fix
-        entry: uvx ruff check --fix
+        entry: uv run --no-sync ruff check --fix
         language: system
         types: [ python ]
       - id: ruff-format
         name: Ruff Format
-        entry: uvx ruff format .
+        entry: uv run --no-sync ruff format
         language: system
         types: [python]
       - id: warn-unstaged-claude
@@ -22,8 +42,6 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-  - repo: local
-    hooks:
       - id: check-changelog-headers
         name: Changelog header overwrite guard
         entry: .pre-commit-scripts/check_changelog_headers.sh
