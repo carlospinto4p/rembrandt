@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 3. **Update CLAUDE.md Each Iteration**: Review and update this file when rules change or new important patterns emerge.
 
-4. **Periodic Reviews**: Every 6-7 versions, propose a `/refactor`, `/optimize`, and `/improvements` pass.
+4. **Periodic Reviews**: Triggered by backlog depth — when `/backlog` shows fewer than 5 open items, propose `/scan`, `/improvements`, and `/prune` together.
 
 ## Project Overview
 

@@ -2,6 +2,16 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.64 - 24th July 2026
+
+- `CLAUDE.md`: replaced the superseded **Core Rules** periodic-review
+  trigger with the backlog-depth rule — when `/backlog` shows fewer
+  than 5 open items, propose `/scan`, `/improvements`, and `/prune`.
+  The old "Every 6-7 versions" cadence also named `/refactor` and
+  `/optimize`, neither of which is a real skill. Pushed from the
+  programme registry via `sync-config --types section`.
+
+
 ### v6.3.63 - 24th July 2026
 
 - Updated `.claude/rules/committing.md`: adds the canonical
