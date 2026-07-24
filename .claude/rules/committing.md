@@ -1,10 +1,26 @@
 ---
 name: committing
-description: Git commit conventions and post-change workflow
-version: 1.1
+description: Git commit conventions, pull-first step, lock-file handling, and post-change workflow
+version: 1.4
 ---
 
 # Committing Guidelines
+
+## Pull First — Before Any Work
+
+**The first step of every session's workflow is `git pull`.** Run it
+before reading code, planning, or editing — not just before pushing.
+
+- Use `git -C <repo> pull` as a standalone Bash call (never chained).
+- Do this even when the working tree looks clean: cleanliness says
+  nothing about whether the remote has moved ahead from another
+  machine.
+- If the pull brings in commits, re-read anything you had already
+  looked at before continuing — your view of the code is stale.
+
+Pulling at the end (just before `git push`) is too late: work built on
+a stale base has to be redone or rebased, and the conflict surfaces
+after the effort is spent rather than before.
 
 ## Post-Change Workflow
 
