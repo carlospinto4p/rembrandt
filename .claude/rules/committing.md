@@ -18,7 +18,7 @@ version: 1.1
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes. For **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) skip `uv lock`: the lock file's self-referential `version` drifting by a patch is expected and harmless, and chasing it across many repos is wasted churn. Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
+6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes; for **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) don't run `uv lock` just to chase the self-referential version. But **if `uv.lock` has changed by any route, commit it** (step 7) — never leave it dirty on disk. Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
 7. **Commit changes**: Create a commit with a descriptive message following the format below
    - **Always include uv.lock** in commits when it has changed
 8. **Push to remote**: Push the changes with `git push`
@@ -36,6 +36,20 @@ entry.
 
 **Pure tracking changes** (`backlog.md` checkboxes only): commit and push,
 but skip tests and version bump.
+
+**Lock-file-only changes** (`uv.lock` is the entire diff): commit and
+push, but **no version bump and no changelog entry**. Almost always this
+is the lock's self-referential `version` catching up to an already-
+released `pyproject.toml` — bumping would push `pyproject.toml` ahead
+again and recreate the very drift being cleared, so the bump can never
+converge. Commit it as a `chore:` on its own.
+
+The exception is a lock that was **broken or substantively changed** — a
+dependency added, removed, or upgraded, or a bad/missing resolution
+repaired. That is a dependency change, so it takes a patch bump and a
+changelog entry like any other code-related change. The test is whether
+the diff touches anything beyond the `[[package]] name = "<this project>"`
+version line.
 
 ## When to Skip Tests
 

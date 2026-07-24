@@ -2,6 +2,16 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.62 - 24th July 2026
+
+- Updated `.claude/rules/committing.md` from canonical: `uv.lock` is
+  committed whenever it changed, and a lock-only diff takes no version
+  bump or changelog entry (bumping `pyproject.toml` would push it ahead
+  again and recreate the drift, so it never converges).
+- Committed the pending `uv.lock` self-referential version line, per
+  that same rule — it had been left dirty on disk.
+
+
 ### v6.3.61 - 24th July 2026
 
 - Updated `.pre-commit-config.yaml`: the ruff hooks now run
