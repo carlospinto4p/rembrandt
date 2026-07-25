@@ -2,6 +2,14 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.66 - 25th July 2026
+
+- Updated `.claude/rules/committing.md` from canonical: clarifies that
+  a lock file's self-referential version drifting by a patch after a
+  non-code bump is expected and harmless — not something to chase
+  across repos.
+
+
 ### v6.3.65 - 25th July 2026
 
 - Rotated changelog: archived 5 entries to `changelog/2026.md`.

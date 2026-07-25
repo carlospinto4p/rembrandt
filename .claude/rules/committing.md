@@ -34,7 +34,7 @@ after the effort is spent rather than before.
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes; for **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) don't run `uv lock` just to chase the self-referential version. But **if `uv.lock` has changed by any route, commit it** (step 7) — never leave it dirty on disk. Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
+6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes. For **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) skip `uv lock`: the lock file's self-referential `version` drifting by a patch is expected and harmless, and chasing it across many repos is wasted churn. **If `uv.lock` has changed by any route, still commit it** (step 7) — never leave it dirty on disk. Note: `uv sync` may uninstall the editable install — if `uv run` fails afterwards, run `uv pip install -e ".[dev]"` to restore it.
 7. **Commit changes**: Create a commit with a descriptive message following the format below
    - **Always include uv.lock** in commits when it has changed
 8. **Push to remote**: Push the changes with `git push`
