@@ -2,6 +2,14 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.67 - 26th July 2026
+
+- Redeployed the hardened `scripts/changelog-add.sh`: guards against
+  the CWD-relative wrong-repo footgun (comparing the target
+  changelog's version against the wrong repo's manifest when invoked
+  from outside its own directory).
+
+
 ### v6.3.66 - 25th July 2026
 
 - Updated `.claude/rules/committing.md` from canonical: clarifies that

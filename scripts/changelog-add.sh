@@ -23,18 +23,37 @@
 #
 #   -f, --file PATH   changelog to edit (default: ./changelog.md)
 #
+# Wrong-repo guard: when -f/--file is omitted, the default './changelog.md'
+# is resolved against the CWD, and the script then refuses to run unless
+# that directory's manifest (pyproject.toml / Cargo.toml / build.gradle.kts
+# / package.json) is already AT the <version> you're adding — the normal
+# workflow bumps the manifest before adding the changelog entry. This turns
+# "wrong repo's changelog" from a silent write into a refusal. Pass -f/--file
+# explicitly (this always skips the check) when editing a changelog outside
+# the CWD's own tree, e.g. from another repo's shell.
+#
 # The body is inserted verbatim — write it exactly as it should appear
 # (leading "- " bullets, wrapped lines, etc.). The version you pass should match
 # the manifest bump in the same commit; the `check-version-changelog` guard
 # enforces that at commit time.
+#
+# NOTE: this always writes a "### vX.Y.Z - date" header — it is built for
+# version-numbered changelogs. A changelog that has moved to plain-date
+# headers with no version number at all (e.g. shakespeare's, for recent
+# entries) will still get a versioned header spliced in at the now-correct
+# top position, which won't match the surrounding entries' format. For a
+# changelog like that, hand-edit instead — see the "If the script isn't
+# present, or you must hand-edit anyway" section of the global
+# changelog-entries.md rule, anchoring the edit on the title line.
 set -euo pipefail
 
 file="changelog.md"
+file_explicit=0
 args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -f|--file) file="$2"; shift 2 ;;
-    -h|--help) sed -n '2,33p' "$0"; exit 0 ;;
+    -f|--file) file="$2"; file_explicit=1; shift 2 ;;
+    -h|--help) sed -n '2,47p' "$0"; exit 0 ;;
     -*) echo "Unknown option: $1" >&2; exit 2 ;;
     *) args+=("$1"); shift ;;
   esac
@@ -67,6 +86,48 @@ fi
 
 [[ -f "$file" ]] || { echo "No changelog at '$file'." >&2; exit 1; }
 
+# Guard against the "wrong repo" footgun: when -f/--file was NOT passed
+# explicitly, the default './changelog.md' is CWD-relative, so invoking the
+# script by its own absolute path from a different repo's shell silently
+# targets that other repo's changelog (see .claude/rules/changelog-entries.md
+# — this bit programme itself on 2026-07-23, writing a reignhood entry into
+# programme's own changelog.md). Cross-check: the changelog's directory must
+# hold a manifest whose version already equals <version> — the normal
+# workflow bumps the manifest before adding the changelog entry, so this
+# holds whenever the script targets the intended repo.
+if [[ "$file_explicit" -eq 0 ]]; then
+  dir="$(cd "$(dirname "$file")" && pwd)"
+  manifest=""
+  manifest_ver=""
+  for candidate in \
+    "pyproject.toml:^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"" \
+    "src-tauri/Cargo.toml:^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"" \
+    "Cargo.toml:^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"" \
+    "app/build.gradle.kts:versionName\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"" \
+    "package.json:\"version\"\s*:\s*\"([0-9]+\.[0-9]+\.[0-9]+)\""
+  do
+    rel="${candidate%%:*}"
+    pattern="${candidate#*:}"
+    path="$dir/$rel"
+    [[ -f "$path" ]] || continue
+    v="$(grep -m1 -oP "$pattern" "$path" | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' || true)"
+    [[ -n "$v" ]] || continue
+    manifest="$rel"
+    manifest_ver="$v"
+    break
+  done
+
+  version_num="${version#v}"
+  if [[ -z "$manifest" ]]; then
+    echo "Refusing: no manifest (pyproject.toml/Cargo.toml/app/build.gradle.kts/package.json) with a parsable version found next to '$file'. Pass -f/--file explicitly to confirm the target repo." >&2
+    exit 1
+  fi
+  if [[ "$manifest_ver" != "$version_num" ]]; then
+    echo "Refusing: '$dir/$manifest' is at version $manifest_ver, but you're adding a $version entry to '$file'. Wrong repo's changelog? Pass -f/--file to target the right one explicitly." >&2
+    exit 1
+  fi
+fi
+
 # Body from stdin; command substitution trims trailing newlines so we control
 # the spacing exactly.
 body="$(cat)"
@@ -79,11 +140,20 @@ if grep -qE "^### ${version} " "$file"; then
   exit 1
 fi
 
-# The splice point: the first existing version header. Everything before it
-# (title + blank gap) is kept as-is; the new block goes in just above it, so no
-# existing header is ever touched. If there is no header yet, append after the
-# whole file.
-hdr_line="$(grep -nE '^### v[0-9]+\.[0-9]+\.[0-9]+' "$file" | head -1 | cut -d: -f1 || true)"
+# The splice point: the first existing entry header — ANY `### ` line, not
+# just a version-shaped one. Everything before it (title + blank gap) is kept
+# as-is; the new block goes in just above it, so no existing header is ever
+# touched. If there is no header yet, append after the whole file.
+#
+# Matching only "### v..." (or bare "### 0.1.2") missed changelogs that don't
+# head entries with a version at all — e.g. shakespeare's, which moved to
+# plain "### <date>" headers with no version number for its recent entries.
+# There the version-only regex skipped straight past those to the first
+# *older* version-numbered header further down, silently splicing the new
+# entry there instead of at the true top. Anchoring on any `### ` line fixes
+# this generically: the topmost one is always the true top of the changelog,
+# whatever it's headed with.
+hdr_line="$(grep -nE '^### ' "$file" | head -1 | cut -d: -f1 || true)"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
