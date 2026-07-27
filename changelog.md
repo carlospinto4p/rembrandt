@@ -2,6 +2,15 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.68 - 27th July 2026
+
+- Updated `.claude/rules/committing.md` from canonical: added a
+  "Concurrent Sessions" section covering the cross-session
+  commit-pollution hazard (check `git status --porcelain`
+  immediately before every commit, stage by name, diff before
+  re-shipping a change another session already committed).
+
+
 ### v6.3.67 - 26th July 2026
 
 - Redeployed the hardened `scripts/changelog-add.sh`: guards against

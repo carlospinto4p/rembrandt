@@ -1,7 +1,7 @@
 ---
 name: committing
 description: Git commit conventions, pull-first step, lock-file handling, and post-change workflow
-version: 1.4
+version: 1.5
 ---
 
 # Committing Guidelines
@@ -21,6 +21,37 @@ before reading code, planning, or editing — not just before pushing.
 Pulling at the end (just before `git push`) is too late: work built on
 a stale base has to be redone or rebased, and the conflict surfaces
 after the effort is spent rather than before.
+
+## Concurrent Sessions — Verify Before Every Commit, Not Just After a Broad Add
+
+A second live Claude Code session working the same repo can commit
+independently while this session is mid-task. If that session's own
+`git add` is broad (`-A`/`.`), it can sweep up this session's
+uncommitted, unstaged working-tree edits and commit them under its
+own unrelated message — the content survives, but the fix lands
+under the wrong commit, and this session can then double-ship a
+redundant version bump on top of a change that already shipped.
+
+- **Run `git status --porcelain` immediately before every `git
+  commit`** — not only right after a broad add. If files you
+  expected to still be uncommitted are missing from the working
+  tree, they may already have been committed by another session;
+  check `git log` for a commit you didn't make before proceeding.
+- **Stage by name, never `-A`/`.`** (already the rule — see the
+  global Git Safety Protocol). This is also this hazard's own
+  mitigation: a session that only ever stages the files its own
+  task touched cannot accidentally sweep up another session's
+  in-flight edits.
+- If you find your own uncommitted edits already committed
+  elsewhere, do not re-commit them — diff the committed version
+  against your working tree to confirm the content is identical,
+  then drop your now-redundant version bump instead of
+  double-shipping.
+
+Found 2026-07-23 while fixing `unstructured_mapping`'s
+`backup_db.py`: a concurrent session's `v2.156.1` commit absorbed
+this session's uncommitted edits before this session got to commit
+them.
 
 ## Post-Change Workflow
 
