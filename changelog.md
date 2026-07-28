@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.69 - 28th July 2026
+
+- Rotated changelog: archived 4 entries to `changelog/2026.md`.
+
+
 ### v6.3.68 - 27th July 2026
 
 - Updated `.claude/rules/committing.md` from canonical: added a
@@ -199,28 +204,3 @@
 ### v6.3.40 - 31st May 2026
 
 - Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
-
-
-### v6.3.39 - 31st May 2026
-
-- Added `scripts/backup_db.py`: snapshots `data_science.db` to
-  `~/Dropbox/home/development/db/rembrandt/` using the SQLite online
-  backup API (atomic write; source opened read-only). Destination
-  overridable via `REMBRANDT_BACKUP_DEST` env var or `--dest` flag.
-
-
-### v6.3.38 - 17th May 2026
-
-- Rotated changelog: archived 5 old entries to `changelog/2026.md`.
-
-
-### v6.3.37 - 9th May 2026
-
-- Added `When to Skip Tests` section to `.claude/rules/committing.md`: explicit allowlist (markdown, version bump, lock file, `.claude/` config, `CLAUDE.md`) of diffs where tests can be safely skipped.
-
-
-### v6.3.36 - 9th May 2026
-
-- Regrouped 2 historical changelog entries flagged by `/changelog-review` (programme v2.52.143):
-  - `changelog/2026.md` v0.27.1: 3 bullets touching `db.py` collapsed under one parent.
-  - `changelog/2026.md` v0.9.0: 3 bullets touching `scripts/` collapsed under one parent.
