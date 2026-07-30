@@ -2,6 +2,13 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.70 - 30th July 2026
+
+- Pruned the stale `Read(credentials/**)` deny from `.claude/settings.json`
+  (superseded by the git-aware `block-read-secrets` hook, fleet-wide
+  `push_to_projects.py --types projectperms` sync).
+
+
 ### v6.3.69 - 28th July 2026
 
 - Rotated changelog: archived 4 entries to `changelog/2026.md`.

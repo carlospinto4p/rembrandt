@@ -24,7 +24,6 @@
       "Read(**/*.key)",
       "Read(**/*.pem)",
       "Read(.env)",
-      "Read(credentials/**)",
       "Read(.env.local)",
       "Read(.env.*.local)",
       "Read(.env.development)",
