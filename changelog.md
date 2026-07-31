@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.71 - 31st July 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.70 - 30th July 2026
 
 - Pruned the stale `Read(credentials/**)` deny from `.claude/settings.json`
@@ -201,13 +206,3 @@
 ### v6.3.42 - 3rd June 2026
 
 - Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
-
-
-### v6.3.41 - 1st June 2026
-
-- Updated `.claude/rules/committing.md`: no-parallel-git-command rule and `-m` flag guidance.
-
-
-### v6.3.40 - 31st May 2026
-
-- Added `[build-system]` to `pyproject.toml`; `uv sync --all-extras` now handles the editable install automatically.
