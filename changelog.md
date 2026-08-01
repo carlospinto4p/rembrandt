@@ -2,6 +2,17 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.72 - 1st August 2026
+
+- Moved dev tooling from `[project.optional-dependencies]` to PEP 735
+  `[dependency-groups]` in `pyproject.toml` — a bare `uv run`/`uv sync`
+  no longer uninstalls pytest/ruff/pre-commit, since extras are
+  opt-in per invocation but groups are not. Added `[tool.uv]
+  default-groups = ["dev"]`.
+- Updated `CLAUDE.md` and `.claude/rules/committing.md` install
+  instructions from `uv sync --all-extras` to a bare `uv sync`.
+
+
 ### v6.3.71 - 31st July 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.

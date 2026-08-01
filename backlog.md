@@ -1,6 +1,21 @@
 
 # Backlog - Rembrandt
 
+### 2026.08.01
+
+- [ ] **Fix `Database.retention_rate()` — always returns 0.0.**
+  `tests/unit/test_db.py::test_retention_rate_all_correct` and
+  `::test_retention_rate_mixed` fail on `main` (confirmed pre-existing,
+  unrelated to the dependency-group migration in this same commit —
+  reproduced against `efccc33` before this change). `total` is read
+  correctly but the computed percentage comes back `0.0` regardless of
+  the `correct`/`total` ratio; likely an integer-division or a
+  `SUM(CASE WHEN correct THEN 1 ELSE 0 END)` type-coercion issue in
+  `src/rembrandt/db.py`'s `retention_rate()` (~line 1332), or a
+  cutoff/timestamp mismatch between `_add_history()`'s test helper and
+  the `_ISO_FMT` cutoff computed in the method. Priority: MEDIUM.
+  Effort: Small.
+
 ### 2026.07.16 (roadmap)
 
 - [ ] **Define this project's roadmap.** `roadmap.md` was scaffolded as
