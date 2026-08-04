@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.73 - 4th August 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.72 - 1st August 2026
 
 - Moved dev tooling from `[project.optional-dependencies]` to PEP 735
@@ -207,13 +212,3 @@
 ### v6.3.44 - 4th June 2026
 
 - Rotated changelog: archived 6 entries to `changelog/2026.md`.
-
-
-### v6.3.43 - 4th June 2026
-
-- Synced `.claude/rules/committing.md` from the programme registry: step 6 now scopes `uv.lock` regeneration to code-related bumps only — non-code patch bumps (`.claude/` config, docs, changelog, rule syncs) skip `uv lock`.
-
-
-### v6.3.42 - 3rd June 2026
-
-- Synced `.claude/rules/testing.md` from the programme registry: added the SQLite-backed fixtures pointer to the session-scoped template pattern (see the shared `testing-python` rule).
