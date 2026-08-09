@@ -2,6 +2,15 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.74 - 9th August 2026
+
+- **Documented the Dropbox backup restore procedure.** Added a
+  `## Restoring from backup` section to `README.md` — the plain `cp`
+  step to copy `data_science.db` back from
+  `~/Dropbox/home/development/db/rembrandt/` after `scripts/backup_db.py`
+  has snapshotted it.
+
+
 ### v6.3.73 - 4th August 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.

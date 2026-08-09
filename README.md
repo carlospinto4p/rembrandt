@@ -13,6 +13,20 @@ and progress tracking.
 pip install rembrandt
 ```
 
+## Restoring from backup
+
+`scripts/backup_db.py` snapshots `data_science.db` to
+`~/Dropbox/home/development/db/rembrandt/` on a schedule (see the
+global `db-backup-dropbox.md` rule). To restore onto a fresh machine
+or after data loss, copy the snapshot back into place:
+
+```bash
+cp ~/Dropbox/home/development/db/rembrandt/data_science.db data_science.db
+```
+
+The snapshot is a complete, self-contained SQLite file (produced via
+SQLite's online backup API) — no WAL or SHM sidecars needed.
+
 ## Quick Start
 
 ```python
