@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.75 - 10th August 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.74 - 9th August 2026
 
 - **Documented the Dropbox backup restore procedure.** Added a
@@ -211,13 +216,3 @@
 ### v6.3.46 - 8th June 2026
 
 - Synced from programme: reworded `versioning.md` changelog-prepend guidance (insert a new entry above the top header, never replace it) and added universal `.gitignore` entries (`*.bak.*`, `*.tmp.*`, etc.).
-
-
-### v6.3.45 - 7th June 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v6.3.44 - 4th June 2026
-
-- Rotated changelog: archived 6 entries to `changelog/2026.md`.
