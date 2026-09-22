@@ -2,6 +2,29 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.76 - 23rd September 2026
+
+- Gave the backup's temporary file a per-process name, so two runs
+  snapshotting the same database can no longer write the same file.
+  Fleet-wide change following the failure this caused in
+  `knowledge_graph_news` on 2026-09-22, where a retired systemd unit
+  was left installed beside its replacement and both ran the identical
+  command at 02:00.
+  - `scripts/backup_db.py`:
+    - Added `_tmp_sibling`: writes `<dest>.<pid>.tmp` instead of the
+      shared `<dest>.tmp`.
+    - Added `_sweep_stale_tmp`: deletes temp siblings untouched for a
+      day, including the older fixed `<dest>.tmp` form, which nothing
+      reclaims once every run writes a pid-suffixed name. Errors are
+      swallowed, since a concurrent run may sweep the same file and
+      cleanup must not fail the backup it precedes.
+    - Added `_STALE_TMP_AGE_S`.
+- Added `tests/unit/test_backup_db.py` coverage: 6 tests — no temp file
+  left behind, the pid in the name, a stale sibling and a stale legacy
+  `.tmp` both swept, and a fresh sibling and the destination both left
+  alone.
+
+
 ### v6.3.75 - 10th August 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.

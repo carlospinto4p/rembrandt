@@ -32,6 +32,7 @@ import argparse
 import logging
 import os
 import sqlite3
+import time
 from pathlib import Path
 
 logging.basicConfig(
@@ -53,6 +54,55 @@ DEFAULT_DEST = (
 def _effective_dest() -> Path:
     env = os.environ.get("REMBRANDT_BACKUP_DEST")
     return Path(env) if env else DEFAULT_DEST
+
+
+#: A leftover temp file must be untouched this long before a later run
+#: deletes it. A live backup writes continuously, so a day is
+#: unmistakably stale.
+_STALE_TMP_AGE_S = 86_400
+
+
+def _tmp_sibling(dest: Path) -> Path:
+    """Return this process's private temp path beside *dest*.
+
+    The pid is in the name so two runs backing up the same database
+    cannot write the same temp file. That collision broke
+    knowledge_graph_news's nightly backup on 2026-09-22, when a retired
+    systemd unit was left installed beside its replacement and both ran
+    the identical command at 02:00.
+
+    :param dest: Final destination path.
+    :return: ``<dest>.<pid>.tmp`` in the destination's directory.
+    """
+    return dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
+
+
+def _sweep_stale_tmp(dest: Path, keep: Path) -> None:
+    """Delete temp siblings of *dest* left behind by a killed run.
+
+    A per-process temp name is never reused, so nothing reclaims the
+    file when a run dies between creating it and renaming it. Covers the
+    older fixed ``<dest>.tmp`` form too, which has no reclaimer once
+    every run writes a pid-suffixed name. Failures are swallowed: a
+    concurrent run may sweep the same file, and cleanup must never fail
+    the backup it precedes.
+
+    :param dest: Destination whose temp siblings are considered.
+    :param keep: This run's own temp path, never deleted.
+    """
+    cutoff = time.time() - _STALE_TMP_AGE_S
+    candidates = [
+        *dest.parent.glob(f"{dest.name}.*.tmp"),
+        dest.with_name(dest.name + ".tmp"),
+    ]
+    for old in candidates:
+        if old == keep:
+            continue
+        try:
+            if old.is_file() and old.stat().st_mtime < cutoff:
+                old.unlink()
+        except OSError:
+            continue
 
 
 def backup_one(
@@ -77,7 +127,8 @@ def backup_one(
 
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src_path.name
-    tmp = dest.with_name(dest.name + ".tmp")
+    tmp = _tmp_sibling(dest)
+    _sweep_stale_tmp(dest, tmp)
 
     src = sqlite3.connect(f"file:{src_path}?mode=ro", uri=True)
     try:

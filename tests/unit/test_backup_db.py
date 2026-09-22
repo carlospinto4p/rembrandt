@@ -1,6 +1,7 @@
 """Tests for the empty/shrink backup guard in scripts/backup_db.py."""
 
 import importlib.util
+import os
 import sqlite3
 from pathlib import Path
 
@@ -85,3 +86,64 @@ def test_backup_one_allow_shrink_overwrites(tmp_path):
     (dest_dir / "data.db").write_bytes(b"x" * 5_000_000)
     out = mod.backup_one(src, dest_dir, allow_shrink=True)
     assert out.stat().st_size < 5_000_000
+
+
+# ── temp-file naming and sweep ────────────────────────────────────────
+
+
+def test_backup_one_leaves_no_temp_file(tmp_path):
+    mod = _load()
+    src = tmp_path / "data.db"
+    _make_sqlite(src)
+    dest_dir = tmp_path / "dest"
+    mod.backup_one(src, dest_dir)
+    assert list(dest_dir.glob("*.tmp")) == []
+
+
+def test_tmp_sibling_carries_the_pid(tmp_path):
+    """Two runs backing up one database must not share a temp file."""
+    mod = _load()
+    dest = tmp_path / "data.db"
+    assert mod._tmp_sibling(dest) == tmp_path / f"data.db.{os.getpid()}.tmp"
+
+
+def test_sweep_removes_stale_sibling(tmp_path):
+    mod = _load()
+    dest = tmp_path / "data.db"
+    stale = tmp_path / "data.db.999.tmp"
+    stale.write_text("abandoned")
+    os.utime(stale, (0, 0))
+    mod._sweep_stale_tmp(dest, mod._tmp_sibling(dest))
+    assert not stale.exists()
+
+
+def test_sweep_removes_stale_legacy_fixed_name(tmp_path):
+    """The old `<dest>.tmp` form has no reclaimer once every run writes
+    a pid-suffixed name."""
+    mod = _load()
+    dest = tmp_path / "data.db"
+    legacy = tmp_path / "data.db.tmp"
+    legacy.write_text("abandoned")
+    os.utime(legacy, (0, 0))
+    mod._sweep_stale_tmp(dest, mod._tmp_sibling(dest))
+    assert not legacy.exists()
+
+
+def test_sweep_keeps_a_fresh_sibling(tmp_path):
+    """A concurrent run's temp file is not stale, and deleting it would
+    break the collision this naming prevents."""
+    mod = _load()
+    dest = tmp_path / "data.db"
+    live = tmp_path / "data.db.999.tmp"
+    live.write_text("in progress")
+    mod._sweep_stale_tmp(dest, mod._tmp_sibling(dest))
+    assert live.exists()
+
+
+def test_sweep_leaves_the_destination_alone(tmp_path):
+    mod = _load()
+    dest = tmp_path / "data.db"
+    dest.write_text("the backup")
+    os.utime(dest, (0, 0))
+    mod._sweep_stale_tmp(dest, mod._tmp_sibling(dest))
+    assert dest.read_text() == "the backup"
