@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.77 - 25th September 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.76 - 23rd September 2026
 
 - Gave the backup's temporary file a per-process name, so two runs
@@ -229,13 +234,3 @@
 ### v6.3.48 - 13th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v6.3.47 - 10th June 2026
-
-- Rotated changelog: archived 2 entries to `changelog/2026.md`.
-
-
-### v6.3.46 - 8th June 2026
-
-- Synced from programme: reworded `versioning.md` changelog-prepend guidance (insert a new entry above the top header, never replace it) and added universal `.gitignore` entries (`*.bak.*`, `*.tmp.*`, etc.).
