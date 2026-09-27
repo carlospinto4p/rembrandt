@@ -2,6 +2,15 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.78 - 27th September 2026
+
+- `.claude/rules/committing.md`/`versioning.md`: pulled programme's
+  canonical trim (2026-09-27 context-budget pass) — shorter
+  Concurrent-Sessions wording, one fewer commit-message example, and
+  the stale PEP-735 `uv pip install -e ".[dev]"` wording fixed. No
+  behavior change.
+
+
 ### v6.3.77 - 25th September 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.

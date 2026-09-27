@@ -1,7 +1,7 @@
 ---
 name: versioning
 description: Semantic versioning scheme, changelog format, and release workflow
-version: 1.1
+version: 1.2
 ---
 
 # Versioning Workflow
@@ -88,28 +88,19 @@ rule above):
     - `tests/test_tables.py`: 12 tests.
     - `tests/test_drift.py`: 14 tests.
   ```
-- **Cascade** — a parent change with downstream consequences:
-  ```
-  - Moved `app/` into `src/project/app/`:
-    - Updated `Dockerfile` entrypoint.
-    - Updated `README.md` run command.
-    - Updated `docker-compose.yml` volume.
-  ```
 
-**When NOT to group:**
+The same grouping applies to a parent change with downstream
+consequences (e.g. moving a directory and updating every file that
+referenced its old path) — one parent bullet, sub-bullets underneath.
 
-- 1- or 2-item changes touching the same module — keep flat with
-  the path inline:
-  ```
-  - Added `docs/schema.md`: ERD and schema documentation.
-  - Updated `src/foo.py` and `src/bar.py`: shared error class.
-  ```
-- Unrelated changes — separate top-level bullets.
-- Narrative bullets without a file reference — flat at top level.
+**When NOT to group:** 1- or 2-item changes touching the same module
+(keep flat, path inline), unrelated changes (separate top-level
+bullets), and narrative bullets with no file reference (flat, top
+level).
 
 **IMPORTANT**: Always leave **two blank lines** between version entries in the changelog for readability.
 
-**IMPORTANT**: Always include changes under `.claude/` (rules, skills, commands, hooks, `settings.json`, `settings.local.json`) and `CLAUDE.md` in the changelog, and bump at least a patch version. These are project configuration/tooling changes that affect development workflow and must be tracked like any other change. Cross-project migrations that modify each repo's `.claude/` files require a patch bump per repo, not just in the project that drove the migration.
+**IMPORTANT**: `.claude/` (rules, skills, commands, hooks, `settings.json`, `settings.local.json`) and `CLAUDE.md` changes need a version bump and changelog entry too, even with no application code change — see `committing.md`'s "Config/tooling changes" note, including its per-repo rule for cross-project migrations.
 
 ## Reading the Changelog
 

@@ -1,7 +1,7 @@
 ---
 name: committing
 description: Git commit conventions, pull-first step, lock-file handling, and post-change workflow
-version: 1.5
+version: 1.6
 ---
 
 # Committing Guidelines
@@ -25,33 +25,21 @@ after the effort is spent rather than before.
 ## Concurrent Sessions — Verify Before Every Commit, Not Just After a Broad Add
 
 A second live Claude Code session working the same repo can commit
-independently while this session is mid-task. If that session's own
-`git add` is broad (`-A`/`.`), it can sweep up this session's
-uncommitted, unstaged working-tree edits and commit them under its
-own unrelated message — the content survives, but the fix lands
-under the wrong commit, and this session can then double-ship a
-redundant version bump on top of a change that already shipped.
+independently while this session is mid-task, sweeping up this
+session's uncommitted edits into an unrelated commit if its own
+`git add` is broad (`-A`/`.`) — the content survives, but the fix
+lands under the wrong commit.
 
 - **Run `git status --porcelain` immediately before every `git
-  commit`** — not only right after a broad add. If files you
-  expected to still be uncommitted are missing from the working
-  tree, they may already have been committed by another session;
-  check `git log` for a commit you didn't make before proceeding.
-- **Stage by name, never `-A`/`.`** (already the rule — see the
-  global Git Safety Protocol). This is also this hazard's own
-  mitigation: a session that only ever stages the files its own
-  task touched cannot accidentally sweep up another session's
-  in-flight edits.
-- If you find your own uncommitted edits already committed
-  elsewhere, do not re-commit them — diff the committed version
-  against your working tree to confirm the content is identical,
-  then drop your now-redundant version bump instead of
-  double-shipping.
-
-Found 2026-07-23 while fixing `unstructured_mapping`'s
-`backup_db.py`: a concurrent session's `v2.156.1` commit absorbed
-this session's uncommitted edits before this session got to commit
-them.
+  commit`** — not only right after a broad add. If files you expected
+  to still be uncommitted are missing, check `git log` for a commit
+  you didn't make before proceeding.
+- **Stage by name, never `-A`/`.`** — a session that only stages the
+  files its own task touched cannot accidentally sweep up another
+  session's in-flight edits.
+- If your edits turn out to already be committed elsewhere, diff the
+  committed version against your working tree to confirm it matches,
+  then drop your now-redundant version bump instead of double-shipping.
 
 ## Post-Change Workflow
 
@@ -59,13 +47,13 @@ them.
 
 1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
 2. **Update tests if needed**: If the changes require test updates, fix them before committing
-3. **Update version and changelog**: Follow `versioning.md` rules. Include guideline and tooling changes (`.claude/**`, `CLAUDE.md`) in the changelog too — **any** change under `.claude/` counts (rules, skills, commands, hooks, `settings.json`, etc.).
+3. **Update version and changelog**: Follow `versioning.md` rules — config/tooling changes count too (see below).
 4. **Update README.md if needed**: When changes affect user-facing functionality:
    - New methods or classes: add usage examples
    - Changed method signatures or behavior: update existing examples
    - New configuration options: document them
 5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes. For **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) skip `uv lock`: the lock file's self-referential `version` drifting by a patch is expected and harmless, and chasing it across many repos is wasted churn. **If `uv.lock` has changed by any route, still commit it** (step 7) — never leave it dirty on disk. Development dependencies are PEP 735 groups, not extras — there is no `dev` extra, so `uv pip install -e ".[dev]"` no longer works; a bare `uv sync` restores everything, editable install included.
+6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes. For **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) skip `uv lock`: the lock file's self-referential `version` drifting by a patch is expected and harmless, and chasing it across many repos is wasted churn. **If `uv.lock` has changed by any route, still commit it** (step 7) — never leave it dirty on disk. Development dependencies are PEP 735 groups, not extras, so there is no `dev` extra to reinstall via `-e ".[dev]"` — a bare `uv sync` restores everything, editable install included.
 7. **Commit changes**: Create a commit with a descriptive message following the format below
    - **Always include uv.lock** in commits when it has changed
 8. **Push to remote**: Push the changes with `git push`
@@ -165,18 +153,13 @@ Use conventional commit style:
 ## When to Add a Body
 
 A body is warranted only when the *why* is non-obvious and not
-already captured elsewhere. Good reasons:
+already captured elsewhere — a workaround for a specific bug or
+upstream issue (link it), a hidden constraint that explains an
+unusual choice, or an incident the diff alone won't surface.
 
-- A workaround for a specific bug or upstream issue (link it)
-- A hidden constraint that explains an unusual choice
-- An incident or decision the diff alone won't surface
-
-Do **not** write bodies that:
-
-- Restate what the diff does
-- Recap which version this is or how it relates to the previous one
-- Describe a new file/skill/function in prose (the changelog does that)
-- Add multi-paragraph design rationale that belongs in a PR description
+Don't write a body that restates the diff, recaps the version, or
+describes a new file/skill/function in prose (the changelog does
+that) — that belongs in a PR description, not here.
 
 If you do add a body, separate it from the subject with a blank line
 and keep it tight — one short paragraph is almost always enough.
@@ -189,8 +172,4 @@ feat: Add project registry with version tracking
 
 ```
 fix: Handle missing changelog in cross-project sync
-```
-
-```
-docs: Update README with installation options
 ```
