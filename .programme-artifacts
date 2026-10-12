@@ -1,0 +1,7 @@
+# Read by programme (~/development/programme). See its
+# .claude/rules/artifact-backup-coverage.md.
+
+# Where this project reads its database from: `data_science.db` sits
+# at the project root. The Dropbox data restore puts the snapshot
+# back here.
+data = .

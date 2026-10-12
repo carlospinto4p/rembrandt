@@ -2,6 +2,13 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.80 - 12th October 2026
+
+- Added `.programme-artifacts` with `data = .`, so programme's
+  Dropbox data restore puts `data_science.db` back at the project
+  root. It used to write it to a `data/` folder nothing reads.
+
+
 ### v6.3.79 - 28th September 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
