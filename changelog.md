@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.81 - 13th October 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.80 - 12th October 2026
 
 - Added `.programme-artifacts` with `data = .`, so programme's
@@ -228,20 +233,3 @@
   smaller source signals truncation/data loss. The refusal exits
   non-zero so the backup unit's `OnFailure` handler raises the alarm;
   `--allow-shrink` overrides. Added a one-byte-smaller regression test.
-
-
-### v6.3.51 - 20th June 2026
-
-- `scripts/backup_db.py`: guard `backup_one` against clobbering a good
-  Dropbox backup with empty/fresh-machine data — refuse a missing or
-  zero-byte source, and refuse a snapshot under 50% of the existing
-  backup unless `--allow-shrink`. Added `tests/unit/test_backup_db.py`
-  (5 tests). Mirrors programme's `backup_guard`.
-
-
-### v6.3.50 - 14th June 2026
-
-- Added the `check-changelog-headers` pre-commit guard
-  (`.pre-commit-scripts/check_changelog_headers.sh` + the `.pre-commit-config.yaml`
-  stanza): blocks a changelog edit that overwrites an existing version
-  header (the bug that silently lost manifold's `v0.1.35`).
