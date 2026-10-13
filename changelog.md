@@ -2,6 +2,14 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.82 - 13th October 2026
+
+- `CLAUDE.md` `## Core Rules`: removed "Update CLAUDE.md Each
+  Iteration". Self-Improvement already says to update the file
+  when a rule changes. Periodic Reviews is now rule 3. Pushed from
+  `programme` v4.159.10.
+
+
 ### v6.3.81 - 13th October 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
