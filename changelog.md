@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.83 - 16th October 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.82 - 13th October 2026
 
 - `CLAUDE.md` `## Core Rules`: removed "Update CLAUDE.md Each
@@ -224,20 +229,3 @@
 ### v6.3.54 - 25th June 2026
 
 - Rotated changelog: archived 5 entries to `changelog/2026.md`.
-
-
-### v6.3.53 - 20th June 2026
-
-- Added `scripts/changelog-add.sh` (safe changelog-prepend helper) and the `check-version-changelog` pre-commit guard, distributed in the programme fleet rollout.
-- Restored `.pre-commit-scripts/check_unstaged_claude.py` and removed the
-  stray `.pre-commit-scripts/` `.gitignore` entry so local hook scripts
-  are tracked like the rest of the fleet.
-
-
-### v6.3.52 - 20th June 2026
-
-- `scripts/backup_db.py`: tightened the shrink guard to refuse **any**
-  snapshot smaller than the existing backup (was a >50% collapse) — a
-  smaller source signals truncation/data loss. The refusal exits
-  non-zero so the backup unit's `OnFailure` handler raises the alarm;
-  `--allow-shrink` overrides. Added a one-byte-smaller regression test.

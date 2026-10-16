@@ -423,7 +423,7 @@ wheels = [
 
 [[package]]
 name = "rembrandt"
-version = "6.3.82"
+version = "6.3.83"
 source = { editable = "." }
 dependencies = [
     { name = "aiosqlite" },
