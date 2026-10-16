@@ -155,11 +155,27 @@ fi
 # whatever it's headed with.
 hdr_line="$(grep -nE '^### ' "$file" | head -1 | cut -d: -f1 || true)"
 
+# The gap under the new entry copies the one the file already leaves above its
+# second entry header: two blank lines in most projects, one in tyfold's. A
+# fixed count broke one side or the other (v4.152.3 hard-coded one). With no
+# second entry to measure, use two, as versioning.md asks.
+gap=2
+hdr2_line="$(grep -nE '^### ' "$file" | sed -n 2p | cut -d: -f1 || true)"
+if [[ -n "$hdr2_line" ]]; then
+  gap=0
+  while (( hdr2_line - gap - 1 > 0 )) &&
+    [[ -z "$(sed -n "$((hdr2_line - gap - 1))p" "$file")" ]]; do
+    gap=$((gap + 1))
+  done
+  (( gap > 0 )) || gap=2
+fi
+
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
 if [[ -n "$hdr_line" ]]; then
   head -n "$((hdr_line - 1))" "$file" >"$tmp"
-  printf '### %s - %s\n\n%s\n\n\n' "$version" "$date_str" "$body" >>"$tmp"
+  printf '### %s - %s\n\n%s\n' "$version" "$date_str" "$body" >>"$tmp"
+  printf '%*s' "$gap" '' | tr ' ' '\n' >>"$tmp"
   tail -n "+$hdr_line" "$file" >>"$tmp"
 else
   # No prior entries: keep the title block, then the new entry.
