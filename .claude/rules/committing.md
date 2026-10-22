@@ -1,7 +1,7 @@
 ---
 name: committing
 description: Git commit conventions, pull-first step, lock-file handling, and post-change workflow
-version: 1.6
+version: 1.7
 ---
 
 # Committing Guidelines
@@ -12,100 +12,81 @@ version: 1.6
 before reading code, planning, or editing — not just before pushing.
 
 - Use `git -C <repo> pull` as a standalone Bash call (never chained).
-- Do this even when the working tree looks clean: cleanliness says
-  nothing about whether the remote has moved ahead from another
-  machine.
+- Do this even when the working tree looks clean: the remote may have
+  moved ahead from another machine.
 - If the pull brings in commits, re-read anything you had already
-  looked at before continuing — your view of the code is stale.
+  looked at — your view of the code is stale.
 
-Pulling at the end (just before `git push`) is too late: work built on
-a stale base has to be redone or rebased, and the conflict surfaces
-after the effort is spent rather than before.
+Pulling only before `git push` is too late: work built on a stale base
+has to be redone.
 
 ## Concurrent Sessions — Verify Before Every Commit, Not Just After a Broad Add
 
-A second live Claude Code session working the same repo can commit
-independently while this session is mid-task, sweeping up this
-session's uncommitted edits into an unrelated commit if its own
-`git add` is broad (`-A`/`.`) — the content survives, but the fix
-lands under the wrong commit.
+A second live session in the same repo can commit while this one is
+mid-task, and a broad `git add` (`-A`/`.`) there sweeps this session's
+uncommitted edits into its unrelated commit.
 
 - **Run `git status --porcelain` immediately before every `git
-  commit`** — not only right after a broad add. If files you expected
-  to still be uncommitted are missing, check `git log` for a commit
-  you didn't make before proceeding.
-- **Stage by name, never `-A`/`.`** — a session that only stages the
-  files its own task touched cannot accidentally sweep up another
-  session's in-flight edits.
-- If your edits turn out to already be committed elsewhere, diff the
-  committed version against your working tree to confirm it matches,
-  then drop your now-redundant version bump instead of double-shipping.
+  commit`.** If files you expected to be uncommitted are missing,
+  check `git log` for a commit you didn't make before proceeding.
+- **Stage by name, never `-A`/`.`**, so you cannot sweep up another
+  session's edits either.
+- If your edits are already committed elsewhere, diff that commit
+  against your working tree, then drop your redundant version bump.
 
 ## Post-Change Workflow
 
-**IMPORTANT**: After completing any task that involves code changes, ALWAYS follow this workflow:
+**MANDATORY after every prompt that results in code changes:**
 
-1. **Run tests**: Execute `uv run pytest tests/unit -v` and ensure all tests pass
-2. **Update tests if needed**: If the changes require test updates, fix them before committing
-3. **Update version and changelog**: Follow `versioning.md` rules — config/tooling changes count too (see below).
-4. **Update README.md if needed**: When changes affect user-facing functionality:
-   - New methods or classes: add usage examples
-   - Changed method signatures or behavior: update existing examples
-   - New configuration options: document them
-5. **Update CLAUDE.md if needed**: When rules change or new important patterns emerge
-6. **Sync lock file and reinstall**: Run `uv sync --all-extras` to update `uv.lock`. Only needed when the bump is **code-related** — actual source or dependency changes. For **non-code patch bumps** (`.claude/` config, docs, changelog-only, cross-project rule syncs) skip `uv lock`: the lock file's self-referential `version` drifting by a patch is expected and harmless, and chasing it across many repos is wasted churn. **If `uv.lock` has changed by any route, still commit it** (step 7) — never leave it dirty on disk. Development dependencies are PEP 735 groups, not extras, so there is no `dev` extra to reinstall via `-e ".[dev]"` — a bare `uv sync` restores everything, editable install included.
-7. **Commit changes**: Create a commit with a descriptive message following the format below
-   - **Always include uv.lock** in commits when it has changed
-8. **Push to remote**: Push the changes with `git push`
+1. **Run tests**: `uv run pytest tests/unit -v`, all passing.
+2. **Update tests** the change requires, before committing.
+3. **Update version and changelog** per `versioning.md` —
+   config/tooling changes count too (see below).
+4. **Update README.md** when user-facing behaviour changed: usage
+   examples for new methods or classes, updated examples for changed
+   signatures, docs for new configuration options.
+5. **Update CLAUDE.md** when rules change or new important patterns
+   emerge.
+6. **Sync the lock file**: `uv sync --all-extras`, only when the bump
+   is **code-related** (source or dependency changes). For non-code
+   patch bumps (`.claude/` config, docs, changelog-only, cross-project
+   rule syncs) don't run `uv lock` to chase the self-referential
+   version. **If `uv.lock` changed by any route, commit it** — never
+   leave it dirty. Dev dependencies are PEP 735 groups, not extras: a
+   bare `uv sync` restores everything, editable install included.
+7. **Commit** with a message in the format below, **always including
+   `uv.lock`** when it changed.
+8. **Push** with `git push`.
 
-This workflow is MANDATORY after every prompt that results in code changes.
+**Config/tooling changes** (anything under `.claude/` and `CLAUDE.md`)
+still take a patch bump and changelog entry with no code change; skip
+tests only if no code changed. This is per project: a cross-project
+migration touching N repos gets a bump and entry in each.
 
-**Config/tooling changes** (anything under `.claude/` — rules,
-skills, commands, hooks, `settings.json`, `settings.local.json` —
-and `CLAUDE.md`): still require a patch version bump and changelog
-entry, even when no application code changed. Follow the full
-workflow above (skip tests only if no code changed). This applies
-per project: if a cross-project migration touches N repos'
-`.claude/` files, each repo gets its own patch bump and changelog
-entry.
-
-**Pure tracking changes** (`backlog.md` checkboxes only): commit and push,
-but skip tests and version bump.
+**Pure tracking changes** (`backlog.md` checkboxes only): commit and
+push, no tests, no version bump.
 
 **Lock-file-only changes** (`uv.lock` is the entire diff): commit and
-push, but **no version bump and no changelog entry**. Almost always this
-is the lock's self-referential `version` catching up to an already-
-released `pyproject.toml` — bumping would push `pyproject.toml` ahead
-again and recreate the very drift being cleared, so the bump can never
-converge. Commit it as a `chore:` on its own.
-
-The exception is a lock that was **broken or substantively changed** — a
-dependency added, removed, or upgraded, or a bad/missing resolution
-repaired. That is a dependency change, so it takes a patch bump and a
-changelog entry like any other code-related change. The test is whether
-the diff touches anything beyond the `[[package]] name = "<this project>"`
-version line.
+push as a `chore:`, **no version bump and no changelog entry**. The
+diff is almost always the lock's own `version` catching up to an
+already-released `pyproject.toml`; a bump would recreate the drift.
+The exception is a **broken or substantively changed** lock (a
+dependency added, removed or upgraded, or a bad resolution repaired),
+which takes a patch bump and entry like any code change. The test:
+does the diff touch anything beyond the `[[package]] name = "<this
+project>"` version line?
 
 ## When to Skip Tests
 
-The default is to run tests (step 1). **Skip tests when the
-staged diff consists exclusively of one or more of**:
+The default is to run them. **Skip only when the staged diff is
+exclusively** markdown/docs (`*.md`), a `pyproject.toml` version bump,
+`uv.lock`, `.claude/` config files, or `CLAUDE.md`.
 
-- Markdown / docs (`*.md`, `changelog.md`, `README.md`)
-- Version bump in `pyproject.toml`
-- Lock file (`uv.lock`)
-- `.claude/` config files (rules, skills, commands, hooks,
-  `settings.json`, `settings.local.json`)
-- `CLAUDE.md`
-
-If **any** `.py` file is in the diff (including under
-`tests/`), run tests. If the diff mixes a skippable file with
-anything outside the list above, run tests. When in doubt, run
-them — but do not launch a long suite for a one-line markdown
-edit.
-
-The signal is the diff itself, not your intent. Check
-`git status --porcelain` before deciding.
+If **any** `.py` file is in the diff (including under `tests/`), or
+the diff mixes a skippable file with anything else, run tests. When
+in doubt, run them — but not a long suite for a one-line markdown
+edit. Check `git status --porcelain` before deciding: the signal is
+the diff, not your intent.
 
 ## Commit Message Format
 
@@ -119,50 +100,32 @@ Use conventional commit style:
 
 ## Types
 
-- `feat` - New feature or functionality
-- `fix` - Bug fix
-- `refactor` - Code refactoring without changing behavior
-- `docs` - Documentation changes
-- `test` - Adding or updating tests
-- `chore` - Maintenance tasks, dependency updates
+`feat` (new functionality), `fix` (bug fix), `refactor` (no behaviour
+change), `docs`, `test`, `chore` (maintenance, dependency updates).
 
 ## Best Practices
 
-- Keep the subject line under 72 characters
-- Use imperative mood ("Add feature" not "Added feature")
-- **Default to subject-only.** Skip the body unless it adds
-  something a reader wouldn't get from the subject, the diff,
-  and the changelog entry.
-- Reference issues when applicable
+- Subject line under 72 characters, imperative mood ("Add feature").
+- **Default to subject-only.** Skip the body unless it adds something
+  the subject, diff and changelog don't.
+- Reference issues when applicable.
 - **One command per Bash call** — never chain git commands with `&&`,
-  `;`, heredocs, or subshells. Each `git add`, `git commit`,
-  `git push`, etc. must be its own separate Bash call.
-- **Never put a git command in a parallel tool batch.** Send each
-  git operation as the *only* tool call in its message and wait for
-  the result before the next. A `PreToolUse` hook that rejects one
-  call (`exit 2`) cancels every other call queued in the same
-  batch — so a single blocked `git commit` silently discards all
-  the reads/edits bundled with it, and stale results from the
-  cancelled batch get misread as current state. Serial git calls
-  avoid the cascade entirely.
+  `;`, heredocs, or subshells.
+- **Never put a git command in a parallel tool batch.** A
+  `PreToolUse` hook that rejects one call cancels every other call in
+  the same batch, silently discarding the reads and edits bundled with
+  it. Send each git operation alone and wait for its result.
 - **Use repeated `-m` flags for commit bodies**, not heredocs or
-  `$(cat <<EOF …)`. The newline in a heredoc trips the
-  chained-command hook even though the body is legitimate; two
-  `-m` flags (subject, then body) pass cleanly.
+  `$(cat <<EOF …)`, which trip the chained-command hook.
 
 ## When to Add a Body
 
-A body is warranted only when the *why* is non-obvious and not
-already captured elsewhere — a workaround for a specific bug or
-upstream issue (link it), a hidden constraint that explains an
-unusual choice, or an incident the diff alone won't surface.
-
-Don't write a body that restates the diff, recaps the version, or
-describes a new file/skill/function in prose (the changelog does
-that) — that belongs in a PR description, not here.
-
-If you do add a body, separate it from the subject with a blank line
-and keep it tight — one short paragraph is almost always enough.
+Only when the *why* is non-obvious and not captured elsewhere: a
+workaround for a specific bug or upstream issue (link it), a hidden
+constraint explaining an unusual choice, or an incident the diff won't
+surface. Never a body that restates the diff or describes a new file
+(the changelog does that). Separate it from the subject with a blank
+line; one short paragraph.
 
 ## Examples
 

@@ -2,6 +2,13 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.84 - 22nd October 2026
+
+- `.claude/rules/committing.md`: synced the trimmed canonical
+  from programme (7.9k to 5.5k characters, same headings and
+  instructions) to cut the instruction text loaded per session.
+
+
 ### v6.3.83 - 16th October 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
