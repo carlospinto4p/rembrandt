@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.85 - 25th October 2026
+
+- Rotated changelog: archived 2 entries to `changelog/2026.md`.
+
+
 ### v6.3.84 - 22nd October 2026
 
 - `.claude/rules/committing.md`: synced the trimmed canonical
@@ -226,13 +231,3 @@
 ### v6.3.56 - 28th June 2026
 
 - Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v6.3.55 - 25th June 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v6.3.54 - 25th June 2026
-
-- Rotated changelog: archived 5 entries to `changelog/2026.md`.
