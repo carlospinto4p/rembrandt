@@ -2,8 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
-
 from rembrandt.fsrs import (
     AGAIN,
     EASY,
@@ -22,8 +20,6 @@ from rembrandt.models import (
     FSRSConfig,
     UserProgress,
 )
-
-pytestmark = pytest.mark.asyncio
 
 
 # --- Retrievability Tests ---

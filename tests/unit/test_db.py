@@ -1152,7 +1152,12 @@ async def test_daily_stats_multiple_days(db):
 
 
 async def _add_history(db, user_id, cid, correct, n):
-    """Helper to insert N answer_history rows."""
+    """Helper to insert N answer_history rows, dated now.
+
+    Dated now so the rows fall inside the default 30-day window
+    of `Database.retention_rate`; a fixed date expires.
+    """
+    answered_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     for _ in range(n):
         await db._conn.execute(
             "INSERT INTO answer_history "
@@ -1165,7 +1170,7 @@ async def _add_history(db, user_id, cid, correct, n):
                 "flashcard",
                 int(correct),
                 5 if correct else 1,
-                "2026-02-27T10:00:00",
+                answered_at,
             ),
         )
     await db._conn.commit()

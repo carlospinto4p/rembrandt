@@ -2,6 +2,17 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.87 - 7th November 2026
+
+- Fixed `tests/unit/test_db.py`: `_add_history` dated every row
+  `2026-02-27`, outside the 30-day window of
+  `Database.retention_rate`, so both retention-rate tests had failed
+  since late March. Rows are now dated at insert time.
+- `tests/unit/test_fsrs.py`: removed the module-wide
+  `pytest.mark.asyncio`, redundant under `asyncio_mode = "auto"`
+  and the source of 27 warnings on sync tests.
+
+
 ### v6.3.86 - 7th November 2026
 
 - Added `LICENSE`: MIT, chosen by the owner on 7th November 2026.
