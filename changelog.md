@@ -2,6 +2,13 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.86 - 7th November 2026
+
+- Added `LICENSE`: MIT, chosen by the owner on 7th November 2026.
+- `pyproject.toml`: declared `license = "MIT"` and
+  `license-files = ["LICENSE"]`.
+
+
 ### v6.3.85 - 25th October 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
