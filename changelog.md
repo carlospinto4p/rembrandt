@@ -2,6 +2,11 @@
 ## Changelog - Rembrandt
 
 
+### v6.3.88 - 10th November 2026
+
+- Rotated changelog: archived 3 entries to `changelog/2026.md`.
+
+
 ### v6.3.87 - 7th November 2026
 
 - Fixed `tests/unit/test_db.py`: `_add_history` dated every row
@@ -231,21 +236,3 @@
 ### v6.3.59 - 4th July 2026
 
 - Rotated changelog: archived 2 entries to `changelog/2026.md`.
-
-
-### v6.3.58 - 3rd July 2026
-
-- Updated `.pre-commit-scripts/check_version_changelog.sh` to canonical:
-  exclude `reservations/**` placeholder manifests from version-bump
-  detection, so defensive package-name holds don't demand a changelog
-  entry (programme fleet rollout).
-
-
-### v6.3.57 - 1st July 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.
-
-
-### v6.3.56 - 28th June 2026
-
-- Rotated changelog: archived 1 entries to `changelog/2026.md`.

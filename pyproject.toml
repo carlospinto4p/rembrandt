@@ -1,6 +1,6 @@
 [project]
 name = "rembrandt"
-version = "6.3.87"
+version = "6.3.88"
 description = "A general-purpose spaced-repetition library for any subject."
 license = "MIT"
 license-files = ["LICENSE"]
